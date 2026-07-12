@@ -1,0 +1,31 @@
+.git
+.github
+.next
+node_modules
+coverage
+dist
+out
+
+# Local editor and operating-system files
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Logs and local test output
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+playwright-report
+test-results
+
+# Never copy local environment values or credentials into an image.
+.env
+.env.*
+!.env.example
+.npmrc
+*.key
+*.pem
+*.p12
+*.pfx
