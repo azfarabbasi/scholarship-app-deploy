@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "data:validate": "tsx scripts/validate-opportunity-seed.ts"
   },
   "engines": {
     "node": ">=22.0.0"
@@ -22,6 +23,8 @@
     "@types/react-dom": "19.2.3",
     "eslint": "9.39.5",
     "eslint-config-next": "16.2.10",
-    "typescript": "5.9.3"
+    "tsx": "4.23.0",
+    "typescript": "5.9.3",
+    "zod": "4.4.3"
   }
 }

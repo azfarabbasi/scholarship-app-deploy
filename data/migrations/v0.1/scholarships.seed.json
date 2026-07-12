@@ -1,0 +1,2046 @@
+[
+  {
+    "legacyId": 1,
+    "slug": "daad-scholarships-for-foreign-students",
+    "title": "DAAD Scholarships for Foreign Students",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Germany"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Bachelor",
+      "Master",
+      "PhD"
+    ],
+    "benefitSummary": "Full funding: tuition, €850–934/month stipend, health insurance, and travel allowance.",
+    "eligibilitySummary": "Bachelor's, Master's, or PhD applicants from any country with a strong academic record in a relevant subject.",
+    "deadline": {
+      "rawText": "Varies by program (October–November for most)",
+      "precision": "estimated",
+      "dates": [
+        "2026-11-30"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.daad.de/en/study-and-research-in-germany/scholarships/",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-1",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines."
+    ]
+  },
+  {
+    "legacyId": 2,
+    "slug": "helmholtz-research-school-fellowships",
+    "title": "Helmholtz Research School Fellowships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Germany"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "PhD"
+    ],
+    "benefitSummary": "Fully funded PhD: salary, research budget, and travel grants.",
+    "eligibilitySummary": "PhD applicants in STEM, environmental sciences, or health research.",
+    "deadline": {
+      "rawText": "Rolling / program-specific",
+      "precision": "rolling",
+      "dates": [],
+      "cycleYear": null,
+      "timezone": null,
+      "isRolling": true
+    },
+    "officialUrl": "https://www.helmholtz.de/en/career/doctoral-researchers/",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-2",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is rolling; no fixed deadline date was present."
+    ]
+  },
+  {
+    "legacyId": 3,
+    "slug": "friedrich-ebert-stiftung-scholarship",
+    "title": "Friedrich Ebert Stiftung Scholarship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Germany"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Bachelor",
+      "Master",
+      "PhD"
+    ],
+    "benefitSummary": "€830/month plus travel and study allowances.",
+    "eligibilitySummary": "Undergraduate or postgraduate applicants with good academics and social commitment.",
+    "deadline": {
+      "rawText": "March 15 and September 15 annually",
+      "precision": "exact",
+      "dates": [
+        "2026-03-15",
+        "2026-09-15"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.fes.de/en/foundation/foerderung/studienfoerderung/",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-3",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 4,
+    "slug": "konrad-adenauer-stiftung-scholarship",
+    "title": "Konrad Adenauer Stiftung Scholarship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Germany"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master",
+      "PhD"
+    ],
+    "benefitSummary": "€830/month plus a full benefits package.",
+    "eligibilitySummary": "Master's or PhD applicants with strong civic engagement and good academic standing.",
+    "deadline": {
+      "rawText": "January 15 and July 15",
+      "precision": "exact",
+      "dates": [
+        "2026-01-15",
+        "2026-07-15"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.kas.de/en/web/begabtenfoerderung-und-kultur/students",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-4",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 5,
+    "slug": "heinrich-boll-stiftung-scholarship",
+    "title": "Heinrich Böll Stiftung Scholarship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Germany"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Bachelor",
+      "Master",
+      "PhD"
+    ],
+    "benefitSummary": "€830/month plus a family supplement.",
+    "eligibilitySummary": "International students committed to democracy, human rights, and sustainability.",
+    "deadline": {
+      "rawText": "March 1 and September 1",
+      "precision": "exact",
+      "dates": [
+        "2026-03-01",
+        "2026-09-01"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.boell.de/en/scholarship-program",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-5",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 6,
+    "slug": "alexander-von-humboldt-research-fellowship",
+    "title": "Alexander von Humboldt Research Fellowship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Germany"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Postdoc",
+      "Research"
+    ],
+    "benefitSummary": "€2,670–3,170/month for postdoctoral researchers and fully funded research stays.",
+    "eligibilitySummary": "Postdoctoral researchers worldwide who completed a PhD within the last 12 years.",
+    "deadline": {
+      "rawText": "Apply anytime; reviewed three times per year",
+      "precision": "rolling",
+      "dates": [],
+      "cycleYear": null,
+      "timezone": null,
+      "isRolling": true
+    },
+    "officialUrl": "https://www.humboldt-foundation.de/en/apply/sponsorship-programmes/humboldt-research-fellowship",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-6",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is rolling; no fixed deadline date was present."
+    ]
+  },
+  {
+    "legacyId": 7,
+    "slug": "daad-study-scholarships-master-s",
+    "title": "DAAD Study Scholarships – Master's",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Germany"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "Tuition, living stipend, and health insurance.",
+    "eligibilitySummary": "Outstanding graduates seeking a Master's degree in Germany.",
+    "deadline": {
+      "rawText": "November 15",
+      "precision": "exact",
+      "dates": [
+        "2026-11-15"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.daad.de/en/study-and-research-in-germany/scholarships/daad-scholarships/",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-7",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 8,
+    "slug": "bavaria-wide-free-tuition-public-universities",
+    "title": "Bavaria-Wide Free Tuition (Public Universities)",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Germany"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Bachelor",
+      "Master"
+    ],
+    "benefitSummary": "No tuition fees at selected Bavarian public-university programs.",
+    "eligibilitySummary": "International students; language requirements vary by program.",
+    "deadline": {
+      "rawText": "April–July application window",
+      "precision": "estimated",
+      "dates": [
+        "2026-07-31"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.studieren-in-bayern.de/en/",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-8",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines."
+    ]
+  },
+  {
+    "legacyId": 9,
+    "slug": "holland-scholarship",
+    "title": "Holland Scholarship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Netherlands"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Bachelor",
+      "Master"
+    ],
+    "benefitSummary": "€5,000 one-time grant.",
+    "eligibilitySummary": "Non-EEA students applying to a Dutch Bachelor's or Master's program.",
+    "deadline": {
+      "rawText": "February 1 for most universities",
+      "precision": "estimated",
+      "dates": [
+        "2026-02-01"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.studyinholland.nl/scholarships/holland-scholarship",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-9",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines."
+    ]
+  },
+  {
+    "legacyId": 10,
+    "slug": "erasmus-university-rotterdam-excellence-scholarship",
+    "title": "Erasmus University Rotterdam Excellence Scholarship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Netherlands"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "€15,000 or a full tuition waiver.",
+    "eligibilitySummary": "Outstanding international Master's students; merit-based.",
+    "deadline": {
+      "rawText": "January 1–February 1",
+      "precision": "estimated",
+      "dates": [
+        "2026-02-01"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.eur.nl/en/education/scholarships/rotterdam-excellence-scholarship",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-10",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines."
+    ]
+  },
+  {
+    "legacyId": 11,
+    "slug": "tu-delft-excellence-scholarships",
+    "title": "TU Delft Excellence Scholarships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Netherlands"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "Full tuition plus €1,000/month living allowance.",
+    "eligibilitySummary": "Excellent academic record and admission to a TU Delft Master's program.",
+    "deadline": {
+      "rawText": "December 1",
+      "precision": "exact",
+      "dates": [
+        "2026-12-01"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.tudelft.nl/onderwijs/toelating-en-inschrijving/masters/scholarships-and-grants",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-11",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 12,
+    "slug": "wageningen-university-scholarship",
+    "title": "Wageningen University Scholarship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Netherlands"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "€15,000 toward tuition.",
+    "eligibilitySummary": "Non-EEA students admitted to a Wageningen Master's program with a strong GPA.",
+    "deadline": {
+      "rawText": "January 15",
+      "precision": "exact",
+      "dates": [
+        "2026-01-15"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.wur.nl/en/education/masters/scholarships.htm",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-12",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 13,
+    "slug": "utrecht-excellence-scholarship",
+    "title": "Utrecht Excellence Scholarship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Netherlands"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "Full tuition or €10,000.",
+    "eligibilitySummary": "Applicants in the top 10% of their graduating class applying for a Utrecht Master's.",
+    "deadline": {
+      "rawText": "February 1",
+      "precision": "exact",
+      "dates": [
+        "2026-02-01"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.uu.nl/en/masters/general-information/grants-and-scholarships/utrecht-excellence-scholarships",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-13",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 14,
+    "slug": "swedish-institute-scholarships-for-global-professionals-sisgp",
+    "title": "Swedish Institute Scholarships for Global Professionals (SISGP)",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Sweden"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "Full tuition, SEK 11,000/month living allowance, travel grant, and insurance.",
+    "eligibilitySummary": "Non-EU/EEA applicants with at least three years of work experience applying to a Swedish Master's program.",
+    "deadline": {
+      "rawText": "February 10",
+      "precision": "exact",
+      "dates": [
+        "2026-02-10"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://si.se/en/apply/scholarships/swedish-institute-scholarships-for-global-professionals/",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-14",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 15,
+    "slug": "lund-university-global-scholarship",
+    "title": "Lund University Global Scholarship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Sweden"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "Tuition fee waiver.",
+    "eligibilitySummary": "Non-EU/EEA students admitted to a full-time Lund Master's program.",
+    "deadline": {
+      "rawText": "February 1",
+      "precision": "exact",
+      "dates": [
+        "2026-02-01"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.lunduniversity.lu.se/study-in-lund/fees-and-funding/scholarships",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-15",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 16,
+    "slug": "stockholm-university-academic-merit-scholarship",
+    "title": "Stockholm University Academic Merit Scholarship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Sweden"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "50% or 100% tuition waiver.",
+    "eligibilitySummary": "Non-EU/EEA students with an excellent academic record.",
+    "deadline": {
+      "rawText": "January 15",
+      "precision": "exact",
+      "dates": [
+        "2026-01-15"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.su.se/english/study/scholarships",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-16",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 17,
+    "slug": "kth-royal-institute-of-technology-scholarship",
+    "title": "KTH Royal Institute of Technology Scholarship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Sweden"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "Tuition waiver.",
+    "eligibilitySummary": "Outstanding non-EU/EEA Master's applicants in technology or engineering.",
+    "deadline": {
+      "rawText": "January 15",
+      "precision": "exact",
+      "dates": [
+        "2026-01-15"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.kth.se/en/studies/master/general/scholarships-1.7032",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-17",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 18,
+    "slug": "norwegian-government-scholarship",
+    "title": "Norwegian Government Scholarship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Norway"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master",
+      "PhD"
+    ],
+    "benefitSummary": "Living-cost stipend; the guide states no tuition at public universities.",
+    "eligibilitySummary": "Students from developing countries at Master's or PhD level.",
+    "deadline": {
+      "rawText": "Varies by institution",
+      "precision": "unknown",
+      "dates": [],
+      "cycleYear": null,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.siu.no/en/partnerships/scholarships-for-students-from-developing-countries",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-18",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is unknown; no deadline date was present."
+    ]
+  },
+  {
+    "legacyId": 19,
+    "slug": "university-of-oslo-scholarship-eutopia",
+    "title": "University of Oslo Scholarship (EUTOPIA)",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Norway"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Exchange",
+      "Master"
+    ],
+    "benefitSummary": "Mobility grant and stipend.",
+    "eligibilitySummary": "Students in EUTOPIA alliance universities pursuing exchange or a joint degree.",
+    "deadline": {
+      "rawText": "Program-specific",
+      "precision": "unknown",
+      "dates": [],
+      "cycleYear": null,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.uio.no/english/studies/admission/exchange/",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-19",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is unknown; no deadline date was present."
+    ]
+  },
+  {
+    "legacyId": 20,
+    "slug": "ntnu-international-master-s-scholarships",
+    "title": "NTNU International Master's Scholarships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Norway"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "Tuition support and living stipend, as stated in the guide.",
+    "eligibilitySummary": "International students admitted to NTNU; merit-based.",
+    "deadline": {
+      "rawText": "February 1",
+      "precision": "exact",
+      "dates": [
+        "2026-02-01"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.ntnu.edu/studies/costs-and-scholarships",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-20",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 21,
+    "slug": "eiffel-excellence-scholarship-program",
+    "title": "Eiffel Excellence Scholarship Program",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "France"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master",
+      "PhD"
+    ],
+    "benefitSummary": "€1,181/month for Master's or €1,400/month for PhD, plus airfare and health insurance.",
+    "eligibilitySummary": "International students under the stated age limits; nomination by a French institution is required.",
+    "deadline": {
+      "rawText": "Institutional deadline: early January",
+      "precision": "estimated",
+      "dates": [
+        "2026-01-10"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.campusfrance.org/en/eiffel-scholarship-program-of-excellence",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-21",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines."
+    ]
+  },
+  {
+    "legacyId": 22,
+    "slug": "ile-de-france-region-master-scholarship",
+    "title": "Île-de-France Region Master Scholarship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "France"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "Up to €10,000 for tuition and living costs.",
+    "eligibilitySummary": "International students enrolling in universities in the Paris region.",
+    "deadline": {
+      "rawText": "June–September",
+      "precision": "estimated",
+      "dates": [
+        "2026-09-30"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.iledefrance.fr/bourses-master-region",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-22",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines."
+    ]
+  },
+  {
+    "legacyId": 23,
+    "slug": "universite-paris-saclay-international-master-s-scholarships",
+    "title": "Université Paris-Saclay International Master's Scholarships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "France"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "€10,000 per year.",
+    "eligibilitySummary": "International Master's applicants selected competitively.",
+    "deadline": {
+      "rawText": "February–March",
+      "precision": "estimated",
+      "dates": [
+        "2026-03-31"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.universite-paris-saclay.fr/en/education/scholarships-and-financial-aid",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-23",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines."
+    ]
+  },
+  {
+    "legacyId": 24,
+    "slug": "french-government-scholarships-bgf",
+    "title": "French Government Scholarships (BGF)",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "France"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Bachelor",
+      "Master",
+      "PhD"
+    ],
+    "benefitSummary": "Monthly allowance and exemption from tuition fees.",
+    "eligibilitySummary": "Foreign students; administered through French embassies in the applicant's home country.",
+    "deadline": {
+      "rawText": "Varies by country",
+      "precision": "unknown",
+      "dates": [],
+      "cycleYear": null,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.campusfrance.org/en/government-scholarship",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-24",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is unknown; no deadline date was present."
+    ]
+  },
+  {
+    "legacyId": 25,
+    "slug": "dtu-scholarship",
+    "title": "DTU Scholarship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Denmark"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "Full tuition waiver plus monthly stipend.",
+    "eligibilitySummary": "Non-EU/EEA students admitted to a DTU Master's program with an excellent academic record.",
+    "deadline": {
+      "rawText": "January 15",
+      "precision": "exact",
+      "dates": [
+        "2026-01-15"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.dtu.dk/english/education/msc/scholarships",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-25",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 26,
+    "slug": "copenhagen-university-excellence-scholarships",
+    "title": "Copenhagen University Excellence Scholarships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Denmark"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "Full tuition plus DKK 6,000/month for living costs.",
+    "eligibilitySummary": "Top-ranking non-EU students in STEM and social-science programs.",
+    "deadline": {
+      "rawText": "January 15",
+      "precision": "exact",
+      "dates": [
+        "2026-01-15"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://studies.ku.dk/masters/financing/scholarships/",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-26",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 27,
+    "slug": "aarhus-university-gsst-scholarship",
+    "title": "Aarhus University GSST Scholarship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Denmark"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "PhD"
+    ],
+    "benefitSummary": "Fee waiver plus DKK 5,500–6,000/month.",
+    "eligibilitySummary": "PhD candidates at the Graduate School of Science and Technology.",
+    "deadline": {
+      "rawText": "Rolling applications",
+      "precision": "rolling",
+      "dates": [],
+      "cycleYear": null,
+      "timezone": null,
+      "isRolling": true
+    },
+    "officialUrl": "https://phd.nat.au.dk/for-prospective-students/scholarships/",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-27",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is rolling; no fixed deadline date was present."
+    ]
+  },
+  {
+    "legacyId": 28,
+    "slug": "university-of-helsinki-scholarship-programme",
+    "title": "University of Helsinki Scholarship Programme",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Finland"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Bachelor",
+      "Master"
+    ],
+    "benefitSummary": "50% or 100% tuition waiver.",
+    "eligibilitySummary": "Non-EU/EEA Bachelor's or Master's applicants selected on academic merit.",
+    "deadline": {
+      "rawText": "January 22",
+      "precision": "exact",
+      "dates": [
+        "2026-01-22"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.helsinki.fi/en/studying/fees-and-financial-support/scholarships",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-28",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 29,
+    "slug": "aalto-university-scholarships",
+    "title": "Aalto University Scholarships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Finland"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "Partial or full tuition waiver.",
+    "eligibilitySummary": "Non-EU/EEA students with a strong academic background admitted to an Aalto Master's program.",
+    "deadline": {
+      "rawText": "January 11",
+      "precision": "exact",
+      "dates": [
+        "2026-01-11"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://into.aalto.fi/display/enmaster/Scholarships+and+financial+aid",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-29",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 30,
+    "slug": "finnish-government-scholarship-pool",
+    "title": "Finnish Government Scholarship Pool",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Finland"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "PhD",
+      "Research"
+    ],
+    "benefitSummary": "€1,500/month plus travel and insurance.",
+    "eligibilitySummary": "PhD-level researchers undertaking research visits of three to nine months.",
+    "deadline": {
+      "rawText": "September 30",
+      "precision": "exact",
+      "dates": [
+        "2026-09-30"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.oph.fi/en/funding-and-grants/scholarships-and-grants/finnish-government-scholarship-pool",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-30",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 31,
+    "slug": "oead-scholarships",
+    "title": "OeAD Scholarships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Austria"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master",
+      "PhD",
+      "Research"
+    ],
+    "benefitSummary": "€1,050–1,250/month plus health insurance.",
+    "eligibilitySummary": "University graduates seeking research stays or postgraduate programs in Austria.",
+    "deadline": {
+      "rawText": "March 1 and September 1",
+      "precision": "exact",
+      "dates": [
+        "2026-03-01",
+        "2026-09-01"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://oead.at/en/to-austria/grants-and-fellowships/",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-31",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 32,
+    "slug": "university-of-vienna-merit-scholarship",
+    "title": "University of Vienna Merit Scholarship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Austria"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Bachelor",
+      "Master"
+    ],
+    "benefitSummary": "Up to €7,267 per year.",
+    "eligibilitySummary": "Non-EU students with excellent academic performance.",
+    "deadline": {
+      "rawText": "June 30 for winter semester",
+      "precision": "exact",
+      "dates": [
+        "2026-06-30"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://international.univie.ac.at/studying-at-univie/scholarships/",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-32",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 33,
+    "slug": "swiss-government-excellence-scholarships",
+    "title": "Swiss Government Excellence Scholarships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Switzerland"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "PhD",
+      "Postdoc",
+      "Research"
+    ],
+    "benefitSummary": "CHF 1,920/month, CHF 300 accommodation support, and health insurance.",
+    "eligibilitySummary": "Postgraduate and research applicants; awards are handled through Swiss embassies.",
+    "deadline": {
+      "rawText": "End of October/November; varies by country",
+      "precision": "estimated",
+      "dates": [
+        "2026-11-30"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.sbfi.admin.ch/sbfi/en/home/education/scholarships-and-grants/swiss-government-excellence-scholarships.html",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-33",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines."
+    ]
+  },
+  {
+    "legacyId": 34,
+    "slug": "eth-zurich-excellence-scholarship",
+    "title": "ETH Zurich Excellence Scholarship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Switzerland"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "Full tuition plus CHF 12,000 per semester for living costs.",
+    "eligibilitySummary": "Outstanding international Master's students; merit-based.",
+    "deadline": {
+      "rawText": "December 15",
+      "precision": "exact",
+      "dates": [
+        "2026-12-15"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://ethz.ch/en/studies/financial/scholarships/excellencescholarship.html",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-34",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 35,
+    "slug": "epfl-excellence-fellowships",
+    "title": "EPFL Excellence Fellowships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Switzerland"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master",
+      "PhD"
+    ],
+    "benefitSummary": "Full tuition plus CHF 16,000 per semester, as stated in the guide.",
+    "eligibilitySummary": "Top international students admitted to EPFL with a strong academic or research background.",
+    "deadline": {
+      "rawText": "Program-specific (January–February)",
+      "precision": "estimated",
+      "dates": [
+        "2026-02-28"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.epfl.ch/education/master/master-excellence-fellowships/",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-35",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines."
+    ]
+  },
+  {
+    "legacyId": 36,
+    "slug": "italian-government-scholarships-farnesina",
+    "title": "Italian Government Scholarships (Farnesina)",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Italy"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master",
+      "PhD",
+      "Research"
+    ],
+    "benefitSummary": "€700–900/month plus tuition waiver.",
+    "eligibilitySummary": "International students; applications are generally administered through Italian diplomatic channels.",
+    "deadline": {
+      "rawText": "Typically March–May; varies by country",
+      "precision": "estimated",
+      "dates": [
+        "2026-05-31"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.esteri.it/en/opportunita/borse-di-studio/per-stranieri/",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-36",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines."
+    ]
+  },
+  {
+    "legacyId": 37,
+    "slug": "university-of-bologna-unibo-action-2-scholarship",
+    "title": "University of Bologna UNIBO Action 2 Scholarship",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Italy"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Bachelor",
+      "Master"
+    ],
+    "benefitSummary": "€11,059 per year plus tuition waiver.",
+    "eligibilitySummary": "Non-EU international students selected on merit.",
+    "deadline": {
+      "rawText": "April–June",
+      "precision": "estimated",
+      "dates": [
+        "2026-06-30"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.unibo.it/en/teaching/enrolment/enrolment-and-admission-procedures/scholarships-for-international-students",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-37",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines."
+    ]
+  },
+  {
+    "legacyId": 38,
+    "slug": "politecnico-di-milano-international-fellowships",
+    "title": "Politecnico di Milano International Fellowships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Italy"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "€8,000–11,000 per year.",
+    "eligibilitySummary": "International Master's students in engineering, design, or architecture.",
+    "deadline": {
+      "rawText": "February–March",
+      "precision": "estimated",
+      "dates": [
+        "2026-03-31"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.polimi.it/en/programmes/masters-of-science/scholarships/",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-38",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines."
+    ]
+  },
+  {
+    "legacyId": 39,
+    "slug": "becas-espana-scholarships-maec-aecid",
+    "title": "Becas España Scholarships (MAEC-AECID)",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Spain"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master",
+      "PhD",
+      "Research"
+    ],
+    "benefitSummary": "Accommodation plus monthly stipend.",
+    "eligibilitySummary": "Graduate students and researchers from developing countries.",
+    "deadline": {
+      "rawText": "January–March",
+      "precision": "estimated",
+      "dates": [
+        "2026-03-31"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.aecid.es/en/becas-y-convocatorias",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-39",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines."
+    ]
+  },
+  {
+    "legacyId": 40,
+    "slug": "la-caixa-fellowship-programme",
+    "title": "La Caixa Fellowship Programme",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Spain",
+      "Portugal"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master",
+      "PhD"
+    ],
+    "benefitSummary": "Full tuition, €16,000 per year, and relocation support.",
+    "eligibilitySummary": "Excellent graduates in STEM and social sciences for European and US universities.",
+    "deadline": {
+      "rawText": "February",
+      "precision": "estimated",
+      "dates": [
+        "2026-02-28"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://fundacionlacaixa.org/en/scholarships-postgraduate-studies-abroad",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-40",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines.",
+      "Legacy geography \"Spain / Portugal\" was split into countries Spain and Portugal."
+    ]
+  },
+  {
+    "legacyId": 41,
+    "slug": "vlir-uos-scholarships",
+    "title": "VLIR-UOS Scholarships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Belgium"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "Full funding: tuition, €900/month, and travel.",
+    "eligibilitySummary": "Students from developing countries applying to eligible Master's programs at Flemish universities.",
+    "deadline": {
+      "rawText": "February 1",
+      "precision": "exact",
+      "dates": [
+        "2026-02-01"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.vliruos.be/en/scholarships/6",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-41",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 42,
+    "slug": "ku-leuven-scholarships",
+    "title": "KU Leuven Scholarships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Belgium"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "Partial or full tuition waivers.",
+    "eligibilitySummary": "International Master's applicants assessed on merit and financial need.",
+    "deadline": {
+      "rawText": "March 1",
+      "precision": "exact",
+      "dates": [
+        "2026-03-01"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.kuleuven.be/english/admissions/scholarships",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-42",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 43,
+    "slug": "czech-government-scholarships",
+    "title": "Czech Government Scholarships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Czech Republic"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master",
+      "PhD"
+    ],
+    "benefitSummary": "Full scholarship: tuition plus CZK 14,000–15,000/month.",
+    "eligibilitySummary": "Nationals of eligible developing countries applying to Master's or PhD programs.",
+    "deadline": {
+      "rawText": "August 31",
+      "precision": "exact",
+      "dates": [
+        "2026-08-31"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.dzs.cz/en/information-for-foreigners/czech-government-scholarships/",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-43",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 44,
+    "slug": "polish-government-scholarships-nawa",
+    "title": "Polish Government Scholarships (NAWA)",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Poland"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master",
+      "PhD"
+    ],
+    "benefitSummary": "PLN 1,250–3,000/month plus tuition waiver.",
+    "eligibilitySummary": "International Master's and PhD students applying through the NAWA portal.",
+    "deadline": {
+      "rawText": "March–April",
+      "precision": "estimated",
+      "dates": [
+        "2026-04-30"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://nawa.gov.pl/en/students/incoming-students/nawa-scholarship-programme",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-44",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines."
+    ]
+  },
+  {
+    "legacyId": 45,
+    "slug": "fct-scholarships",
+    "title": "FCT Scholarships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Portugal"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "PhD",
+      "Postdoc",
+      "Research"
+    ],
+    "benefitSummary": "€1,074/month plus tuition waiver.",
+    "eligibilitySummary": "PhD students and postdoctoral researchers in STEM and humanities.",
+    "deadline": {
+      "rawText": "Rolling / annual call",
+      "precision": "rolling",
+      "dates": [],
+      "cycleYear": null,
+      "timezone": null,
+      "isRolling": true
+    },
+    "officialUrl": "https://www.fct.pt/en/financiamento/bolsas/",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-45",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is rolling; no fixed deadline date was present."
+    ]
+  },
+  {
+    "legacyId": 46,
+    "slug": "university-of-lisbon-scholarships",
+    "title": "University of Lisbon Scholarships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Portugal"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master",
+      "PhD"
+    ],
+    "benefitSummary": "Partial tuition waiver.",
+    "eligibilitySummary": "International Master's and PhD students selected on academic merit.",
+    "deadline": {
+      "rawText": "July–September",
+      "precision": "estimated",
+      "dates": [
+        "2026-09-30"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.ulisboa.pt/en/info/scholarships",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-46",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines."
+    ]
+  },
+  {
+    "legacyId": 47,
+    "slug": "erasmus-mundus-joint-master-degrees-emjmd",
+    "title": "Erasmus Mundus Joint Master Degrees (EMJMD)",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [],
+    "regions": [
+      "European Union"
+    ],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "Full scholarship: €1,000–1,400/month, tuition, and travel allowance.",
+    "eligibilitySummary": "Bachelor's degree holders worldwide; program-specific requirements apply.",
+    "deadline": {
+      "rawText": "January–February for most programs",
+      "precision": "estimated",
+      "dates": [
+        "2026-02-28"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.eacea.ec.europa.eu/scholarships/erasmus-mundus-catalogue_en",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-47",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines.",
+      "Legacy geography \"EU-wide\" was normalized to the European Union region; no country was inferred."
+    ]
+  },
+  {
+    "legacyId": 48,
+    "slug": "marie-sklodowska-curie-doctoral-networks-msca",
+    "title": "Marie Skłodowska-Curie Doctoral Networks (MSCA)",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [],
+    "regions": [
+      "European Union"
+    ],
+    "studyLevels": [
+      "PhD"
+    ],
+    "benefitSummary": "Salary of approximately €3,400+ gross per month, mobility allowance, and possible family allowance.",
+    "eligibilitySummary": "Doctoral candidates meeting the consortium and mobility rules.",
+    "deadline": {
+      "rawText": "Varies by consortium call",
+      "precision": "unknown",
+      "dates": [],
+      "cycleYear": null,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://marie-sklodowska-curie-actions.ec.europa.eu/actions/doctoral-networks",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-48",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is unknown; no deadline date was present.",
+      "Legacy geography \"EU-wide\" was normalized to the European Union region; no country was inferred."
+    ]
+  },
+  {
+    "legacyId": 49,
+    "slug": "erc-starting-grant",
+    "title": "ERC Starting Grant",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [],
+    "regions": [
+      "European Union"
+    ],
+    "studyLevels": [
+      "Research"
+    ],
+    "benefitSummary": "Up to €1.5 million over five years.",
+    "eligibilitySummary": "Researchers two to seven years after PhD, hosted by an eligible EU institution.",
+    "deadline": {
+      "rawText": "Open call – annual",
+      "precision": "unknown",
+      "dates": [],
+      "cycleYear": null,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://erc.europa.eu/apply-grant/starting-grant",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-49",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is unknown; no deadline date was present.",
+      "Legacy geography \"EU-wide\" was normalized to the European Union region; no country was inferred."
+    ]
+  },
+  {
+    "legacyId": 50,
+    "slug": "horizon-europe-research-grants",
+    "title": "Horizon Europe Research Grants",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [],
+    "regions": [
+      "European Union"
+    ],
+    "studyLevels": [
+      "Research"
+    ],
+    "benefitSummary": "Project-based full funding.",
+    "eligibilitySummary": "Researchers and academic teams affiliated with eligible EU or associated-country institutions.",
+    "deadline": {
+      "rawText": "Multiple annual calls",
+      "precision": "unknown",
+      "dates": [],
+      "cycleYear": null,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://research-and-innovation.ec.europa.eu/funding/funding-opportunities/funding-programmes-and-open-calls/horizon-europe_en",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-50",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is unknown; no deadline date was present.",
+      "Legacy geography \"EU-wide\" was normalized to the European Union region; no country was inferred."
+    ]
+  },
+  {
+    "legacyId": 51,
+    "slug": "eunice-alliance-scholarships",
+    "title": "EUNICE Alliance Scholarships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [],
+    "regions": [
+      "European Union"
+    ],
+    "studyLevels": [
+      "Exchange",
+      "Bachelor",
+      "Master"
+    ],
+    "benefitSummary": "Mobility grant plus reduced or waived tuition.",
+    "eligibilitySummary": "Students at EUNICE partner universities participating in exchange semesters.",
+    "deadline": {
+      "rawText": "February–April",
+      "precision": "estimated",
+      "dates": [
+        "2026-04-30"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://eunice-university.eu/education/scholarship/",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-51",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines.",
+      "Legacy geography \"EU-wide\" was normalized to the European Union region; no country was inferred."
+    ]
+  },
+  {
+    "legacyId": 52,
+    "slug": "central-european-university-scholarships",
+    "title": "Central European University Scholarships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Austria",
+      "Hungary"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Master",
+      "PhD"
+    ],
+    "benefitSummary": "Full scholarship: tuition, €8,400/year stipend, and housing support.",
+    "eligibilitySummary": "Master's and PhD applicants with strong academics and commitment to open society.",
+    "deadline": {
+      "rawText": "January–February",
+      "precision": "estimated",
+      "dates": [
+        "2026-02-28"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.ceu.edu/admission/graduate/financialaid",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-52",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines.",
+      "Legacy geography \"Austria / Hungary\" was split into countries Austria and Hungary."
+    ]
+  },
+  {
+    "legacyId": 53,
+    "slug": "imprs-max-planck-phd-fellowships",
+    "title": "IMPRS (Max Planck) PhD Fellowships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Germany"
+    ],
+    "regions": [
+      "European Union"
+    ],
+    "studyLevels": [
+      "PhD"
+    ],
+    "benefitSummary": "Fully funded salary under a TVöD contract plus research budget.",
+    "eligibilitySummary": "Top PhD applicants worldwide in natural, social, and life sciences.",
+    "deadline": {
+      "rawText": "Rolling / program-specific",
+      "precision": "rolling",
+      "dates": [],
+      "cycleYear": null,
+      "timezone": null,
+      "isRolling": true
+    },
+    "officialUrl": "https://www.mpg.de/phd",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-53",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is rolling; no fixed deadline date was present.",
+      "Legacy geography \"Germany / EU\" was normalized to country Germany and the European Union region."
+    ]
+  },
+  {
+    "legacyId": 54,
+    "slug": "jacobs-university-bremen-merit-scholarships",
+    "title": "Jacobs University Bremen Merit Scholarships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [
+      "Germany"
+    ],
+    "regions": [],
+    "studyLevels": [
+      "Bachelor",
+      "Master"
+    ],
+    "benefitSummary": "Up to 100% tuition reduction.",
+    "eligibilitySummary": "Outstanding international students at Bachelor's or Master's level.",
+    "deadline": {
+      "rawText": "May 1",
+      "precision": "exact",
+      "dates": [
+        "2026-05-01"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://www.jacobs-university.de/study/financial-support/scholarships",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-54",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred."
+    ]
+  },
+  {
+    "legacyId": 55,
+    "slug": "eit-digital-master-school-scholarships",
+    "title": "EIT Digital Master School Scholarships",
+    "opportunityType": "scholarship",
+    "providerName": null,
+    "countries": [],
+    "regions": [
+      "European Union"
+    ],
+    "studyLevels": [
+      "Master"
+    ],
+    "benefitSummary": "€2,500–5,000 per year partial scholarship.",
+    "eligibilitySummary": "Students admitted to an EIT Digital Master's program in technology and innovation.",
+    "deadline": {
+      "rawText": "February",
+      "precision": "estimated",
+      "dates": [
+        "2026-02-28"
+      ],
+      "cycleYear": 2026,
+      "timezone": null,
+      "isRolling": false
+    },
+    "officialUrl": "https://masterschool.eitdigital.eu/scholarships",
+    "source": {
+      "sourceType": "legacy-prototype",
+      "sourceReference": "ScholarTrack_Europe/data.js#legacy-id-55",
+      "verificationStatus": "not-reverified",
+      "lastCheckedAt": null
+    },
+    "migrationNotes": [
+      "Provider name was not structured in the legacy dataset; no provider was inferred.",
+      "The legacy deadline precision is estimated; retained dates are estimates, not reverified exact deadlines.",
+      "Legacy geography \"EU-wide\" was normalized to the European Union region; no country was inferred."
+    ]
+  }
+]
