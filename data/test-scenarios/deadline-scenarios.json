@@ -1,0 +1,924 @@
+[
+  {
+    "scenarioId": "DL-001-exact-future",
+    "description": "A verified exact closing date in the future for the current intake.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2027",
+      "cycleYear": 2027,
+      "precision": "exact",
+      "verificationStatus": "verified",
+      "recurrence": { "cadence": "none", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "Applications close on 30 April 2027.",
+          "officialUrl": "https://future-fellowship.example.invalid/deadlines",
+          "lastCheckedAt": "2027-01-10T09:00:00+01:00",
+          "sourceTimezone": "Europe/Paris",
+          "sourceDate": "2027-04-30",
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "current-intake",
+      "intakeId": "fictional-intake-2027",
+      "programStartDate": "2027-09-01",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "not-applicable"
+    },
+    "currentDate": "2027-03-01T12:00:00+05:00",
+    "expectedLifecycleState": "open",
+    "expectedStudentFacingLabel": "Apply now",
+    "countdownAllowed": true,
+    "verificationRequired": false,
+    "notes": "Count calendar-day boundaries in Europe/Paris; a local conversion must not replace that source timezone."
+  },
+  {
+    "scenarioId": "DL-002-exact-today",
+    "description": "A verified exact deadline evaluated on its source-calendar date.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2027",
+      "cycleYear": 2027,
+      "precision": "exact",
+      "verificationStatus": "verified",
+      "recurrence": { "cadence": "none", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "Submit by 15 May 2027, local programme time.",
+          "officialUrl": "https://today-award.example.invalid/apply",
+          "lastCheckedAt": "2027-05-14T10:00:00+02:00",
+          "sourceTimezone": "Europe/Berlin",
+          "sourceDate": "2027-05-15",
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "current-intake",
+      "intakeId": "fictional-intake-2027",
+      "programStartDate": "2027-10-01",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "not-applicable"
+    },
+    "currentDate": "2027-05-15T08:00:00+02:00",
+    "expectedLifecycleState": "due-today",
+    "expectedStudentFacingLabel": "Apply now",
+    "countdownAllowed": true,
+    "verificationRequired": false,
+    "notes": "The display says deadline today; it must not show zero days remaining without the text status."
+  },
+  {
+    "scenarioId": "DL-003-exact-passed",
+    "description": "A verified exact date that has passed within its named cycle.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2027",
+      "cycleYear": 2027,
+      "precision": "exact",
+      "verificationStatus": "verified",
+      "recurrence": { "cadence": "none", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "The 2027 cycle closed on 10 January 2027.",
+          "officialUrl": "https://closed-bursary.example.invalid/2027",
+          "lastCheckedAt": "2027-01-11T09:00:00Z",
+          "sourceTimezone": "UTC",
+          "sourceDate": "2027-01-10",
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "current-intake",
+      "intakeId": "fictional-intake-2027",
+      "programStartDate": "2027-08-20",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "not-applicable"
+    },
+    "currentDate": "2027-01-20T12:00:00Z",
+    "expectedLifecycleState": "passed-current-cycle",
+    "expectedStudentFacingLabel": "Deadline passed for this cycle",
+    "countdownAllowed": true,
+    "verificationRequired": false,
+    "notes": "Days since deadline may be shown, but the date remains attached to the 2027 cycle and must not roll forward."
+  },
+  {
+    "scenarioId": "DL-004-month-range-estimate",
+    "description": "A source gives only a month range rather than an exact day.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2027",
+      "cycleYear": 2027,
+      "precision": "estimated",
+      "verificationStatus": "unverified",
+      "recurrence": { "cadence": "unknown", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "The application period is expected to end during March or April 2027.",
+          "officialUrl": "https://estimated-grant.example.invalid/timeline",
+          "lastCheckedAt": null,
+          "sourceTimezone": null,
+          "sourceDate": null,
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "current-intake",
+      "intakeId": "fictional-intake-2027",
+      "programStartDate": "2027-09-15",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "not-applicable"
+    },
+    "currentDate": "2027-02-01T12:00:00Z",
+    "expectedLifecycleState": "expected-to-reopen",
+    "expectedStudentFacingLabel": "Deadline estimate only",
+    "countdownAllowed": false,
+    "verificationRequired": true,
+    "notes": "Neither boundary of the month range may be converted into an exact deadline; show an estimate warning and no countdown."
+  },
+  {
+    "scenarioId": "DL-005-rolling",
+    "description": "A verified opportunity accepts applications on a rolling basis with no closing date.",
+    "sourceData": {
+      "cycleId": "fictional-rolling-cycle",
+      "cycleYear": null,
+      "precision": "rolling",
+      "verificationStatus": "verified",
+      "recurrence": { "cadence": "none", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "Applications are considered throughout the year while funding remains available.",
+          "officialUrl": "https://rolling-fund.example.invalid/apply",
+          "lastCheckedAt": "2027-04-01T09:00:00Z",
+          "sourceTimezone": null,
+          "sourceDate": null,
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "not-applicable",
+      "intakeId": null,
+      "programStartDate": null,
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "not-applicable"
+    },
+    "currentDate": "2027-04-15T12:00:00Z",
+    "expectedLifecycleState": "rolling",
+    "expectedStudentFacingLabel": "Rolling opportunity",
+    "countdownAllowed": false,
+    "verificationRequired": false,
+    "notes": "A rolling opportunity must never receive an invented closing date or countdown."
+  },
+  {
+    "scenarioId": "DL-006-unknown",
+    "description": "No deadline information is published for the future intake.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2028",
+      "cycleYear": 2028,
+      "precision": "unknown",
+      "verificationStatus": "unverified",
+      "recurrence": { "cadence": "unknown", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "No application deadline has been announced.",
+          "officialUrl": "https://unknown-award.example.invalid/apply",
+          "lastCheckedAt": null,
+          "sourceTimezone": null,
+          "sourceDate": null,
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "future-intake",
+      "intakeId": "fictional-intake-2028",
+      "programStartDate": "2028-09-01",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "unknown"
+    },
+    "currentDate": "2027-11-01T12:00:00Z",
+    "expectedLifecycleState": "not-announced",
+    "expectedStudentFacingLabel": "Not yet announced",
+    "countdownAllowed": false,
+    "verificationRequired": true,
+    "notes": "Unknown precision provides insufficient confidence for a countdown or a projected date."
+  },
+  {
+    "scenarioId": "DL-007-program-specific",
+    "description": "Each eligible programme publishes its own closing date.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2027",
+      "cycleYear": 2027,
+      "precision": "program-specific",
+      "verificationStatus": "verified",
+      "recurrence": { "cadence": "irregular", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "program-specific",
+          "scopeReference": "selected-program",
+          "rawText": "Consult the selected programme page for its application deadline.",
+          "officialUrl": "https://programme-award.example.invalid/programmes",
+          "lastCheckedAt": "2027-01-05T10:00:00Z",
+          "sourceTimezone": null,
+          "sourceDate": null,
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "current-intake",
+      "intakeId": "fictional-intake-2027",
+      "programStartDate": "2027-09-01",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "unknown"
+    },
+    "currentDate": "2027-01-20T12:00:00Z",
+    "expectedLifecycleState": "temporarily-unavailable",
+    "expectedStudentFacingLabel": "Verify deadline",
+    "countdownAllowed": false,
+    "verificationRequired": true,
+    "notes": "The programme-specific fact is verified, but no universal date exists; the chosen programme must be checked."
+  },
+  {
+    "scenarioId": "DL-008-two-deadlines-one-cycle",
+    "description": "One cycle has a nomination deadline followed by a candidate deadline.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2027",
+      "cycleYear": 2027,
+      "precision": "exact",
+      "verificationStatus": "verified",
+      "recurrence": { "cadence": "none", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "institution-specific",
+          "scopeReference": "institution-nomination",
+          "rawText": "Institution nominations close on 1 February 2027.",
+          "officialUrl": "https://multi-stage-award.example.invalid/timeline",
+          "lastCheckedAt": "2027-01-02T09:00:00Z",
+          "sourceTimezone": "UTC",
+          "sourceDate": "2027-02-01",
+          "sourceDateTime": null,
+          "projectedDate": null
+        },
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": "candidate-application",
+          "rawText": "Nominated candidates must apply by 15 March 2027.",
+          "officialUrl": "https://multi-stage-award.example.invalid/timeline",
+          "lastCheckedAt": "2027-01-02T09:00:00Z",
+          "sourceTimezone": "UTC",
+          "sourceDate": "2027-03-15",
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "current-intake",
+      "intakeId": "fictional-intake-2027",
+      "programStartDate": "2027-09-01",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "not-applicable"
+    },
+    "currentDate": "2027-01-15T12:00:00Z",
+    "expectedLifecycleState": "approaching",
+    "expectedStudentFacingLabel": "Apply now",
+    "countdownAllowed": true,
+    "verificationRequired": false,
+    "notes": "Both ordered deadlines remain separate and labelled; the applicable stage determines which countdown is shown."
+  },
+  {
+    "scenarioId": "DL-009-annual-recurring",
+    "description": "An official source documents annual recurrence and an exact current-cycle date.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2028",
+      "cycleYear": 2028,
+      "precision": "exact",
+      "verificationStatus": "verified",
+      "recurrence": {
+        "cadence": "annual",
+        "intervalYears": 1,
+        "documentedByOfficialSource": true,
+        "observedCycleYears": [2027, 2028],
+        "automaticDateGenerationAllowed": false
+      },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "The 2028 application closes on 20 June 2028; the award runs annually.",
+          "officialUrl": "https://annual-award.example.invalid/2028",
+          "lastCheckedAt": "2028-02-01T10:00:00Z",
+          "sourceTimezone": "UTC",
+          "sourceDate": "2028-06-20",
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "current-intake",
+      "intakeId": "fictional-intake-2028",
+      "programStartDate": "2028-10-01",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "not-applicable"
+    },
+    "currentDate": "2028-03-01T12:00:00Z",
+    "expectedLifecycleState": "open",
+    "expectedStudentFacingLabel": "Apply now",
+    "countdownAllowed": true,
+    "verificationRequired": false,
+    "notes": "Annual recurrence is metadata only and must not generate a 2029 date."
+  },
+  {
+    "scenarioId": "DL-010-previous-cycle",
+    "description": "Only an exact deadline for a previous intake is available.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2026",
+      "cycleYear": 2026,
+      "precision": "exact",
+      "verificationStatus": "stale",
+      "recurrence": { "cadence": "unknown", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "Applications for the 2026 cycle closed on 30 November 2026.",
+          "officialUrl": "https://past-cycle-award.example.invalid/2026",
+          "lastCheckedAt": "2026-11-01T10:00:00Z",
+          "sourceTimezone": "UTC",
+          "sourceDate": "2026-11-30",
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "previous-intake",
+      "intakeId": "fictional-intake-2026",
+      "programStartDate": "2027-09-01",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "not-applicable"
+    },
+    "currentDate": "2026-12-10T12:00:00Z",
+    "expectedLifecycleState": "expected-to-reopen",
+    "expectedStudentFacingLabel": "Wait for next cycle",
+    "countdownAllowed": false,
+    "verificationRequired": true,
+    "notes": "The 2026 occurrence remains historical evidence; it cannot become a current deadline or countdown and may only support an expected reopening."
+  },
+  {
+    "scenarioId": "DL-011-unannounced-next-cycle",
+    "description": "The next intake exists, but its opening and closing dates have not been announced.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2028",
+      "cycleYear": 2028,
+      "precision": "unknown",
+      "verificationStatus": "verified",
+      "recurrence": { "cadence": "annual", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "opening",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "Dates for the 2028 cycle will be announced later.",
+          "officialUrl": "https://next-cycle-award.example.invalid/2028",
+          "lastCheckedAt": "2027-10-01T09:00:00Z",
+          "sourceTimezone": null,
+          "sourceDate": null,
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "future-intake",
+      "intakeId": "fictional-intake-2028",
+      "programStartDate": "2028-09-01",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "unknown"
+    },
+    "currentDate": "2027-10-15T12:00:00Z",
+    "expectedLifecycleState": "not-announced",
+    "expectedStudentFacingLabel": "Not yet announced",
+    "countdownAllowed": false,
+    "verificationRequired": false,
+    "notes": "The absence of dates is verified; annual metadata must not be used to copy a previous date into 2028."
+  },
+  {
+    "scenarioId": "DL-012-expected-reopening",
+    "description": "History suggests reopening, but the future cycle has no announced date.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2028",
+      "cycleYear": 2028,
+      "precision": "estimated",
+      "verificationStatus": "estimated-from-previous-cycle",
+      "recurrence": {
+        "cadence": "annual",
+        "intervalYears": 1,
+        "documentedByOfficialSource": false,
+        "observedCycleYears": [2026, 2027],
+        "automaticDateGenerationAllowed": false
+      },
+      "occurrences": [
+        {
+          "kind": "opening",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "The opportunity opened in prior cycles; no 2028 date is published.",
+          "officialUrl": "https://historical-award.example.invalid/archive",
+          "lastCheckedAt": "2027-09-01T09:00:00Z",
+          "sourceTimezone": null,
+          "sourceDate": null,
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "future-intake",
+      "intakeId": "fictional-intake-2028",
+      "programStartDate": "2028-09-01",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "unknown"
+    },
+    "currentDate": "2027-10-01T12:00:00Z",
+    "expectedLifecycleState": "expected-to-reopen",
+    "expectedStudentFacingLabel": "Wait for next cycle",
+    "countdownAllowed": false,
+    "verificationRequired": true,
+    "notes": "The expectation remains historical metadata; no exact projected date is generated."
+  },
+  {
+    "scenarioId": "DL-013-institution-specific",
+    "description": "Participating institutions set different internal nomination deadlines.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2027",
+      "cycleYear": 2027,
+      "precision": "institution-specific",
+      "verificationStatus": "verified",
+      "recurrence": { "cadence": "irregular", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "institution-specific",
+          "scopeReference": "applicant-home-institution",
+          "rawText": "Your institution determines its internal nomination deadline.",
+          "officialUrl": "https://institution-award.example.invalid/nomination",
+          "lastCheckedAt": "2027-01-10T09:00:00Z",
+          "sourceTimezone": null,
+          "sourceDate": null,
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "current-intake",
+      "intakeId": "fictional-intake-2027",
+      "programStartDate": "2027-09-01",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "unknown"
+    },
+    "currentDate": "2027-01-15T12:00:00Z",
+    "expectedLifecycleState": "temporarily-unavailable",
+    "expectedStudentFacingLabel": "Verify deadline",
+    "countdownAllowed": false,
+    "verificationRequired": true,
+    "notes": "An institution-specific date must never be displayed as a universal opportunity deadline."
+  },
+  {
+    "scenarioId": "DL-014-non-local-timezone",
+    "description": "An exact timed deadline uses a source timezone different from the student's timezone.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2027",
+      "cycleYear": 2027,
+      "precision": "exact",
+      "verificationStatus": "verified",
+      "recurrence": { "cadence": "none", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "Applications close at 17:00 New York time on 5 October 2027.",
+          "officialUrl": "https://timezone-fellowship.example.invalid/apply",
+          "lastCheckedAt": "2027-09-20T10:00:00-04:00",
+          "sourceTimezone": "America/New_York",
+          "sourceDate": "2027-10-05",
+          "sourceDateTime": "2027-10-05T17:00:00-04:00",
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "current-intake",
+      "intakeId": "fictional-intake-2027",
+      "programStartDate": "2028-01-10",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "not-applicable"
+    },
+    "currentDate": "2027-10-05T20:00:00+05:00",
+    "expectedLifecycleState": "due-today",
+    "expectedStudentFacingLabel": "Apply now",
+    "countdownAllowed": true,
+    "verificationRequired": false,
+    "notes": "The student is in Asia/Karachi, but expiry is evaluated at the source instant and America/New_York remains stored."
+  },
+  {
+    "scenarioId": "DL-015-crossing-midnight",
+    "description": "A source-day deadline falls after local midnight in the student's timezone.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2027",
+      "cycleYear": 2027,
+      "precision": "exact",
+      "verificationStatus": "verified",
+      "recurrence": { "cadence": "none", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "Submit by 23:30 New York time on 30 September 2027.",
+          "officialUrl": "https://midnight-award.example.invalid/apply",
+          "lastCheckedAt": "2027-09-29T09:00:00-04:00",
+          "sourceTimezone": "America/New_York",
+          "sourceDate": "2027-09-30",
+          "sourceDateTime": "2027-09-30T23:30:00-04:00",
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "current-intake",
+      "intakeId": "fictional-intake-2027",
+      "programStartDate": "2028-01-15",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "not-applicable"
+    },
+    "currentDate": "2027-10-01T07:00:00+05:00",
+    "expectedLifecycleState": "due-today",
+    "expectedStudentFacingLabel": "Apply now",
+    "countdownAllowed": true,
+    "verificationRequired": false,
+    "notes": "It is already 1 October locally but still 30 September in New York and before the exact closing instant."
+  },
+  {
+    "scenarioId": "DL-016-leap-year",
+    "description": "A valid exact deadline occurs on leap day.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2028",
+      "cycleYear": 2028,
+      "precision": "exact",
+      "verificationStatus": "verified",
+      "recurrence": { "cadence": "none", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "The application closes on 29 February 2028.",
+          "officialUrl": "https://leap-year-grant.example.invalid/apply",
+          "lastCheckedAt": "2028-02-01T09:00:00Z",
+          "sourceTimezone": "UTC",
+          "sourceDate": "2028-02-29",
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "current-intake",
+      "intakeId": "fictional-intake-2028",
+      "programStartDate": "2028-09-01",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "not-applicable"
+    },
+    "currentDate": "2028-02-29T12:00:00Z",
+    "expectedLifecycleState": "due-today",
+    "expectedStudentFacingLabel": "Apply now",
+    "countdownAllowed": true,
+    "verificationRequired": false,
+    "notes": "Calendar validation must accept 29 February in 2028 and must reject it in non-leap years."
+  },
+  {
+    "scenarioId": "DL-017-conflicting-sources",
+    "description": "Two fictional official source pages publish different exact closing dates.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2027",
+      "cycleYear": 2027,
+      "precision": "exact",
+      "verificationStatus": "conflicting",
+      "recurrence": { "cadence": "none", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": "programme-page",
+          "rawText": "The programme page says 1 May 2027.",
+          "officialUrl": "https://conflict-award.example.invalid/programme",
+          "lastCheckedAt": "2027-04-01T09:00:00Z",
+          "sourceTimezone": "UTC",
+          "sourceDate": "2027-05-01",
+          "sourceDateTime": null,
+          "projectedDate": null
+        },
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": "official-notice",
+          "rawText": "The official notice says 15 May 2027.",
+          "officialUrl": "https://conflict-award.example.invalid/notice",
+          "lastCheckedAt": "2027-04-01T09:05:00Z",
+          "sourceTimezone": "UTC",
+          "sourceDate": "2027-05-15",
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "current-intake",
+      "intakeId": "fictional-intake-2027",
+      "programStartDate": "2027-09-01",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "not-applicable"
+    },
+    "currentDate": "2027-04-10T12:00:00Z",
+    "expectedLifecycleState": "temporarily-unavailable",
+    "expectedStudentFacingLabel": "Verify deadline",
+    "countdownAllowed": false,
+    "verificationRequired": true,
+    "notes": "Neither conflicting date controls a countdown until the conflict is resolved and the verification record is updated."
+  },
+  {
+    "scenarioId": "DL-018-withdrawn",
+    "description": "The fictional provider has withdrawn the opportunity.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2027",
+      "cycleYear": 2027,
+      "precision": "unknown",
+      "verificationStatus": "withdrawn",
+      "recurrence": { "cadence": "none", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "This fictional opportunity has been withdrawn and is not accepting applications.",
+          "officialUrl": "https://withdrawn-award.example.invalid/status",
+          "lastCheckedAt": "2027-03-01T09:00:00Z",
+          "sourceTimezone": null,
+          "sourceDate": null,
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "not-applicable",
+      "intakeId": null,
+      "programStartDate": null,
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "not-applicable"
+    },
+    "currentDate": "2027-03-02T12:00:00Z",
+    "expectedLifecycleState": "temporarily-unavailable",
+    "expectedStudentFacingLabel": "Verify deadline",
+    "countdownAllowed": false,
+    "verificationRequired": false,
+    "notes": "Withdrawal makes the current cycle unavailable; permanent archival would require separate evidence, and no automatic reopening is permitted."
+  },
+  {
+    "scenarioId": "DL-019-malformed-date",
+    "description": "A source field contains an impossible ISO-shaped calendar date.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2027",
+      "cycleYear": 2027,
+      "precision": "exact",
+      "verificationStatus": "unverified",
+      "recurrence": { "cadence": "none", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "Imported value: 2027-02-30.",
+          "officialUrl": "https://malformed-award.example.invalid/import",
+          "lastCheckedAt": null,
+          "sourceTimezone": "UTC",
+          "sourceDate": "2027-02-30",
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "current-intake",
+      "intakeId": "fictional-intake-2027",
+      "programStartDate": "2027-09-01",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "unknown"
+    },
+    "currentDate": "2027-01-15T12:00:00Z",
+    "expectedLifecycleState": "temporarily-unavailable",
+    "expectedStudentFacingLabel": "Verify deadline",
+    "countdownAllowed": false,
+    "verificationRequired": true,
+    "notes": "The JSON fixture is intentionally malformed at the calendar level; parsing must fail safely and suppress countdowns."
+  },
+  {
+    "scenarioId": "DL-020-graduate-before-start",
+    "description": "A final-year student expects to graduate before the programme starts.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2027",
+      "cycleYear": 2027,
+      "precision": "exact",
+      "verificationStatus": "verified",
+      "recurrence": { "cadence": "none", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "Apply by 31 March 2027; final-year students may apply if they graduate before the programme starts.",
+          "officialUrl": "https://final-year-award.example.invalid/eligibility",
+          "lastCheckedAt": "2027-01-05T09:00:00Z",
+          "sourceTimezone": "UTC",
+          "sourceDate": "2027-03-31",
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "current-intake",
+      "intakeId": "fictional-intake-2027",
+      "programStartDate": "2027-09-01",
+      "expectedGraduationDate": "2027-06-15",
+      "finalYearEligibility": "eligible"
+    },
+    "currentDate": "2027-01-15T12:00:00Z",
+    "expectedLifecycleState": "open",
+    "expectedStudentFacingLabel": "Apply now",
+    "countdownAllowed": true,
+    "verificationRequired": false,
+    "notes": "Eligibility compares the expected graduation date with programme start, never with the application deadline."
+  },
+  {
+    "scenarioId": "DL-021-graduate-after-start",
+    "description": "A final-year student expects to graduate after the programme starts.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2027",
+      "cycleYear": 2027,
+      "precision": "exact",
+      "verificationStatus": "verified",
+      "recurrence": { "cadence": "none", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "Apply by 31 March 2027; final-year students must graduate before the programme starts.",
+          "officialUrl": "https://late-graduation-award.example.invalid/eligibility",
+          "lastCheckedAt": "2027-01-05T09:00:00Z",
+          "sourceTimezone": "UTC",
+          "sourceDate": "2027-03-31",
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "current-intake",
+      "intakeId": "fictional-intake-2027",
+      "programStartDate": "2027-09-01",
+      "expectedGraduationDate": "2027-10-15",
+      "finalYearEligibility": "ineligible"
+    },
+    "currentDate": "2027-01-15T12:00:00Z",
+    "expectedLifecycleState": "open",
+    "expectedStudentFacingLabel": "Verify deadline",
+    "countdownAllowed": true,
+    "verificationRequired": true,
+    "notes": "The deadline remains open and may retain its countdown, but the student must not be told to apply without an eligibility warning."
+  },
+  {
+    "scenarioId": "DL-022-opening-soon",
+    "description": "A verified future cycle has a distinct opening date that has not yet arrived.",
+    "sourceData": {
+      "cycleId": "fictional-cycle-2028",
+      "cycleYear": 2028,
+      "precision": "exact",
+      "verificationStatus": "verified",
+      "recurrence": { "cadence": "none", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "opening",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "Applications open on 15 January 2028.",
+          "officialUrl": "https://opening-soon-award.example.invalid/apply",
+          "lastCheckedAt": "2027-12-15T09:00:00Z",
+          "sourceTimezone": "Europe/Paris",
+          "sourceDate": "2028-01-15",
+          "sourceDateTime": null,
+          "projectedDate": null
+        },
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "Applications close on 15 March 2028.",
+          "officialUrl": "https://opening-soon-award.example.invalid/apply",
+          "lastCheckedAt": "2027-12-15T09:00:00Z",
+          "sourceTimezone": "Europe/Paris",
+          "sourceDate": "2028-03-15",
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "future-intake",
+      "intakeId": "fictional-intake-2028",
+      "programStartDate": "2028-09-01",
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "not-applicable"
+    },
+    "currentDate": "2028-01-01T12:00:00+01:00",
+    "expectedLifecycleState": "opening-soon",
+    "expectedStudentFacingLabel": "Prepare now",
+    "countdownAllowed": true,
+    "verificationRequired": false,
+    "notes": "The countdown is explicitly to the verified opening boundary; it must not be described as days until closing."
+  },
+  {
+    "scenarioId": "DL-023-permanently-archived",
+    "description": "An official source confirms that a fictional opportunity has been permanently discontinued.",
+    "sourceData": {
+      "cycleId": "fictional-archive-record",
+      "cycleYear": null,
+      "precision": "unknown",
+      "verificationStatus": "archived",
+      "recurrence": { "cadence": "none", "automaticDateGenerationAllowed": false },
+      "occurrences": [
+        {
+          "kind": "closing",
+          "scope": "universal",
+          "scopeReference": null,
+          "rawText": "This fictional opportunity has been permanently discontinued.",
+          "officialUrl": "https://archived-award.example.invalid/status",
+          "lastCheckedAt": "2028-02-01T09:00:00Z",
+          "sourceTimezone": null,
+          "sourceDate": null,
+          "sourceDateTime": null,
+          "projectedDate": null
+        }
+      ]
+    },
+    "targetIntake": {
+      "relation": "not-applicable",
+      "intakeId": null,
+      "programStartDate": null,
+      "expectedGraduationDate": null,
+      "finalYearEligibility": "not-applicable"
+    },
+    "currentDate": "2028-02-02T12:00:00Z",
+    "expectedLifecycleState": "permanently-archived",
+    "expectedStudentFacingLabel": "Verify deadline",
+    "countdownAllowed": false,
+    "verificationRequired": false,
+    "notes": "Permanent archival requires explicit evidence and never permits an automatic future-cycle projection."
+  }
+]

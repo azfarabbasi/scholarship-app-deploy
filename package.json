@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "data:validate": "tsx scripts/validate-opportunity-seed.ts"
+    "data:validate": "tsx scripts/validate-opportunity-seed.ts",
+    "deadlines:audit": "tsx scripts/audit-deadlines.ts"
   },
   "engines": {
     "node": ">=22.0.0"
