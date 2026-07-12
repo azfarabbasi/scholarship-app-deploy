@@ -86,8 +86,11 @@ Docker-first validation commands, run from `scholartrack-platform`, are:
 
 ```powershell
 docker compose build
+docker compose run --rm --no-deps web npm run data:validate
+docker compose run --rm --no-deps web npm run deadlines:audit
+docker compose run --rm --no-deps web npm run checkpoint0:validate
 docker compose run --rm --no-deps web npm run lint
-docker compose run --rm --no-deps web npm run build
+docker compose run --rm --no-deps -e NODE_ENV=production web npm run build
 ```
 
 If Node.js is intentionally installed on the host, the equivalent host commands
@@ -95,6 +98,9 @@ are:
 
 ```powershell
 npm ci
+npm run data:validate
+npm run deadlines:audit
+npm run checkpoint0:validate
 npm run lint
 npm run build
 ```

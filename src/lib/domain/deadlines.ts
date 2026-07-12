@@ -6,6 +6,8 @@
  * separately tested application services.
  */
 
+import type { EntityId, PublicationClassifiedRecord } from "./common";
+
 export const DEADLINE_PRECISIONS = [
   "exact",
   "estimated",
@@ -90,18 +92,55 @@ export const FINAL_YEAR_ELIGIBILITY_STATUSES = [
 export type FinalYearEligibilityStatus =
   (typeof FINAL_YEAR_ELIGIBILITY_STATUSES)[number];
 
-export const DEADLINE_OCCURRENCE_KINDS = ["opening", "closing"] as const;
+export const DEADLINE_BOUNDARY_KINDS = ["opening", "closing"] as const;
 
-export type DeadlineOccurrenceKind =
-  (typeof DEADLINE_OCCURRENCE_KINDS)[number];
+export type DeadlineBoundaryKind = (typeof DEADLINE_BOUNDARY_KINDS)[number];
 
-export const DEADLINE_SCOPES = [
-  "universal",
-  "program-specific",
-  "institution-specific",
+export const DEADLINE_BOUNDARY_PRECISIONS = [
+  "exact",
+  "estimated",
+] as const satisfies readonly DeadlinePrecision[];
+
+export type DeadlineBoundaryPrecision =
+  (typeof DEADLINE_BOUNDARY_PRECISIONS)[number];
+
+export const DEADLINE_ROLES = [
+  "applicant-submission",
+  "institutional-nomination",
+  "embassy-nomination",
+  "programme-round",
+  "document-supplement",
+  "other",
 ] as const;
 
-export type DeadlineScope = (typeof DEADLINE_SCOPES)[number];
+export type DeadlineRole = (typeof DEADLINE_ROLES)[number];
+
+export const DEADLINE_SCOPE_KINDS = ["universal", "scoped"] as const;
+
+export type DeadlineScopeKind = (typeof DEADLINE_SCOPE_KINDS)[number];
+
+export const DEADLINE_OCCURRENCE_AVAILABILITY_STATUSES = [
+  "draft",
+  "active",
+  "withdrawn",
+  "superseded",
+  "archived",
+] as const;
+
+export type DeadlineOccurrenceAvailabilityStatus =
+  (typeof DEADLINE_OCCURRENCE_AVAILABILITY_STATUSES)[number];
+
+export const DEADLINE_CYCLE_STATUSES = [
+  "draft",
+  "in-review",
+  "announced",
+  "active",
+  "completed",
+  "withdrawn",
+  "historical",
+] as const;
+
+export type DeadlineCycleStatus = (typeof DEADLINE_CYCLE_STATUSES)[number];
 
 export const DEADLINE_RECURRENCE_CADENCES = [
   "none",
@@ -165,6 +204,13 @@ export interface DeadlineTargetIntake {
   finalYearEligibility: FinalYearEligibilityStatus;
 }
 
+/** A source-declared cycle target, before student-relative evaluation. */
+export interface DeadlineCycleTargetIntake {
+  intakeId: string;
+  intakeLabel: string;
+  programStartDate: DeadlineCalendarDate | null;
+}
+
 /**
  * Describes recurrence evidence without authorising or storing an automatically
  * generated future deadline.
@@ -178,12 +224,17 @@ export interface DeadlineRecurrence {
   automaticDateGenerationAllowed: false;
 }
 
-export interface DeadlineSource {
-  officialUrl: string | null;
+interface DeadlineSourceFields {
+  deadlineSourceId: EntityId;
+  officialSourceId: EntityId;
+  publisherName: string;
+  sourceType: string;
+  cycleId: EntityId;
+  occurrenceId: EntityId;
+  factPath: string;
+  scope: DeadlineOccurrenceScope;
   sourceLabel: string | null;
   rawText: string;
-  verificationStatus: DeadlineVerificationStatus;
-  lastCheckedAt: DeadlineDateTime | null;
   sourceTimezone: DeadlineTimezone | null;
   sourceDate: DeadlineCalendarDate | null;
   sourceDateTime: DeadlineDateTime | null;
@@ -193,23 +244,149 @@ export interface DeadlineSource {
   projectionBasis: string | null;
 }
 
-export interface DeadlineOccurrence {
-  occurrenceId: string;
-  kind: DeadlineOccurrenceKind;
-  precision: DeadlinePrecision;
-  lifecycleStatus: DeadlineLifecycleStatus;
-  scope: DeadlineScope;
-  scopeReference: string | null;
-  source: DeadlineSource;
+type VerifiedDeadlineSource = DeadlineSourceFields & {
+  officialUrl: string;
+  verificationStatus: "verified";
+  lastCheckedAt: DeadlineDateTime;
+};
+
+type NonVerifiedDeadlineSource = DeadlineSourceFields & {
+  officialUrl: string | null;
+  verificationStatus: Exclude<DeadlineVerificationStatus, "verified">;
+  lastCheckedAt: DeadlineDateTime | null;
+};
+
+export type DeadlineSource =
+  | VerifiedDeadlineSource
+  | NonVerifiedDeadlineSource;
+
+/**
+ * Explicit dimensions used to select an occurrence. Null means that dimension
+ * is not constrained by the source; it must never be populated by inference.
+ */
+export interface DeadlineOccurrenceScope {
+  kind: DeadlineScopeKind;
+  programId: string | null;
+  institutionId: string | null;
+  countryCode: string | null;
+  residencyCode: string | null;
+  applicantCategoryCode: string | null;
+  roundLabel: string | null;
 }
 
-export interface DeadlineCycle {
-  cycleId: string;
+interface DeadlineBoundaryFields {
+  boundaryId: EntityId;
+  sources: readonly [DeadlineSource, ...DeadlineSource[]];
+}
+
+export interface DeadlineExactOpeningBoundary extends DeadlineBoundaryFields {
+  kind: "opening";
+  precision: "exact";
+}
+
+export interface DeadlineEstimatedOpeningBoundary
+  extends DeadlineBoundaryFields {
+  kind: "opening";
+  precision: "estimated";
+}
+
+export interface DeadlineExactClosingBoundary extends DeadlineBoundaryFields {
+  kind: "closing";
+  precision: "exact";
+}
+
+export interface DeadlineEstimatedClosingBoundary
+  extends DeadlineBoundaryFields {
+  kind: "closing";
+  precision: "estimated";
+}
+
+export type DeadlineOpeningBoundary =
+  | DeadlineExactOpeningBoundary
+  | DeadlineEstimatedOpeningBoundary;
+
+export type DeadlineClosingBoundary =
+  | DeadlineExactClosingBoundary
+  | DeadlineEstimatedClosingBoundary;
+
+export type DeadlineBoundary =
+  | DeadlineOpeningBoundary
+  | DeadlineClosingBoundary;
+
+interface DeadlineOccurrenceFields {
+  occurrenceId: EntityId;
+  role: DeadlineRole;
+  roleLabel: string | null;
+  scope: DeadlineOccurrenceScope;
+  /** Supports rolling, unknown, or not-yet-announced facts without a boundary. */
+  occurrenceSources: readonly DeadlineSource[];
+  supersedesOccurrenceId: EntityId | null;
+}
+
+type ExactOccurrenceTiming =
+  | {
+      precision: "exact";
+      openingBoundary: DeadlineExactOpeningBoundary;
+      closingBoundary: DeadlineExactClosingBoundary | null;
+    }
+  | {
+      precision: "exact";
+      openingBoundary: null;
+      closingBoundary: DeadlineExactClosingBoundary;
+    };
+
+type EstimatedOccurrenceTiming =
+  | {
+      precision: "estimated";
+      openingBoundary: DeadlineEstimatedOpeningBoundary;
+      closingBoundary: DeadlineEstimatedClosingBoundary | null;
+    }
+  | {
+      precision: "estimated";
+      openingBoundary: null;
+      closingBoundary: DeadlineEstimatedClosingBoundary;
+    };
+
+type ScopedOccurrenceTiming = {
+  precision: "program-specific" | "institution-specific";
+  openingBoundary: DeadlineOpeningBoundary | null;
+  closingBoundary: DeadlineClosingBoundary | null;
+};
+
+type UndatedOccurrenceTiming = {
+  precision: "rolling" | "unknown";
+  openingBoundary: null;
+  closingBoundary: null;
+};
+
+export type DeadlineOccurrence = PublicationClassifiedRecord<
+  DeadlineOccurrenceFields &
+    (
+      | ExactOccurrenceTiming
+      | EstimatedOccurrenceTiming
+      | ScopedOccurrenceTiming
+      | UndatedOccurrenceTiming
+    ),
+  DeadlineOccurrenceAvailabilityStatus,
+  "draft"
+>;
+
+interface DeadlineCycleFields {
+  cycleId: EntityId;
+  cycleLabel: string | null;
   cycleYear: number | null;
-  targetIntake: DeadlineTargetIntake;
+  applicationCycleStartsOn: DeadlineCalendarDate | null;
+  applicationCycleEndsOn: DeadlineCalendarDate | null;
+  targetIntakes: readonly DeadlineCycleTargetIntake[];
   occurrences: readonly DeadlineOccurrence[];
   recurrence: DeadlineRecurrence;
 }
+
+export type DeadlineCycle = PublicationClassifiedRecord<
+  DeadlineCycleFields,
+  DeadlineCycleStatus,
+  "draft" | "in-review"
+>;
 
 export interface DeadlineCountdownDisplayState {
   allowed: boolean;

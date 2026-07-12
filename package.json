@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "data:validate": "tsx scripts/validate-opportunity-seed.ts",
-    "deadlines:audit": "tsx scripts/audit-deadlines.ts"
+    "deadlines:audit": "tsx scripts/audit-deadlines.ts",
+    "checkpoint0:validate": "tsx scripts/validate-checkpoint0.ts"
   },
   "engines": {
     "node": ">=22.0.0"

@@ -1,0 +1,214 @@
+erDiagram
+    OPPORTUNITY_TYPE ||--o{ OPPORTUNITY : classifies
+    PROVIDER ||--o{ OPPORTUNITY : provides
+    OPPORTUNITY ||--o{ DEADLINE_CYCLE : has
+    DEADLINE_CYCLE ||--o{ DEADLINE : contains
+    DEADLINE_CYCLE }o--o{ INTAKE : targets
+    OPPORTUNITY ||--o{ INTAKE : offers
+    OPPORTUNITY ||--o{ ELIGIBILITY_RULE : governs
+    OPPORTUNITY }o--o{ OFFICIAL_SOURCE : cites
+    PROVIDER o|--o{ OFFICIAL_SOURCE : may_publish
+    OFFICIAL_SOURCE }|--o{ VERIFICATION_RECORD : supports
+    OPPORTUNITY o|--o{ VERIFICATION_RECORD : may_be_subject_of
+    DEADLINE o|--o{ VERIFICATION_RECORD : may_be_subject_of
+    OPPORTUNITY ||--o{ OPPORTUNITY_DOCUMENT_REQUIREMENT : declares
+    REQUIRED_DOCUMENT_TEMPLATE ||--o{ OPPORTUNITY_DOCUMENT_REQUIREMENT : types
+
+    USER_ACCOUNT ||--o| USER_PROFILE : owns
+    USER_ACCOUNT o|--o{ SAVED_OPPORTUNITY : owns_when_synced
+    OPPORTUNITY ||--o{ SAVED_OPPORTUNITY : is_saved_as
+    USER_ACCOUNT o|--o{ APPLICATION_TRACKER : owns_when_synced
+    OPPORTUNITY ||--o{ APPLICATION_TRACKER : is_tracked_as
+    DEADLINE_CYCLE o|--o{ APPLICATION_TRACKER : selected_for
+    INTAKE o|--o{ APPLICATION_TRACKER : selected_for
+    APPLICATION_TRACKER ||--o{ APPLICATION_ACTIVITY : records
+    USER_ACCOUNT o|--o{ MASTER_DOCUMENT_RECORD : owns_metadata
+    APPLICATION_TRACKER ||--o{ APPLICATION_DOCUMENT_PROGRESS : tracks
+    OPPORTUNITY_DOCUMENT_REQUIREMENT ||--o{ APPLICATION_DOCUMENT_PROGRESS : measures
+    MASTER_DOCUMENT_RECORD o|--o{ APPLICATION_DOCUMENT_PROGRESS : satisfies
+    APPLICATION_TRACKER o|--o{ REMINDER : may_schedule
+    DEADLINE o|--o{ REMINDER : may_trigger
+
+    OPPORTUNITY ||--o{ CORRECTION_REPORT : receives
+    USER_ACCOUNT o|--o{ CORRECTION_REPORT : submits_optionally
+    CORRECTION_REPORT o|--o{ REVIEW_ASSIGNMENT : may_generate
+    VERIFICATION_RECORD o|--o{ REVIEW_ASSIGNMENT : may_generate
+    USER_ACCOUNT ||--o{ REVIEW_ASSIGNMENT : assigned_to_staff
+    USER_ACCOUNT ||--o{ VERIFICATION_RECORD : authors_as_reviewer
+    REVIEW_ASSIGNMENT o|--o{ AUDIT_LOG : may_be_subject_of
+    VERIFICATION_RECORD o|--o{ AUDIT_LOG : may_be_subject_of
+    USER_ACCOUNT o|--o{ AUDIT_LOG : acts_in
+
+    USER_ACCOUNT o|--o{ AI_INTERACTION_RECORD : owns_when_retained
+    OPPORTUNITY o|--o{ AI_INTERACTION_RECORD : grounds
+    VERIFICATION_RECORD }o--o{ AI_INTERACTION_RECORD : cites
+    AI_INTERACTION_RECORD o|--o{ AUDIT_LOG : is_audited_by
+
+    OPPORTUNITY {
+        string opportunityId PK
+        string slug
+        string title
+        string publicationState
+    }
+
+    PROVIDER {
+        string providerId PK
+        string organisationId FK
+        string displayName
+        string verificationState
+    }
+
+    OPPORTUNITY_TYPE {
+        string opportunityTypeId PK
+        string code
+        string displayName
+        boolean active
+    }
+
+    DEADLINE {
+        string occurrenceId PK
+        string role
+        string precision
+        string scopeKind
+        string openingBoundaryValue
+        string closingBoundaryValue
+        string status
+    }
+
+    DEADLINE_CYCLE {
+        string cycleId PK
+        string cycleLabel
+        int cycleYear
+        string recurrenceCadence
+    }
+
+    INTAKE {
+        string intakeId PK
+        string label
+        string startDate
+        string precision
+    }
+
+    ELIGIBILITY_RULE {
+        string eligibilityRuleId PK
+        string ruleGroupId FK
+        string operator
+        string verificationState
+    }
+
+    OFFICIAL_SOURCE {
+        string officialSourceId PK
+        string canonicalUrl
+        string publisher
+        string sourceKind
+    }
+
+    VERIFICATION_RECORD {
+        string verificationRecordId PK
+        string subjectId
+        string result
+        datetime checkedAt
+    }
+
+    REQUIRED_DOCUMENT_TEMPLATE {
+        string requiredDocumentTemplateId PK
+        string code
+        string displayName
+        boolean metadataOnly
+    }
+
+    OPPORTUNITY_DOCUMENT_REQUIREMENT {
+        string opportunityDocumentRequirementId PK
+        string opportunityId FK
+        string requiredDocumentTemplateId FK
+        string requirementLevel
+        string verificationState
+    }
+
+    USER_ACCOUNT {
+        string userAccountId PK
+        string authSubjectId
+        string accountState
+        string platformRoles
+        datetime createdAt
+    }
+
+    USER_PROFILE {
+        string userProfileId PK
+        string userAccountId FK
+        string completenessState
+        datetime updatedAt
+    }
+
+    SAVED_OPPORTUNITY {
+        string savedOpportunityId PK
+        string opportunityId FK
+        string ownerContextId
+        datetime savedAt
+    }
+
+    APPLICATION_TRACKER {
+        string applicationTrackerId PK
+        string opportunityId FK
+        string ownerContextId
+        string currentStage
+    }
+
+    APPLICATION_ACTIVITY {
+        string applicationActivityId PK
+        string applicationTrackerId FK
+        string activityKind
+        datetime occurredAt
+    }
+
+    MASTER_DOCUMENT_RECORD {
+        string masterDocumentRecordId PK
+        string templateId FK
+        string readinessStatus
+        string versionLabel
+        string expiryDate
+    }
+
+    APPLICATION_DOCUMENT_PROGRESS {
+        string applicationDocumentProgressId PK
+        string applicationTrackerId FK
+        string requirementId FK
+        string readinessState
+    }
+
+    REMINDER {
+        string reminderId PK
+        string ownerContextId
+        datetime triggerAt
+        string status
+    }
+
+    CORRECTION_REPORT {
+        string correctionReportId PK
+        string opportunityId FK
+        string reportCategory
+        string status
+    }
+
+    REVIEW_ASSIGNMENT {
+        string reviewAssignmentId PK
+        string subjectId
+        string assigneeId
+        string status
+    }
+
+    AUDIT_LOG {
+        string auditLogId PK
+        string actorId
+        string subjectId
+        string eventType
+        datetime occurredAt
+    }
+
+    AI_INTERACTION_RECORD {
+        string aiInteractionRecordId PK
+        string ownerContextId
+        string featurePurpose
+        string retentionMode
+        datetime expiresAt
+    }
