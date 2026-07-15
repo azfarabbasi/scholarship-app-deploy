@@ -1,0 +1,197 @@
+"use client";
+
+import type { ReactNode } from "react";
+import type { DeadlineLifecycleStatus, DeadlinePrecision } from "@/lib/domain";
+import { DEADLINE_LIFECYCLE_STATUSES } from "@/lib/domain";
+import { DEADLINE_PRECISION_OPTIONS } from "@/lib/catalogue/repository";
+import type { CatalogueFilterOptions } from "@/lib/catalogue/search";
+import { DEFAULT_CATALOGUE_FILTERS, type CatalogueFilters } from "@/lib/catalogue/search";
+import { Checkbox } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
+import {
+  APPLICATION_STAGE_LABELS,
+  APPLICATION_STAGE_OPTIONS,
+} from "@/lib/storage/types";
+
+const LIFECYCLE_LABELS: Record<DeadlineLifecycleStatus, string> = {
+  "not-announced": "Not yet announced",
+  "expected-to-reopen": "Expected to reopen",
+  "opening-soon": "Opening soon",
+  open: "Open",
+  approaching: "Approaching",
+  "due-today": "Due today",
+  "passed-current-cycle": "Passed (this cycle)",
+  rolling: "Rolling",
+  "temporarily-unavailable": "Needs verification",
+  "permanently-archived": "Archived",
+};
+
+const PRECISION_LABELS: Record<DeadlinePrecision, string> = {
+  exact: "Exact date",
+  estimated: "Estimated",
+  rolling: "Rolling",
+  unknown: "Unknown",
+  "program-specific": "Program-specific",
+  "institution-specific": "Institution-specific",
+};
+
+function toggleValue<T>(list: T[], value: T): T[] {
+  return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+}
+
+function FilterGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <details className="border-b border-border py-3 last:border-b-0" open>
+      <summary className="cursor-pointer text-sm font-semibold text-foreground marker:text-foreground-subtle">
+        {title}
+      </summary>
+      <div className="mt-2 flex flex-col gap-1.5 pl-1">{children}</div>
+    </details>
+  );
+}
+
+export interface FilterPanelProps {
+  options: CatalogueFilterOptions;
+  filters: CatalogueFilters;
+  onChange: (next: CatalogueFilters) => void;
+}
+
+export function FilterPanel({ options, filters, onChange }: FilterPanelProps) {
+  return (
+    <div className="rounded-lg border border-border bg-surface p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-foreground">Filters</h2>
+        <Button variant="ghost" size="sm" onClick={() => onChange({ ...DEFAULT_CATALOGUE_FILTERS, query: filters.query })}>
+          Reset filters
+        </Button>
+      </div>
+
+      <FilterGroup title="Status">
+        <Checkbox
+          id="filter-shortlisted"
+          label="Shortlisted only"
+          checked={filters.shortlistedOnly}
+          onChange={(e) => onChange({ ...filters, shortlistedOnly: e.target.checked })}
+        />
+        <Checkbox
+          id="filter-actionable"
+          label="Open or currently actionable"
+          checked={filters.actionableOnly}
+          onChange={(e) => onChange({ ...filters, actionableOnly: e.target.checked })}
+        />
+        <Checkbox
+          id="filter-rolling"
+          label="Rolling opportunities"
+          checked={filters.rollingOnly}
+          onChange={(e) => onChange({ ...filters, rollingOnly: e.target.checked })}
+        />
+        <Checkbox
+          id="filter-passed"
+          label="Passed this cycle"
+          checked={filters.passedOnly}
+          onChange={(e) => onChange({ ...filters, passedOnly: e.target.checked })}
+        />
+        <Checkbox
+          id="filter-verify"
+          label="Verification required"
+          checked={filters.verificationRequiredOnly}
+          onChange={(e) => onChange({ ...filters, verificationRequiredOnly: e.target.checked })}
+        />
+      </FilterGroup>
+
+      <FilterGroup title="Origin">
+        {(["built-in", "custom"] as const).map((kind) => (
+          <Checkbox
+            key={kind}
+            id={`filter-origin-${kind}`}
+            label={kind === "built-in" ? "Catalogue (built-in)" : "Custom (yours)"}
+            checked={filters.origin.includes(kind)}
+            onChange={() => onChange({ ...filters, origin: toggleValue(filters.origin, kind) })}
+          />
+        ))}
+      </FilterGroup>
+
+      {options.studyLevels.length > 0 ? (
+        <FilterGroup title="Study level">
+          {options.studyLevels.map((level) => (
+            <Checkbox
+              key={level}
+              id={`filter-level-${level}`}
+              label={level}
+              checked={filters.studyLevels.includes(level)}
+              onChange={() => onChange({ ...filters, studyLevels: toggleValue(filters.studyLevels, level) })}
+            />
+          ))}
+        </FilterGroup>
+      ) : null}
+
+      {options.countries.length > 0 ? (
+        <FilterGroup title="Country">
+          <div className="max-h-48 overflow-y-auto pr-1">
+            {options.countries.map((country) => (
+              <Checkbox
+                key={country}
+                id={`filter-country-${country}`}
+                label={country}
+                checked={filters.countries.includes(country)}
+                onChange={() => onChange({ ...filters, countries: toggleValue(filters.countries, country) })}
+              />
+            ))}
+          </div>
+        </FilterGroup>
+      ) : null}
+
+      {options.regions.length > 0 ? (
+        <FilterGroup title="Region">
+          {options.regions.map((region) => (
+            <Checkbox
+              key={region}
+              id={`filter-region-${region}`}
+              label={region}
+              checked={filters.regions.includes(region)}
+              onChange={() => onChange({ ...filters, regions: toggleValue(filters.regions, region) })}
+            />
+          ))}
+        </FilterGroup>
+      ) : null}
+
+      <FilterGroup title="Deadline state">
+        <div className="max-h-56 overflow-y-auto pr-1">
+          {DEADLINE_LIFECYCLE_STATUSES.map((state) => (
+            <Checkbox
+              key={state}
+              id={`filter-state-${state}`}
+              label={LIFECYCLE_LABELS[state]}
+              checked={filters.deadlineStates.includes(state)}
+              onChange={() => onChange({ ...filters, deadlineStates: toggleValue(filters.deadlineStates, state) })}
+            />
+          ))}
+        </div>
+      </FilterGroup>
+
+      <FilterGroup title="Deadline precision">
+        {DEADLINE_PRECISION_OPTIONS.map((precision) => (
+          <Checkbox
+            key={precision}
+            id={`filter-precision-${precision}`}
+            label={PRECISION_LABELS[precision]}
+            checked={filters.precisions.includes(precision)}
+            onChange={() => onChange({ ...filters, precisions: toggleValue(filters.precisions, precision) })}
+          />
+        ))}
+      </FilterGroup>
+
+      <FilterGroup title="Application stage">
+        {APPLICATION_STAGE_OPTIONS.map((stage) => (
+          <Checkbox
+            key={stage}
+            id={`filter-stage-${stage}`}
+            label={APPLICATION_STAGE_LABELS[stage]}
+            checked={filters.stages.includes(stage)}
+            onChange={() => onChange({ ...filters, stages: toggleValue(filters.stages, stage) })}
+          />
+        ))}
+      </FilterGroup>
+    </div>
+  );
+}

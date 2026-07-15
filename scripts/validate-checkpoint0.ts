@@ -250,9 +250,14 @@ if (configResult.error) {
         })}`,
   );
 
+  // TypeScript always normalizes sourceFile.fileName to forward slashes,
+  // even on Windows, where path.join(domainDirectory) uses backslashes. This
+  // comparison must normalize both sides or it silently matches nothing on
+  // Windows outside a (forward-slash) Linux/Docker environment.
+  const domainDirectoryPosix = domainDirectory.split(path.sep).join("/");
   const exportedDomainTypes = new Set<string>();
   for (const sourceFile of program.getSourceFiles()) {
-    if (!sourceFile.fileName.startsWith(domainDirectory) || sourceFile.isDeclarationFile) {
+    if (!sourceFile.fileName.startsWith(domainDirectoryPosix) || sourceFile.isDeclarationFile) {
       continue;
     }
 
