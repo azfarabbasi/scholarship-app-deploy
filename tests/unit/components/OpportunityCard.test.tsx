@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { OpportunityCard } from "@/components/opportunities/OpportunityCard";
 import { evaluateDeadline } from "@/lib/deadlines/engine";
 import type { DeadlineEvaluationInput } from "@/lib/deadlines/types";
-import type { CatalogueOpportunity, EnrichedOpportunity } from "@/lib/catalogue/types";
+import { UNVERIFIED_CATALOGUE_VERIFICATION, type CatalogueOpportunity, type EnrichedOpportunity } from "@/lib/catalogue/types";
 import { DB_NAME, resetDbConnectionForTests } from "@/lib/storage/db";
 
 const rollingInput: DeadlineEvaluationInput = {
@@ -30,6 +30,7 @@ const opportunity: CatalogueOpportunity = {
   eligibilitySummary: "Open to applicants from any country.",
   officialUrl: "https://example.invalid/daad",
   verificationNotes: null,
+  verification: UNVERIFIED_CATALOGUE_VERIFICATION,
   deadlineInput: rollingInput,
   deadlineRawText: "Rolling / program-specific",
   createdAt: "2026-01-01T00:00:00Z",

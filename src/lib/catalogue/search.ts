@@ -9,6 +9,15 @@ export interface CatalogueFilterOptions {
   opportunityTypes: string[];
 }
 
+export const DEADLINE_PRECISION_OPTIONS = [
+  "exact",
+  "estimated",
+  "rolling",
+  "unknown",
+  "program-specific",
+  "institution-specific",
+] as const satisfies readonly DeadlinePrecision[];
+
 function uniqueSorted(values: Iterable<string>): string[] {
   return [...new Set(values)].sort((a, b) => a.localeCompare(b));
 }

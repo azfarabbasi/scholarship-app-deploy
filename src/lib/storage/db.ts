@@ -4,6 +4,7 @@ import type {
   BackupMetaRecord,
   CustomOpportunityRecord,
   PreferencesRecord,
+  PublicCatalogueCacheRecord,
   WorkspaceRecord,
 } from "./types";
 
@@ -14,6 +15,7 @@ interface ScholarTrackSchema extends DBSchema {
   customOpportunities: { key: string; value: CustomOpportunityRecord };
   preferences: { key: string; value: PreferencesRecord };
   meta: { key: string; value: BackupMetaRecord };
+  publicCatalogueCache: { key: string; value: PublicCatalogueCacheRecord };
 }
 
 export type ScholarTrackDb = IDBPDatabase<ScholarTrackSchema>;
@@ -45,6 +47,9 @@ function upgrade(db: ScholarTrackDb): void {
   }
   if (!db.objectStoreNames.contains("meta")) {
     db.createObjectStore("meta", { keyPath: "key" });
+  }
+  if (!db.objectStoreNames.contains("publicCatalogueCache")) {
+    db.createObjectStore("publicCatalogueCache", { keyPath: "key" });
   }
 }
 

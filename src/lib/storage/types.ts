@@ -1,7 +1,20 @@
 import type { OpportunityTypeCode } from "@/lib/domain";
+import type { CatalogueOpportunity } from "@/lib/catalogue/types";
 import type { StudyLevel } from "@/lib/schemas/opportunity-seed";
 
-export const SCHEMA_VERSION = 1;
+/**
+ * v2 adds the `publicCatalogueCache` store (Checkpoint 2: the public
+ * catalogue moved from a build-time JSON import to a database-backed API
+ * response, which now needs an offline cache with its own store).
+ */
+export const SCHEMA_VERSION = 2;
+
+/** Last successfully fetched snapshot of the public database catalogue, for offline use. */
+export interface PublicCatalogueCacheRecord {
+  key: "snapshot";
+  items: CatalogueOpportunity[];
+  syncedAt: string;
+}
 
 export const APPLICATION_STAGE_OPTIONS = [
   "not-started",

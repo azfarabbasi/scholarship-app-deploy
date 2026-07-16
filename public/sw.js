@@ -9,8 +9,14 @@
  *    finally to /offline.
  *  - Hashed /_next/static assets: cache-first (content-addressed, safe to
  *    keep indefinitely).
- *  - Other same-origin GET requests (icons, manifest, catalogue data):
- *    stale-while-revalidate.
+ *  - Other same-origin GET requests (icons, manifest, the public catalogue
+ *    API): stale-while-revalidate. The public catalogue API response itself
+ *    carries a `syncedAt` timestamp so a stale cached read is never presented
+ *    as freshly verified (see src/hooks/useBuiltInOpportunities.ts).
+ *  - `/staff/**` and `/api/staff/**` are never intercepted at all — no staff
+ *    page, staff API response, or authentication response is ever written to
+ *    Cache Storage. A signed-out visit to a staff route while offline must
+ *    fail honestly, not serve a stale privileged page.
  *  - Cross-origin requests (official scholarship websites, etc.) are never
  *    intercepted or cached — they always go straight to the network.
  *
@@ -18,7 +24,7 @@
  * activating a new version and clearing old caches here never touches guest
  * records.
  */
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 const APP_SHELL_CACHE = `scholartrack-app-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `scholartrack-runtime-${CACHE_VERSION}`;
 const STATIC_ASSET_CACHE = `scholartrack-static-${CACHE_VERSION}`;
@@ -124,6 +130,12 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) {
     // Never cache external (official-source) websites.
+    return;
+  }
+
+  if (url.pathname.startsWith("/staff") || url.pathname.startsWith("/api/staff")) {
+    // Staff pages, staff APIs, and Supabase auth callbacks are never
+    // intercepted or cached — always go straight to the network.
     return;
   }
 

@@ -2,20 +2,32 @@
 
 ScholarTrack is a guest-first Progressive Web App for discovering, understanding,
 and tracking verified scholarship and internship opportunities. Checkpoint 1
-delivers the first fully functional release: a browsable catalogue of 55
-built-in opportunities, deadline intelligence that distinguishes reliable dates
-from estimates and unverified claims, a personal workspace, custom
-opportunities, a deadline calendar with `.ics` export, and local-only guest
-data with backup/restore. Optional accounts, cloud sync, and AI features are
-not part of this checkpoint (see [Known limitations](#known-limitations-and-deferred-work)).
+delivered the first fully functional release on a build-time JSON catalogue.
+**Checkpoint 2 replaces that catalogue with a normalised, reviewed PostgreSQL
+database and adds a staff-only administration system** — structured
+opportunity records, official sources, verification history, a draft →
+review → approve → publish workflow with separation of duties, required
+documents and eligibility rules, correction reports, duplicate detection and
+merging, CSV import/export, and an append-only audit log. Staff sign in via
+Supabase Auth; there is still no public registration, no student accounts,
+and guest mode is completely unchanged. Optional student accounts, cloud
+sync, and AI features remain out of scope (see
+[Known limitations](#known-limitations-and-deferred-work)).
 
 Checkpoint 0 established repository boundaries, a Docker-first development
 contract, the domain model, and a documented audit of the legacy prototype.
-Checkpoint 1 builds the actual product on top of that foundation.
+Checkpoint 1 built the guest-facing product. Checkpoint 2 builds the verified
+data layer and staff tooling underneath it.
 
 ## What ScholarTrack does today
 
-- **Browse and search** all 55 built-in opportunities, plus any you add
+- **Browse a database-backed, staff-reviewed catalogue** (Checkpoint 2): the
+  public catalogue now reads only `published` records from PostgreSQL — never
+  a build-time JSON file — with an offline cache that shows a truthful "last
+  synced" time or a service-unavailable state rather than stale data
+  presented as current. See [Checkpoint 2](#checkpoint-2-database-staff-admin-and-supabase-auth)
+  below.
+- **Browse and search** all built-in opportunities, plus any you add
   yourself, with combinable filters (country, region, study level,
   opportunity type, deadline state, precision, verification, origin, stage)
   and sorting (nearest reliable deadline, personal deadline, title, country,
@@ -103,7 +115,9 @@ npm run start`, or the `web-e2e` Compose service described below).
 
 ## Environment values
 
-The baseline requires no credentials. Optional configuration:
+The default Docker workflow (`docker compose up`) needs **no credentials at all** — it starts
+its own local Postgres (`db` service) and the app falls back to a safe "not configured" state
+for staff sign-in until you add Supabase credentials.
 
 ```powershell
 Copy-Item .env.example .env.local
@@ -114,6 +128,12 @@ Copy-Item .env.example .env.local
 - `NEXT_PUBLIC_FEEDBACK_EMAIL` — if set, adds an "Email feedback" mailto button
   in Settings → Feedback. Leave unset to only offer "Copy feedback text" (there
   is no feedback backend either way).
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
+  `SUPABASE_SECRET_KEY`, `DATABASE_URL`, `DATABASE_MIGRATION_URL`,
+  `BOOTSTRAP_ADMIN_EMAIL`, `APP_BASE_URL`, `ENABLE_DATABASE_CATALOGUE`,
+  `ENABLE_STAFF_ADMIN` — Checkpoint 2's database/staff-admin configuration. See
+  [docs/checkpoint-2/supabase-setup.md](docs/checkpoint-2/supabase-setup.md) for exact,
+  beginner-friendly setup steps for every one of these.
 
 Never put real credentials in `.env.example`, source files, Dockerfiles, or
 Compose configuration. Local `.env*` files are ignored by both Git and the Docker
@@ -129,6 +149,7 @@ docker compose run --rm --no-deps web npm run data:validate
 docker compose run --rm --no-deps web npm run deadlines:audit
 docker compose run --rm --no-deps web npm run checkpoint0:validate
 docker compose run --rm --no-deps web npm run checkpoint1:validate
+docker compose run --rm --no-deps web npm run checkpoint2:validate
 docker compose run --rm --no-deps web npm run typecheck
 docker compose run --rm --no-deps web npm run lint
 docker compose run --rm --no-deps -e NODE_ENV=production web npm run build
@@ -142,6 +163,7 @@ npm run data:validate
 npm run deadlines:audit
 npm run checkpoint0:validate
 npm run checkpoint1:validate
+npm run checkpoint2:validate
 npm run typecheck
 npm run lint
 npm run build
@@ -155,6 +177,15 @@ polyfilled with `fake-indexeddb` in the test environment):
 ```powershell
 docker compose run --rm --no-deps web npm run test
 docker compose run --rm --no-deps web npm run test:coverage
+```
+
+Database/RLS/migration integration tests (require a running local Postgres —
+see [Checkpoint 2 § Local database workflow](#local-database-workflow)):
+
+```powershell
+docker compose up -d db-test
+docker compose run --rm --no-deps -e DATABASE_URL=postgres://scholartrack_test:scholartrack_test_password@db-test:5432/scholartrack_test web npm run db:reset:test
+docker compose run --rm --no-deps -e DATABASE_URL=postgres://scholartrack_test:scholartrack_test_password@db-test:5432/scholartrack_test web npm run db:test
 ```
 
 End-to-end tests (Playwright) run through a dedicated Compose test profile
@@ -183,6 +214,108 @@ npx playwright install --with-deps chromium
 npm run test:e2e
 ```
 
+## Checkpoint 2: database, staff admin, and Supabase Auth
+
+### Local database workflow
+
+`docker compose up` now also starts a `db` service (plain Postgres 16 — not Supabase) for
+day-to-day development:
+
+```powershell
+docker compose up -d db
+docker compose exec db psql -U scholartrack -d scholartrack   # open a shell, if you need one
+```
+
+Apply migrations and seed reference taxonomies (countries, study levels, opportunity types,
+etc. — idempotent, safe to re-run):
+
+```powershell
+docker compose run --rm --no-deps web npx tsx scripts/db-apply-sql.ts scripts/db/local-auth-shim.sql
+docker compose run --rm --no-deps web npm run db:migrate
+docker compose run --rm --no-deps web npm run db:seed:taxonomies
+```
+
+Import the original 55-record migration seed (dry run first, then for real — see
+[docs/checkpoint-2/migration-runbook.md](docs/checkpoint-2/migration-runbook.md) for the full
+procedure, including rollback and verification):
+
+```powershell
+docker compose run --rm --no-deps web npm run db:import:legacy:dry-run
+docker compose run --rm --no-deps web npm run db:import:legacy
+docker compose run --rm --no-deps web npm run db:verify:migration
+```
+
+Reset the local database completely (drops all data):
+
+```powershell
+docker compose down -v db
+docker compose up -d db
+```
+
+To connect to a cloud Supabase project instead of local Postgres, see
+[docs/checkpoint-2/supabase-setup.md](docs/checkpoint-2/supabase-setup.md).
+
+### Bootstrapping the first staff administrator
+
+There is **no public registration**. The very first administrator is created once, deliberately:
+
+```powershell
+docker compose run --rm --no-deps web npm run db:bootstrap:admin              # dry run — prints what it would do
+docker compose run --rm --no-deps web npm run db:bootstrap:admin -- --confirm # actually creates the grant
+```
+
+Requires `BOOTSTRAP_ADMIN_EMAIL`, `NEXT_PUBLIC_SUPABASE_URL`, and `SUPABASE_SECRET_KEY` to be
+set (see [Environment values](#environment-values) and
+[docs/checkpoint-2/supabase-setup.md](docs/checkpoint-2/supabase-setup.md)). After that,
+additional staff are invited from `/staff/team` in the app itself — no more scripts needed.
+
+### Staff sign-in
+
+Visit `/staff/login` and sign in with the bootstrapped administrator's email/password. There is
+no separate staff subdomain — `/staff/**` is gated by `middleware.ts` plus a server-side session
++ role check on every page and Server Action (hiding a nav link is never the security boundary).
+
+### Security boundaries
+
+- All reads and writes (public catalogue and staff admin alike) go through this Next.js server
+  using one privileged database connection — never a browser-side Supabase query. Row Level
+  Security is enabled on every table as a second, independent safety net against direct access
+  to Supabase's PostgREST data API, not as this app's own authorization mechanism. See
+  [docs/checkpoint-2/checkpoint-2-architecture.md §4](docs/checkpoint-2/checkpoint-2-architecture.md#4-serverclient-boundaries-and-the-rls-design-decision)
+  for the full reasoning.
+- `SUPABASE_SECRET_KEY`, `DATABASE_URL`, and `DATABASE_MIGRATION_URL` are server-only and never
+  reach a client bundle (enforced by `src/lib/env.ts`'s public/server split and checked by
+  `npm run checkpoint2:validate`).
+- Publishing an opportunity without an official source, or leaving a verification record
+  "pending" without a linked source, is rejected at the database level (triggers), not only in
+  application code.
+- `audit_log` is append-only at the database level — `UPDATE`/`DELETE` are rejected even for
+  this app's own privileged connection.
+
+### Deployment considerations
+
+- The staff area (`Auth`) requires a real Supabase project; the public catalogue and guest
+  workspace work with just the local/self-hosted Postgres database and no Supabase project at
+  all, using `ENABLE_STAFF_ADMIN=false` to hide the (still route-protected) staff area from
+  navigation.
+- If `DATABASE_URL`/Supabase env vars are missing or the database is unreachable, the public
+  site shows a safe "service unavailable" state rather than crashing (`isDatabaseConfigured()`
+  gates the relevant pages).
+- Run `npm run db:migrate` as an explicit deploy step before starting new application instances
+  against a schema change — this project does not push schema changes automatically at runtime.
+
+### Current limitations
+
+- **The 100-record content target has not been met**: 55 real, sourced records exist (from the
+  original migration); 45 more are needed. No fabricated content was added to close this gap —
+  see [docs/checkpoint-2/content-expansion-gap.md](docs/checkpoint-2/content-expansion-gap.md)
+  for why, the rules that govern closing it, and the CSV-import path built to do it.
+- Live Supabase staff-login end-to-end tests exist and are configuration-gated
+  (`E2E_STAFF_EMAIL`/`E2E_STAFF_PASSWORD`) but were not run against a real project in this
+  repository's automated CI-equivalent session — they report a clear skip, not a false pass.
+- Eligibility rules are stored and managed, not yet evaluated against a student profile
+  (deferred per ADR-004 to a later checkpoint).
+
 ## PWA installation and offline behaviour
 
 - **Desktop Chrome/Edge**: visit the site, then use the browser's install
@@ -191,11 +324,16 @@ npm run test:e2e
   the browser menu → "Install app".
 - **iOS Safari**: `beforeinstallprompt` isn't supported; Settings shows manual
   guidance (Share → "Add to Home Screen").
-- **Offline**: after one successful online visit, the app shell, the 55
-  built-in opportunity pages you've viewed, your workspace, calendar, and
-  settings continue to work offline. Official external links always require a
-  connection and are never cached (see
-  [architecture doc](docs/checkpoint-1/checkpoint-1-architecture.md#pwa-and-caching-strategy)
+- **Offline**: after one successful online visit, the app shell, the
+  database-backed catalogue you've loaded, opportunity detail pages you've
+  viewed, your workspace, calendar, and settings continue to work offline —
+  showing a "last synced" time if the cached catalogue is stale, or an honest
+  unavailable state on a device that has never successfully synced. Staff
+  pages (`/staff/**`) are deliberately never cached and are unavailable
+  offline. Official external links always require a connection and are never
+  cached (see
+  [Checkpoint 1 architecture](docs/checkpoint-1/checkpoint-1-architecture.md#pwa-and-caching-strategy)
+  and [Checkpoint 2 architecture](docs/checkpoint-2/checkpoint-2-architecture.md#7-offline-cache-flow)
   for the full caching strategy).
 - The service worker is hand-authored rather than generated by Serwist; see
   the architecture doc for why (Next.js 16 defaults `next build` to
@@ -321,15 +459,27 @@ docker compose logs --follow web
 
 ## Known limitations and deferred work
 
-Deferred beyond Checkpoint 1 (see `docs/checkpoint-0/v1-product-backlog.md`
-for the full roadmap): user accounts, cloud/server-side data synchronisation,
-admin/staff review tooling, deterministic AI-assisted eligibility matching,
-push/email/SMS notifications, and any AI features. No database, Supabase
-connection, authentication, or sensitive-document upload has been added — see
-`docs/checkpoint-1/checkpoint-1-completion-report.md` for the full audit.
+Still deferred beyond Checkpoint 2 (see `docs/checkpoint-0/v1-product-backlog.md` for the full
+roadmap): student accounts, cloud/server-side sync of guest data, deterministic AI-assisted
+eligibility *matching* against a student profile (eligibility rules are stored and manageable
+now, per Checkpoint 2, but not yet evaluated), push/email/SMS notifications, and any AI
+features. No sensitive-document upload has been added (see
+[Checkpoint 2 § Current limitations](#current-limitations) for the two items Checkpoint 2 itself
+did not complete: the 100-record content target and live Supabase e2e execution). See
+`docs/checkpoint-2/checkpoint-2-completion-report.md` for the full audit.
 
 ## Checkpoint documentation
 
+- [Checkpoint 2 architecture](docs/checkpoint-2/checkpoint-2-architecture.md)
+- [Checkpoint 2 database schema](docs/checkpoint-2/database-schema.md)
+- [Checkpoint 2 staff roles and workflows](docs/checkpoint-2/staff-roles-and-workflows.md)
+- [Checkpoint 2 Supabase setup](docs/checkpoint-2/supabase-setup.md)
+- [Checkpoint 2 migration runbook](docs/checkpoint-2/migration-runbook.md)
+- [Checkpoint 2 data verification procedure](docs/checkpoint-2/data-verification-procedure.md)
+- [Checkpoint 2 manual QA](docs/checkpoint-2/checkpoint-2-manual-qa.md)
+- [Checkpoint 2 traceability](docs/checkpoint-2/checkpoint-2-traceability.md)
+- [Checkpoint 2 content-expansion gap](docs/checkpoint-2/content-expansion-gap.md)
+- [Checkpoint 2 completion report](docs/checkpoint-2/checkpoint-2-completion-report.md)
 - [Checkpoint 1 architecture](docs/checkpoint-1/checkpoint-1-architecture.md)
 - [Checkpoint 1 manual QA](docs/checkpoint-1/checkpoint-1-manual-qa.md)
 - [Checkpoint 1 completion report](docs/checkpoint-1/checkpoint-1-completion-report.md)

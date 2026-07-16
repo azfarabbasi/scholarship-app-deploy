@@ -1,15 +1,24 @@
 import { NextResponse } from "next/server";
-import { EXPECTED_BUILT_IN_COUNT, getAllBuiltInOpportunities } from "@/lib/catalogue/repository";
+import { isDatabaseConfigured } from "@/lib/env";
+import { getPublishedOpportunityCount } from "@/lib/catalogue/db-repository";
 
-export const dynamic = "force-static";
+// Depends on live database state, so this can never be statically generated.
+export const dynamic = "force-dynamic";
 
-export function GET() {
-  const builtInCount = getAllBuiltInOpportunities().length;
+export async function GET() {
+  const databaseConfigured = isDatabaseConfigured();
 
-  return NextResponse.json({
-    status: builtInCount === EXPECTED_BUILT_IN_COUNT ? "ok" : "degraded",
-    checkpoint: 1,
-    builtInOpportunityCount: builtInCount,
-    expectedBuiltInOpportunityCount: EXPECTED_BUILT_IN_COUNT,
-  });
+  if (!databaseConfigured) {
+    return NextResponse.json({ status: "degraded", checkpoint: 2, databaseConfigured, publishedOpportunityCount: null });
+  }
+
+  try {
+    const publishedOpportunityCount = await getPublishedOpportunityCount();
+    return NextResponse.json({ status: "ok", checkpoint: 2, databaseConfigured, publishedOpportunityCount });
+  } catch {
+    return NextResponse.json(
+      { status: "degraded", checkpoint: 2, databaseConfigured, publishedOpportunityCount: null },
+      { status: 503 },
+    );
+  }
 }

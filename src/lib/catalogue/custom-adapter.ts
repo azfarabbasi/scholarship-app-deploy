@@ -1,6 +1,6 @@
 import type { CustomOpportunityRecord } from "@/lib/storage/types";
 import type { DeadlineEvaluationInput, DeadlineOccurrenceFact } from "@/lib/deadlines/types";
-import type { CatalogueOpportunity } from "./types";
+import { UNVERIFIED_CATALOGUE_VERIFICATION, type CatalogueOpportunity } from "./types";
 
 function toOccurrences(record: CustomOpportunityRecord): DeadlineOccurrenceFact[] {
   if (record.deadlineKind !== "exact" && record.deadlineKind !== "estimated") {
@@ -58,6 +58,7 @@ export function customOpportunityToCatalogueOpportunity(record: CustomOpportunit
     eligibilitySummary: record.eligibilitySummary,
     officialUrl: record.officialUrl,
     verificationNotes: record.verificationNotes,
+    verification: UNVERIFIED_CATALOGUE_VERIFICATION,
     deadlineInput: customOpportunityDeadlineInput(record),
     deadlineRawText: record.deadlineRawText,
     createdAt: record.createdAt,

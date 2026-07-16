@@ -9,7 +9,8 @@ import { Container } from "@/components/layout/Container";
 import { CurrentDate } from "@/components/home/CurrentDate";
 import { StatsGrid } from "@/components/home/StatsGrid";
 import { CatalogueExplorer } from "@/components/opportunities/CatalogueExplorer";
-import { EXPECTED_BUILT_IN_COUNT } from "@/lib/catalogue/repository";
+import { getPublishedOpportunityCount } from "@/lib/catalogue/db-repository";
+import { isDatabaseConfigured } from "@/lib/env";
 
 export const metadata: Metadata = {
   title: "ScholarTrack — Verified scholarship & internship tracking",
@@ -18,7 +19,23 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-export default function HomePage() {
+// The published-opportunity count is live database state (publish/archive
+// changes it), so this page must never be served from a build-time snapshot.
+export const dynamic = "force-dynamic";
+
+async function getBuiltInCount(): Promise<number | null> {
+  if (!isDatabaseConfigured()) {
+    return null;
+  }
+  try {
+    return await getPublishedOpportunityCount();
+  } catch {
+    return null;
+  }
+}
+
+export default async function HomePage() {
+  const count = await getBuiltInCount();
   return (
     <>
       <section className="border-b border-border bg-surface">
@@ -29,9 +46,10 @@ export default function HomePage() {
               Track verified scholarships and internships with confidence.
             </h1>
             <p className="mt-4 text-base leading-relaxed text-foreground-muted">
-              ScholarTrack helps you browse {EXPECTED_BUILT_IN_COUNT} scholarship and internship opportunities,
-              understand which deadlines are reliable versus estimated, and organise your own applications —
-              shortlist, stages, notes, checklists, and personal deadlines — entirely on your device as a guest.
+              ScholarTrack helps you browse {count !== null ? `${count} published` : ""} scholarship and internship
+              opportunities, understand which deadlines are reliable versus estimated, and organise your own
+              applications — shortlist, stages, notes, checklists, and personal deadlines — entirely on your device
+              as a guest.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Button size="lg" asChild>

@@ -1,4 +1,27 @@
 services:
+  # Local PostgreSQL used for `npm run dev`/`db:*` scripts. This is NOT
+  # Supabase — it is a plain Postgres database for the Drizzle schema and
+  # RLS policies. Staff authentication still requires a real (free-tier)
+  # Supabase project; see docs/checkpoint-2/supabase-setup.md.
+  db:
+    image: postgres:16-alpine
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      POSTGRES_USER: scholartrack
+      POSTGRES_PASSWORD: scholartrack_dev_password
+      POSTGRES_DB: scholartrack
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scholartrack -d scholartrack"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
   web:
     build:
       context: .
@@ -9,10 +32,18 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
     environment:
       NEXT_TELEMETRY_DISABLED: "1"
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
+      DATABASE_URL: postgres://scholartrack:scholartrack_dev_password@db:5432/scholartrack
+      DATABASE_MIGRATION_URL: postgres://scholartrack:scholartrack_dev_password@db:5432/scholartrack
     ports:
       - "3000:3000"
     volumes:
@@ -20,6 +51,29 @@ services:
       - node_modules:/app/node_modules
       - next_cache:/app/.next
     command: npm run dev -- --hostname 0.0.0.0
+
+  # Ephemeral Postgres used only by `db:test`/`db:reset:test` and the e2e
+  # profile. tmpfs storage means every run starts from a clean database —
+  # never shares state with the `db` development database above.
+  db-test:
+    profiles: ["test"]
+    image: postgres:16-alpine
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: scholartrack_test
+      POSTGRES_PASSWORD: scholartrack_test_password
+      POSTGRES_DB: scholartrack_test
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scholartrack_test -d scholartrack_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
 
   # Test-profile-only service: a production build+start of the same app,
   # used exclusively as the target for the Playwright e2e container below.
@@ -36,14 +90,22 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    depends_on:
+      db-test:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
+      DATABASE_URL: postgres://scholartrack_test:scholartrack_test_password@db-test:5432/scholartrack_test
+      DATABASE_MIGRATION_URL: postgres://scholartrack_test:scholartrack_test_password@db-test:5432/scholartrack_test
     volumes:
       - .:/app
       - node_modules:/app/node_modules
       - next_cache_e2e:/app/.next
-    command: sh -lc "npm run build && npm run start -- --hostname 0.0.0.0 --port 3000"
+    command: sh -lc "npm run db:reset:test && npm run db:import:legacy && npm run db:publish:test-fixtures && npm run build && npm run start -- --hostname 0.0.0.0 --port 3000"
     healthcheck:
       test:
         [
@@ -74,6 +136,9 @@ services:
     depends_on:
       web-e2e:
         condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
     environment:
       PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
       PLAYWRIGHT_SKIP_WEBSERVER: "1"
@@ -87,3 +152,4 @@ volumes:
   node_modules:
   next_cache:
   next_cache_e2e:
+  postgres_data:

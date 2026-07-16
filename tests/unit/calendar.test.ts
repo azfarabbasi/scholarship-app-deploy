@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { deriveCalendarEvents } from "@/lib/calendar/events";
 import { buildIcsCalendar, buildSingleEventIcs } from "@/lib/calendar/ics";
-import type { CatalogueOpportunity } from "@/lib/catalogue/types";
+import { UNVERIFIED_CATALOGUE_VERIFICATION, type CatalogueOpportunity } from "@/lib/catalogue/types";
 import type { DeadlineEvaluationInput } from "@/lib/deadlines/types";
 import type { WorkspaceRecord } from "@/lib/storage/types";
 
@@ -23,6 +23,7 @@ function makeOpportunity(overrides: Partial<CatalogueOpportunity> & { deadlineIn
     eligibilitySummary: "Open to all",
     officialUrl: "https://example.invalid",
     verificationNotes: null,
+    verification: UNVERIFIED_CATALOGUE_VERIFICATION,
     deadlineRawText: "Some date",
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",

@@ -1,7 +1,16 @@
+/**
+ * Reads the versioned v0.1 migration seed JSON directly. Checkpoint 2 moved
+ * the *production* public catalogue to the database (see `db-repository.ts`)
+ * — this module now exists only for the legacy import pipeline
+ * (`scripts/import-legacy-scholarships.ts`) and for tests/fixtures that need
+ * the original 55-record dataset. No `app/**`, `src/components/**`, or
+ * `src/hooks/**` file may import this module; `checkpoint2:validate` fails
+ * the build if one does.
+ */
 import rawSeed from "../../../data/migrations/v0.1/scholarships.seed.json";
 import { seedDeadlineToEvaluationInput } from "@/lib/deadlines/seed-adapter";
 import { opportunitySeedSchema, type OpportunitySeed } from "@/lib/schemas/opportunity-seed";
-import type { CatalogueOpportunity } from "./types";
+import { UNVERIFIED_CATALOGUE_VERIFICATION, type CatalogueOpportunity } from "./types";
 
 export const EXPECTED_BUILT_IN_COUNT = 55;
 
@@ -21,6 +30,7 @@ function toCatalogueOpportunity(seed: OpportunitySeed): CatalogueOpportunity {
     eligibilitySummary: seed.eligibilitySummary,
     officialUrl: seed.officialUrl,
     verificationNotes: null,
+    verification: UNVERIFIED_CATALOGUE_VERIFICATION,
     deadlineInput: seedDeadlineToEvaluationInput(seed.deadline, seed.source),
     deadlineRawText: seed.deadline.rawText,
     createdAt: "2026-01-01T00:00:00.000Z",
@@ -102,17 +112,4 @@ export function getUniqueStudyLevels(opportunities: readonly CatalogueOpportunit
 
 export function getUniqueOpportunityTypes(opportunities: readonly CatalogueOpportunity[] = getAllBuiltInOpportunities()): string[] {
   return uniqueSorted(opportunities.map((o) => o.opportunityType));
-}
-
-export const DEADLINE_PRECISION_OPTIONS = [
-  "exact",
-  "estimated",
-  "rolling",
-  "unknown",
-  "program-specific",
-  "institution-specific",
-] as const;
-
-export function getDeadlinePrecisionOptions(): readonly string[] {
-  return DEADLINE_PRECISION_OPTIONS;
 }

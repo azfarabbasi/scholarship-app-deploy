@@ -3,6 +3,7 @@
 import { SearchX } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/common/EmptyState";
@@ -59,7 +60,7 @@ function searchParamsFromFilters(filters: CatalogueFilters, sort: CatalogueSortK
 }
 
 export function CatalogueExplorer({ showFilters = true }: { showFilters?: boolean }) {
-  const { items, loading } = useCatalogue();
+  const { items, loading, lastSyncedAt, isStale, isServiceUnavailable } = useCatalogue();
   const { preferences } = usePreferences();
   const router = useRouter();
   const pathname = usePathname();
@@ -111,50 +112,64 @@ export function CatalogueExplorer({ showFilters = true }: { showFilters?: boolea
   }
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-      {showFilters ? (
-        <aside className="lg:w-72 lg:shrink-0" aria-label="Filter opportunities">
-          <FilterPanel options={options} filters={filters} onChange={setFilters} />
-        </aside>
+    <div className="flex flex-col gap-4">
+      {isServiceUnavailable ? (
+        <Alert tone="danger" title="Catalogue unavailable offline">
+          This device has never successfully synced the opportunity catalogue, and there is no connection right now.
+          Custom opportunities you added yourself are unaffected.
+        </Alert>
+      ) : isStale && lastSyncedAt ? (
+        <Alert tone="warning" title="Showing a cached catalogue">
+          You&rsquo;re offline or the server is unreachable. Showing the catalogue as last synced on{" "}
+          {new Date(lastSyncedAt).toLocaleString()}.
+        </Alert>
       ) : null}
 
-      <div className="min-w-0 flex-1">
-        <CatalogueToolbar
-          query={filters.query}
-          onQueryChange={(query) => setFilters((prev) => ({ ...prev, query }))}
-          sortKey={sortKey}
-          onSortChange={setSortKey}
-          view={view}
-          onViewChange={changeView}
-          resultCount={sorted.length}
-          activeFilterCount={activeFilterCount}
-        />
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        {showFilters ? (
+          <aside className="lg:w-72 lg:shrink-0" aria-label="Filter opportunities">
+            <FilterPanel options={options} filters={filters} onChange={setFilters} />
+          </aside>
+        ) : null}
 
-        <div className="mt-4">
-          {sorted.length === 0 ? (
-            <EmptyState
-              icon={<SearchX className="h-6 w-6" />}
-              title="No opportunities match your filters"
-              description="Try removing a filter or searching with a different term."
-              action={
-                <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_CATALOGUE_FILTERS)}>
-                  Reset all filters
-                </Button>
-              }
-            />
-          ) : (
-            <div
-              className={
-                view === "grid"
-                  ? "grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
-                  : "flex flex-col gap-3"
-              }
-            >
-              {sorted.map((item) => (
-                <OpportunityCard key={item.opportunity.id} item={item} />
-              ))}
-            </div>
-          )}
+        <div className="min-w-0 flex-1">
+          <CatalogueToolbar
+            query={filters.query}
+            onQueryChange={(query) => setFilters((prev) => ({ ...prev, query }))}
+            sortKey={sortKey}
+            onSortChange={setSortKey}
+            view={view}
+            onViewChange={changeView}
+            resultCount={sorted.length}
+            activeFilterCount={activeFilterCount}
+          />
+
+          <div className="mt-4">
+            {sorted.length === 0 ? (
+              <EmptyState
+                icon={<SearchX className="h-6 w-6" />}
+                title="No opportunities match your filters"
+                description="Try removing a filter or searching with a different term."
+                action={
+                  <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_CATALOGUE_FILTERS)}>
+                    Reset all filters
+                  </Button>
+                }
+              />
+            ) : (
+              <div
+                className={
+                  view === "grid"
+                    ? "grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
+                    : "flex flex-col gap-3"
+                }
+              >
+                {sorted.map((item) => (
+                  <OpportunityCard key={item.opportunity.id} item={item} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

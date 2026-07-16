@@ -7,6 +7,14 @@ import { GuestTrackingPanel } from "@/components/workspace/GuestTrackingPanel";
 import { useDeadlineEvaluation } from "@/hooks/useDeadlineEvaluation";
 import type { CatalogueOpportunity } from "@/lib/catalogue/types";
 import { DeadlineBadge, DeadlineCountdownText, OriginBadge, VerificationBadge } from "./badges";
+import { ReportCorrectionDialog } from "./ReportCorrectionDialog";
+
+const VERIFICATION_STATUS_LABELS: Record<CatalogueOpportunity["verification"]["status"], string> = {
+  unverified: "Not yet verified by staff",
+  partially_verified: "Partially verified by staff",
+  verified: "Verified by staff",
+  stale: "Verified previously — due for re-check",
+};
 
 export function OpportunityDetailBody({ opportunity }: { opportunity: CatalogueOpportunity }) {
   const evaluation = useDeadlineEvaluation(opportunity.deadlineInput);
@@ -87,6 +95,56 @@ export function OpportunityDetailBody({ opportunity }: { opportunity: CatalogueO
           <section className="mt-6">
             <h2 className="text-base font-semibold text-foreground">Verification notes</h2>
             <p className="mt-2 whitespace-pre-line text-sm text-foreground-muted">{opportunity.verificationNotes}</p>
+          </section>
+        ) : null}
+
+        {/*
+          Deliberately its own section, separate from deadline status above:
+          verification/source freshness must never be visually or
+          semantically combined with deadline status (checkpoint-2-architecture.md,
+          "public verification display").
+        */}
+        <section className="mt-6">
+          <h2 className="text-base font-semibold text-foreground">Verification</h2>
+          <dl className="mt-2 grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="font-medium text-foreground-muted">Status</dt>
+              <dd className="mt-0.5 text-foreground">{VERIFICATION_STATUS_LABELS[opportunity.verification.status]}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-foreground-muted">Last checked</dt>
+              <dd className="mt-0.5 text-foreground">
+                {opportunity.verification.lastCheckedAt ? new Date(opportunity.verification.lastCheckedAt).toLocaleDateString() : "Not recorded"}
+              </dd>
+            </div>
+            {opportunity.verification.officialSourceLabel ? (
+              <div>
+                <dt className="font-medium text-foreground-muted">Official source</dt>
+                <dd className="mt-0.5 text-foreground">{opportunity.verification.officialSourceLabel}</dd>
+              </div>
+            ) : null}
+            <div>
+              <dt className="font-medium text-foreground-muted">Official required documents</dt>
+              <dd className="mt-0.5 text-foreground">
+                {opportunity.verification.documentCount > 0
+                  ? `${opportunity.verification.documentCount} verified requirement(s) on file`
+                  : "None recorded yet — see the preparation checklist below for general suggestions only"}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-foreground-muted">Eligibility requirements</dt>
+              <dd className="mt-0.5 text-foreground">
+                {opportunity.verification.eligibilityRuleCount > 0
+                  ? `${opportunity.verification.eligibilityRuleCount} sourced rule(s) on file`
+                  : "Not yet structured — see the eligibility summary above"}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        {opportunity.kind === "built-in" ? (
+          <section className="mt-6">
+            <ReportCorrectionDialog opportunityId={opportunity.id} />
           </section>
         ) : null}
 

@@ -3,9 +3,8 @@
 import type { ReactNode } from "react";
 import type { DeadlineLifecycleStatus, DeadlinePrecision } from "@/lib/domain";
 import { DEADLINE_LIFECYCLE_STATUSES } from "@/lib/domain";
-import { DEADLINE_PRECISION_OPTIONS } from "@/lib/catalogue/repository";
 import type { CatalogueFilterOptions } from "@/lib/catalogue/search";
-import { DEFAULT_CATALOGUE_FILTERS, type CatalogueFilters } from "@/lib/catalogue/search";
+import { DEADLINE_PRECISION_OPTIONS, DEFAULT_CATALOGUE_FILTERS, type CatalogueFilters } from "@/lib/catalogue/search";
 import { Checkbox } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import {

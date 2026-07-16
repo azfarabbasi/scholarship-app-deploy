@@ -46,9 +46,13 @@ for (const route of REQUIRED_ROUTES) {
   check(exists(route), `Missing required route file: ${route}`);
 }
 
+// Checkpoint 2 moved the public catalogue from a build-time JSON import to a
+// database-backed API, so the detail route is now intentionally dynamic
+// (publish/archive must take effect immediately) rather than statically
+// generated at build time. See docs/checkpoint-2/checkpoint-2-architecture.md.
 check(
-  read("app/opportunities/[slug]/page.tsx").includes("generateStaticParams"),
-  "Opportunity detail route must implement generateStaticParams for the 55 built-in opportunities.",
+  read("app/opportunities/[slug]/page.tsx").includes("getPublishedOpportunityBySlug"),
+  "Opportunity detail route must look up opportunities from the database-backed repository.",
 );
 
 // ---------------------------------------------------------------------------
@@ -98,7 +102,8 @@ const REQUIRED_LIB_MODULES = [
   "src/lib/deadlines/engine.ts",
   "src/lib/deadlines/personal.ts",
   "src/lib/deadlines/seed-adapter.ts",
-  "src/lib/catalogue/repository.ts",
+  "src/lib/catalogue/legacy-seed-repository.ts",
+  "src/lib/catalogue/db-repository.ts",
   "src/lib/catalogue/search.ts",
   "src/lib/catalogue/stats.ts",
   "src/lib/catalogue/custom-adapter.ts",
@@ -161,19 +166,25 @@ check(
 
 // ---------------------------------------------------------------------------
 // No database, auth, or cloud-sync dependency introduced unintentionally
+//
+// Checkpoint 2 deliberately and explicitly introduces a real Postgres
+// database (via `postgres` + `drizzle-orm`) and Supabase Auth for staff
+// sign-in (via `@supabase/supabase-js` + `@supabase/ssr`) — see
+// docs/checkpoint-2/checkpoint-2-architecture.md. Those four packages are
+// therefore removed from this Checkpoint-1-era prohibited list; every other
+// entry (a second/alternative database, a different auth library, an
+// unrelated cloud vendor) remains prohibited exactly as before, since none of
+// those were requested or added.
 // ---------------------------------------------------------------------------
 
 const PROHIBITED_DEPENDENCY_KEYWORDS = [
   "pg",
-  "postgres",
   "mysql",
   "mysql2",
   "mongodb",
   "mongoose",
   "prisma",
   "@prisma/client",
-  "supabase",
-  "@supabase/supabase-js",
   "firebase",
   "firebase-admin",
   "next-auth",
@@ -190,7 +201,6 @@ const PROHIBITED_DEPENDENCY_KEYWORDS = [
   "knex",
   "sequelize",
   "typeorm",
-  "drizzle-orm",
 ] as const;
 
 const packageJson = JSON.parse(read("package.json")) as {
@@ -253,7 +263,12 @@ for (const file of sourceFiles) {
   }
   const fileInputMatches = [...contents.matchAll(/<input[^>]*type=["']file["'][^>]*>/g)];
   for (const match of fileInputMatches) {
-    if (!/accept=["']application\/json["']/.test(match[0])) {
+    // Checkpoint 1 allowed only the JSON guest-backup file input. Checkpoint 2
+    // adds a staff CSV importer (src/components/staff/CsvImportForm.tsx) for
+    // structured opportunity data — still never a document/image file, so
+    // ".csv"/"text/csv" is added alongside "application/json" here rather
+    // than loosening this check to accept any file input.
+    if (!/accept=["'][^"']*(?:application\/json|\.csv|text\/csv)[^"']*["']/.test(match[0])) {
       fileInputHits.push(`${file}: ${match[0]}`);
     }
   }
@@ -265,7 +280,7 @@ check(
 );
 check(
   fileInputHits.length === 0,
-  `Unexpected file input not restricted to JSON backups: ${fileInputHits.join(", ")}.`,
+  `Unexpected file input not restricted to JSON backups or staff CSV import: ${fileInputHits.join(", ")}.`,
 );
 
 // ---------------------------------------------------------------------------

@@ -8,6 +8,7 @@ import { Dialog, DialogClose, DialogContent, DialogTrigger } from "@/components/
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/common/EmptyState";
 import { useLiveAnnouncer } from "@/components/common/LiveAnnouncer";
+import { useBuiltInOpportunities } from "@/hooks/useBuiltInOpportunities";
 import {
   deleteCustomOpportunity,
   getCustomOpportunityById,
@@ -21,6 +22,7 @@ export function EditCustomOpportunityClient({ id }: { id: string }) {
   const [record, setRecord] = useState<CustomOpportunityRecord | null | undefined>(undefined);
   const router = useRouter();
   const { announce } = useLiveAnnouncer();
+  const { items: builtInOpportunities } = useBuiltInOpportunities();
 
   useEffect(() => {
     let cancelled = false;
@@ -51,7 +53,11 @@ export function EditCustomOpportunityClient({ id }: { id: string }) {
         initialRecord={record}
         submitLabel="Save changes"
         onSubmit={async (input) => {
-          const updated = await updateCustomOpportunity(id, input);
+          const updated = await updateCustomOpportunity(
+            id,
+            input,
+            builtInOpportunities.map((o) => o.slug),
+          );
           return { slug: updated.slug };
         }}
       />

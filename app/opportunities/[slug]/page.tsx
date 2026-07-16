@@ -2,19 +2,32 @@ import type { Metadata } from "next";
 import { Container } from "@/components/layout/Container";
 import { CustomOpportunityDetailClient } from "@/components/opportunities/CustomOpportunityDetailClient";
 import { OpportunityDetailBody } from "@/components/opportunities/OpportunityDetailBody";
-import { getAllBuiltInOpportunities, getBuiltInOpportunityBySlug } from "@/lib/catalogue/repository";
+import { getPublishedOpportunityBySlug } from "@/lib/catalogue/db-repository";
+import { isDatabaseConfigured } from "@/lib/env";
 
 interface PageParams {
   params: Promise<{ slug: string }>;
 }
 
-export function generateStaticParams() {
-  return getAllBuiltInOpportunities().map((opportunity) => ({ slug: opportunity.slug }));
+// Intentionally dynamic, not statically generated: publishing, archiving, or
+// merging a database-backed opportunity must take effect immediately (see
+// docs/checkpoint-2/checkpoint-2-architecture.md, "public data flow").
+export const dynamic = "force-dynamic";
+
+async function lookupPublishedOpportunity(slug: string) {
+  if (!isDatabaseConfigured()) {
+    return null;
+  }
+  try {
+    return await getPublishedOpportunityBySlug(slug);
+  } catch {
+    return null;
+  }
 }
 
 export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
   const { slug } = await params;
-  const opportunity = getBuiltInOpportunityBySlug(slug);
+  const opportunity = await lookupPublishedOpportunity(slug);
 
   if (!opportunity) {
     return { title: "Opportunity" };
@@ -29,7 +42,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 
 export default async function OpportunityDetailPage({ params }: PageParams) {
   const { slug } = await params;
-  const opportunity = getBuiltInOpportunityBySlug(slug);
+  const opportunity = await lookupPublishedOpportunity(slug);
 
   return (
     <Container className="py-8 sm:py-10">

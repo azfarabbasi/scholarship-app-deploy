@@ -15,7 +15,21 @@
     "data:validate": "tsx scripts/validate-opportunity-seed.ts",
     "deadlines:audit": "tsx scripts/audit-deadlines.ts",
     "checkpoint0:validate": "tsx scripts/validate-checkpoint0.ts",
-    "checkpoint1:validate": "tsx scripts/validate-checkpoint1.ts"
+    "checkpoint1:validate": "tsx scripts/validate-checkpoint1.ts",
+    "checkpoint2:validate": "tsx scripts/validate-checkpoint2.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/db-migrate.ts",
+    "db:check": "drizzle-kit check",
+    "db:seed": "tsx scripts/db-seed-taxonomies.ts",
+    "db:seed:taxonomies": "tsx scripts/db-seed-taxonomies.ts",
+    "db:reset:test": "tsx scripts/db-reset-test.ts",
+    "db:test": "vitest run --config vitest.integration.config.ts",
+    "db:import:legacy:dry-run": "tsx scripts/import-legacy-scholarships.ts --dry-run",
+    "db:import:legacy": "tsx scripts/import-legacy-scholarships.ts",
+    "db:publish:test-fixtures": "tsx scripts/db-publish-test-fixtures.ts",
+    "db:import:legacy:rollback": "tsx scripts/import-legacy-scholarships.ts --rollback",
+    "db:verify:migration": "tsx scripts/verify-migration.ts",
+    "db:bootstrap:admin": "tsx scripts/bootstrap-admin.ts"
   },
   "engines": {
     "node": ">=22.0.0"
@@ -23,13 +37,19 @@
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.19",
     "@radix-ui/react-tooltip": "^1.2.12",
+    "@supabase/ssr": "0.12.3",
+    "@supabase/supabase-js": "2.110.6",
+    "client-only": "0.0.1",
     "clsx": "^2.1.1",
+    "drizzle-orm": "0.45.2",
     "idb": "^8.0.3",
     "lucide-react": "^1.24.0",
     "next": "16.2.10",
     "next-themes": "^0.4.6",
+    "postgres": "3.4.9",
     "react": "19.2.7",
-    "react-dom": "19.2.7"
+    "react-dom": "19.2.7",
+    "server-only": "0.0.1"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
@@ -44,6 +64,8 @@
     "@vitejs/plugin-react": "^6.0.3",
     "@vitest/coverage-v8": "^4.1.10",
     "axe-core": "^4.12.1",
+    "dotenv": "17.4.2",
+    "drizzle-kit": "0.31.10",
     "eslint": "9.39.5",
     "eslint-config-next": "16.2.10",
     "fake-indexeddb": "^6.2.5",

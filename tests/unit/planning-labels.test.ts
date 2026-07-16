@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { planningMatchLabels } from "@/lib/planning/labels";
-import type { CatalogueOpportunity } from "@/lib/catalogue/types";
+import { UNVERIFIED_CATALOGUE_VERIFICATION, type CatalogueOpportunity } from "@/lib/catalogue/types";
 import { DEFAULT_PLANNING_PREFERENCES, type PlanningPreferences } from "@/lib/storage/types";
 import type { DeadlineEvaluationInput } from "@/lib/deadlines/types";
 
@@ -28,6 +28,7 @@ function makeOpportunity(overrides: Partial<CatalogueOpportunity> = {}): Catalog
     eligibilitySummary: "Open to all",
     officialUrl: null,
     verificationNotes: null,
+    verification: UNVERIFIED_CATALOGUE_VERIFICATION,
     deadlineInput: rollingInput,
     deadlineRawText: "Rolling",
     createdAt: "2026-01-01T00:00:00Z",

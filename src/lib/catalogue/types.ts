@@ -5,6 +5,37 @@ import type { WorkspaceRecord } from "@/lib/storage/types";
 
 export type CatalogueOpportunityKind = "built-in" | "custom";
 
+export type OverallVerificationStatus = "unverified" | "partially_verified" | "verified" | "stale";
+
+/**
+ * Public verification display facts — deliberately separate from deadline
+ * status, personal-deadline status, and each other (see
+ * docs/checkpoint-2/checkpoint-2-architecture.md, "public verification
+ * display"). Custom (guest-authored) opportunities always report the
+ * `unverified` defaults below; there is nothing to verify them against.
+ */
+export interface CatalogueVerificationInfo {
+  status: OverallVerificationStatus;
+  lastCheckedAt: string | null;
+  officialSourceLabel: string | null;
+  /** True only when every published document requirement for this opportunity carries a verified/published status. */
+  documentsVerified: boolean;
+  documentCount: number;
+  /** True only when every active eligibility rule for this opportunity carries a verified source. */
+  eligibilityVerified: boolean;
+  eligibilityRuleCount: number;
+}
+
+export const UNVERIFIED_CATALOGUE_VERIFICATION: CatalogueVerificationInfo = {
+  status: "unverified",
+  lastCheckedAt: null,
+  officialSourceLabel: null,
+  documentsVerified: false,
+  documentCount: 0,
+  eligibilityVerified: false,
+  eligibilityRuleCount: 0,
+};
+
 /**
  * The unified, display-ready shape used across the catalogue, workspace, and
  * calendar. Built-in records are derived from the versioned seed at build
@@ -27,6 +58,7 @@ export interface CatalogueOpportunity {
   eligibilitySummary: string;
   officialUrl: string | null;
   verificationNotes: string | null;
+  verification: CatalogueVerificationInfo;
   deadlineInput: DeadlineEvaluationInput;
   deadlineRawText: string;
   createdAt: string;

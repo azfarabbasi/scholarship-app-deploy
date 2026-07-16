@@ -1,22 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Checkbox, Input, Label, Select } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useLiveAnnouncer } from "@/components/common/LiveAnnouncer";
+import { useCatalogue } from "@/hooks/useCatalogue";
 import { usePreferences } from "@/hooks/usePreferences";
 import { updatePlanningPreferences } from "@/lib/storage/preferences";
 import { studyLevelSchema, type StudyLevel } from "@/lib/schemas/opportunity-seed";
-import { getUniqueCountries } from "@/lib/catalogue/repository";
 
 const STUDY_LEVEL_OPTIONS = studyLevelSchema.options;
 const INTAKE_TERMS = ["Autumn/Winter", "Spring/Summer", "Not sure yet"];
 
 export function PlanningPreferencesForm() {
   const { preferences, loading } = usePreferences();
+  const { items } = useCatalogue();
   const { announce } = useLiveAnnouncer();
-  const countries = getUniqueCountries();
+  const countries = useMemo(
+    () => [...new Set(items.flatMap((item) => item.opportunity.countries))].sort((a, b) => a.localeCompare(b)),
+    [items],
+  );
 
   const [graduationDate, setGraduationDate] = useState("");
   const [intakeYear, setIntakeYear] = useState("");

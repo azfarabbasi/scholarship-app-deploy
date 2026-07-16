@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { evaluateDeadline } from "@/lib/deadlines/engine";
 import type { DeadlineEvaluationInput } from "@/lib/deadlines/types";
-import type { CatalogueOpportunity, EnrichedOpportunity } from "@/lib/catalogue/types";
+import { UNVERIFIED_CATALOGUE_VERIFICATION, type CatalogueOpportunity, type EnrichedOpportunity } from "@/lib/catalogue/types";
 import {
   DEFAULT_CATALOGUE_FILTERS,
   countActiveFilters,
@@ -29,6 +29,7 @@ function makeOpportunity(overrides: Partial<CatalogueOpportunity> & { deadlineIn
     eligibilitySummary: overrides.eligibilitySummary ?? "Open to all applicants with a strong record",
     officialUrl: "https://example.invalid",
     verificationNotes: null,
+    verification: UNVERIFIED_CATALOGUE_VERIFICATION,
     deadlineRawText: "Some date",
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: overrides.updatedAt ?? "2026-01-01T00:00:00Z",

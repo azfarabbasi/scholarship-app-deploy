@@ -9,7 +9,7 @@ import {
   getUniqueCountries,
   getUniqueOpportunityTypes,
   getUniqueStudyLevels,
-} from "@/lib/catalogue/repository";
+} from "@/lib/catalogue/legacy-seed-repository";
 
 describe("built-in opportunity dataset", () => {
   it("loads exactly 55 built-in records", () => {

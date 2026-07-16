@@ -1,5 +1,4 @@
 import type { CustomOpportunityInput } from "@/lib/schemas/custom-opportunity";
-import { getAllBuiltInOpportunities } from "@/lib/catalogue/repository";
 import { getDb } from "./db";
 import { emitStorageChange } from "./events";
 import type { CustomOpportunityRecord } from "./types";
@@ -33,12 +32,13 @@ export async function getCustomOpportunityBySlug(slug: string): Promise<CustomOp
   return all.find((record) => record.slug === slug);
 }
 
-async function generateUniqueSlug(title: string, ignoreId?: string): Promise<string> {
+async function generateUniqueSlug(
+  title: string,
+  builtInSlugs: readonly string[],
+  ignoreId?: string,
+): Promise<string> {
   const all = await getAllCustomOpportunities();
-  const taken = new Set([
-    ...all.filter((r) => r.id !== ignoreId).map((r) => r.slug),
-    ...getAllBuiltInOpportunities().map((o) => o.slug),
-  ]);
+  const taken = new Set([...all.filter((r) => r.id !== ignoreId).map((r) => r.slug), ...builtInSlugs]);
   const base = slugify(title);
   if (!taken.has(base)) {
     return base;
@@ -52,12 +52,13 @@ async function generateUniqueSlug(title: string, ignoreId?: string): Promise<str
 
 export async function createCustomOpportunity(
   input: CustomOpportunityInput,
+  builtInSlugs: readonly string[] = [],
 ): Promise<CustomOpportunityRecord> {
   const db = await getDb();
   const timestamp = nowIso();
   const record: CustomOpportunityRecord = {
     id: crypto.randomUUID(),
-    slug: await generateUniqueSlug(input.title),
+    slug: await generateUniqueSlug(input.title, builtInSlugs),
     title: input.title,
     opportunityType: input.opportunityType,
     providerName: input.providerName ?? null,
@@ -83,6 +84,7 @@ export async function createCustomOpportunity(
 export async function updateCustomOpportunity(
   id: string,
   input: CustomOpportunityInput,
+  builtInSlugs: readonly string[] = [],
 ): Promise<CustomOpportunityRecord> {
   const db = await getDb();
   const existing = await db.get("customOpportunities", id);
@@ -91,7 +93,7 @@ export async function updateCustomOpportunity(
   }
 
   const slug =
-    input.title === existing.title ? existing.slug : await generateUniqueSlug(input.title, id);
+    input.title === existing.title ? existing.slug : await generateUniqueSlug(input.title, builtInSlugs, id);
 
   const updated: CustomOpportunityRecord = {
     ...existing,
