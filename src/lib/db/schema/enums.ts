@@ -457,3 +457,36 @@ export const auditLogStatusEnum = pgEnum("audit_log_status", [
   "anonymised",
   "expired",
 ]);
+
+// Student workspace (Checkpoint 3) -------------------------------------------------------
+
+/** Mirrors `APPLICATION_STAGE_OPTIONS` in `src/lib/storage/types.ts` (the guest workspace model). */
+export const applicationStageEnum = pgEnum("application_stage", [
+  "not-started",
+  "researching",
+  "preparing",
+  "ready-to-apply",
+  "submitted",
+  "interview-or-assessment",
+  "awarded",
+  "unsuccessful",
+  "withdrawn",
+]);
+
+/** Mirrors `CustomDeadlineKind` in `src/lib/storage/types.ts`. */
+export const customDeadlineKindEnum = pgEnum("custom_deadline_kind", [
+  "exact",
+  "estimated",
+  "rolling",
+  "unknown",
+]);
+
+/** A note or checklist task can target either a built-in (published) opportunity or a student's own custom one. */
+export const workspaceTargetTypeEnum = pgEnum("workspace_target_type", ["built-in", "custom"]);
+
+/** Mirrors `ChecklistItem.origin` plus a third value for items brought in via guest migration. */
+export const checklistTaskSourceEnum = pgEnum("checklist_task_source", ["generic", "user-created", "imported"]);
+
+export const dataRequestTypeEnum = pgEnum("data_request_type", ["export", "deletion"]);
+
+export const dataRequestStatusEnum = pgEnum("data_request_status", ["pending", "completed", "failed"]);

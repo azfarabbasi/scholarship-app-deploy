@@ -1,6 +1,6 @@
 "use client";
 
-import { GraduationCap, LogIn, Menu, X } from "lucide-react";
+import { GraduationCap, LogIn, Menu, User, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -57,6 +57,10 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <Link href="/account" className={cn(buttonClasses("ghost", "sm"), "hidden sm:inline-flex")}>
+            <User className="h-4 w-4" aria-hidden="true" />
+            Account
+          </Link>
           <Link
             href="/staff/login"
             className={cn(buttonClasses("outline", "sm"), "hidden sm:inline-flex")}
@@ -99,6 +103,10 @@ export function Header() {
             ))}
           </ul>
           <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:hidden">
+            <Link href="/account" className={cn(buttonClasses("ghost", "sm"), "w-full justify-center")}>
+              <User className="h-4 w-4" aria-hidden="true" />
+              Account
+            </Link>
             <Link href="/staff/login" className={cn(buttonClasses("outline", "sm"), "w-full justify-center")}>
               <LogIn className="h-4 w-4" aria-hidden="true" />
               Staff portal

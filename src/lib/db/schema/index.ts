@@ -14,3 +14,4 @@ export * from "./corrections";
 export * from "./duplicates";
 export * from "./imports";
 export * from "./audit";
+export * from "./student";

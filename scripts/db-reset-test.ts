@@ -28,7 +28,7 @@ if (!/scholartrack_test|localhost|127\.0\.0\.1|db-test/.test(connectionString)) 
 
 function run(command: string, args: string[]) {
   console.log(`$ ${command} ${args.join(" ")}`);
-  execFileSync(command, args, { stdio: "inherit" });
+  execFileSync(command, args, { stdio: "inherit", shell: process.platform === "win32" });
 }
 
 async function resetSchemas() {

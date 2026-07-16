@@ -3,21 +3,29 @@
 ScholarTrack is a guest-first Progressive Web App for discovering, understanding,
 and tracking verified scholarship and internship opportunities. Checkpoint 1
 delivered the first fully functional release on a build-time JSON catalogue.
-**Checkpoint 2 replaces that catalogue with a normalised, reviewed PostgreSQL
-database and adds a staff-only administration system** — structured
+Checkpoint 2 replaced that catalogue with a normalised, reviewed PostgreSQL
+database and added a staff-only administration system — structured
 opportunity records, official sources, verification history, a draft →
 review → approve → publish workflow with separation of duties, required
 documents and eligibility rules, correction reports, duplicate detection and
-merging, CSV import/export, and an append-only audit log. Staff sign in via
-Supabase Auth; there is still no public registration, no student accounts,
-and guest mode is completely unchanged. Optional student accounts, cloud
-sync, and AI features remain out of scope (see
-[Known limitations](#known-limitations-and-deferred-work)).
+merging, CSV import/export, and an append-only audit log.
+**Checkpoint 3 adds optional student accounts and cloud sync for the
+personal workspace** — sign up/sign in via the same Supabase Auth used by
+staff (but on a completely independent, non-overlapping session), migrate
+guest IndexedDB data into an account with a previewed copy/merge/replace
+choice, sync shortlist/stages/notes/checklists/deadlines/custom
+opportunities/preferences across devices, work offline with a queued-sync
+model, and export/delete cloud data at will. Guest mode remains fully
+functional and is not required — see
+[Checkpoint 3](#checkpoint-3-optional-student-accounts-and-cloud-sync) below.
+AI, push notifications, advertising, and sensitive-document uploads remain
+out of scope (see [Known limitations](#known-limitations-and-deferred-work)).
 
 Checkpoint 0 established repository boundaries, a Docker-first development
 contract, the domain model, and a documented audit of the legacy prototype.
-Checkpoint 1 built the guest-facing product. Checkpoint 2 builds the verified
-data layer and staff tooling underneath it.
+Checkpoint 1 built the guest-facing product. Checkpoint 2 built the verified
+data layer and staff tooling underneath it. Checkpoint 3 adds optional
+accounts and cloud sync on top of both, without changing either.
 
 ## What ScholarTrack does today
 
@@ -58,6 +66,11 @@ data layer and staff tooling underneath it.
 - **Light/dark/system theme**, accessible throughout (skip link, landmarks,
   labelled forms, focus-visible outlines, `aria-live` status announcements,
   reduced-motion support, non-colour-only status indicators).
+- **Optionally create an account** (Checkpoint 3) to sync your shortlist,
+  application stages, notes, checklists, personal deadlines, custom
+  opportunities, and preferences to your own ScholarTrack account and use
+  the same workspace on another device. Entirely optional — guest mode never
+  requires it. See [Checkpoint 3](#checkpoint-3-optional-student-accounts-and-cloud-sync).
 
 ## Workspace rules
 
@@ -150,6 +163,7 @@ docker compose run --rm --no-deps web npm run deadlines:audit
 docker compose run --rm --no-deps web npm run checkpoint0:validate
 docker compose run --rm --no-deps web npm run checkpoint1:validate
 docker compose run --rm --no-deps web npm run checkpoint2:validate
+docker compose run --rm --no-deps web npm run checkpoint3:validate
 docker compose run --rm --no-deps web npm run typecheck
 docker compose run --rm --no-deps web npm run lint
 docker compose run --rm --no-deps -e NODE_ENV=production web npm run build
@@ -164,6 +178,7 @@ npm run deadlines:audit
 npm run checkpoint0:validate
 npm run checkpoint1:validate
 npm run checkpoint2:validate
+npm run checkpoint3:validate
 npm run typecheck
 npm run lint
 npm run build
@@ -201,7 +216,15 @@ The first run downloads the Playwright image and builds `web-e2e`; subsequent
 runs are faster. `web-e2e` shares its network namespace with `e2e`
 (`network_mode: service:web-e2e`) so the app is reachable at
 `http://127.0.0.1:3000` — a secure context for service-worker registration,
-which a Docker-internal hostname is not. Tear down the test containers with:
+which a Docker-internal hostname is not.
+
+A handful of staff and student e2e tests require real, confirmed Supabase
+accounts and are configuration-gated: `E2E_STAFF_EMAIL`/`E2E_STAFF_PASSWORD`
+(staff), `E2E_STUDENT_EMAIL`/`E2E_STUDENT_PASSWORD` (student), and
+`E2E_STUDENT2_EMAIL`/`E2E_STUDENT2_PASSWORD` (a second student account, for
+the cross-user isolation test). Without them set, those specific tests report
+a clear skip reason rather than a false pass — everything else in the suite
+runs unconditionally. Tear down the test containers with:
 
 ```powershell
 docker compose --profile test down --remove-orphans
@@ -315,6 +338,61 @@ no separate staff subdomain — `/staff/**` is gated by `middleware.ts` plus a s
   repository's automated CI-equivalent session — they report a clear skip, not a false pass.
 - Eligibility rules are stored and managed, not yet evaluated against a student profile
   (deferred per ADR-004 to a later checkpoint).
+
+## Checkpoint 3: optional student accounts and cloud sync
+
+### Signing up and signing in
+
+Visit `/auth/signup` to create an account, or `/auth/login` if you already have one. This is
+completely independent of staff sign-in (`/staff/login`) — the two use the same Supabase Auth
+user table but grant access to nothing in common. A student session never gains `/staff` access,
+and a staff member never gets a student workspace unless they separately use student features.
+See [docs/checkpoint-3/student-auth-and-sync.md](docs/checkpoint-3/student-auth-and-sync.md) for
+Supabase email-confirmation settings and local-testing options.
+
+### Bringing guest data into an account
+
+`/account/sync` reads your local guest workspace and previews it against your account's current
+cloud data, then lets you **copy** (add only what's missing), **merge** (keep whichever side is
+newer per item), or **replace** (delete cloud data first, with an extra confirmation). Your local
+guest data is never touched or deleted by this step.
+
+### Cloud sync and offline behaviour
+
+While signed in, `/workspace` shows your cloud-synced shortlist, stages, notes, checklists, and
+custom opportunities instead of the guest view. Changes are saved immediately when online; if
+you go offline, they're applied locally and queued, then replayed automatically once you're back
+online — a status indicator always shows Saved / Saving / Offline / Failed / Conflict needs
+review, with a last-synced time.
+
+### Account data export, import, and deletion
+
+- `/account/data` — export your cloud account data as JSON, or import a previous export
+  (merge/replace, with a preview and confirmation).
+- `/account/delete` — delete just your cloud workspace data (keeping the account), or delete the
+  account entirely (which also removes your Supabase Auth sign-in, via a server-side Admin API
+  call — the secret key never reaches the browser).
+
+Neither export/import nor deletion ever touches guest/local data on any device — that remains a
+separate, explicit action in Settings.
+
+### Privacy boundary
+
+Row Level Security scopes every student-owned table to its owner only — there is no
+staff-select policy on any of them, so staff cannot casually browse another student's notes,
+checklist, or custom opportunities. See
+[docs/checkpoint-3/privacy-and-data-controls.md](docs/checkpoint-3/privacy-and-data-controls.md)
+for the full data inventory and boundary rules, and
+[docs/checkpoint-3/checkpoint-3-architecture.md](docs/checkpoint-3/checkpoint-3-architecture.md)
+for how the RLS/grant model, sync layer, and migration flow fit together.
+
+### Current limitations
+
+- The public catalogue/detail-page quick-shortlist button stays guest-local regardless of
+  sign-in state in this checkpoint — cloud sync is wired up for `/workspace` and `/account`
+  specifically. See the traceability doc's "Deferred / documented limitations" table.
+- Cloud custom-opportunity edits aren't queued for offline replay (tracking/notes/checklist are).
+- Sync is fetch-on-mount, not a live cross-tab/cross-device push subscription.
 
 ## PWA installation and offline behaviour
 
@@ -459,17 +537,25 @@ docker compose logs --follow web
 
 ## Known limitations and deferred work
 
-Still deferred beyond Checkpoint 2 (see `docs/checkpoint-0/v1-product-backlog.md` for the full
-roadmap): student accounts, cloud/server-side sync of guest data, deterministic AI-assisted
-eligibility *matching* against a student profile (eligibility rules are stored and manageable
-now, per Checkpoint 2, but not yet evaluated), push/email/SMS notifications, and any AI
-features. No sensitive-document upload has been added (see
-[Checkpoint 2 § Current limitations](#current-limitations) for the two items Checkpoint 2 itself
-did not complete: the 100-record content target and live Supabase e2e execution). See
-`docs/checkpoint-2/checkpoint-2-completion-report.md` for the full audit.
+Still deferred beyond Checkpoint 3 (see `docs/checkpoint-0/v1-product-backlog.md` for the full
+roadmap): deterministic AI-assisted eligibility *matching* against a student profile
+(eligibility rules are stored and manageable, per Checkpoint 2, but not yet evaluated),
+push/email/SMS notifications, live cross-tab/cross-device push sync (Checkpoint 3's sync is
+fetch-on-mount), and any AI features anywhere in the product. No sensitive-document upload has
+been added. See [Checkpoint 2 § Current limitations](#current-limitations) for the two items
+Checkpoint 2 itself did not complete (the 100-record content target and live Supabase e2e
+execution) and [Checkpoint 3 § Current limitations](#current-limitations-1) for this
+checkpoint's own documented scope cuts. See `docs/checkpoint-3/checkpoint-3-completion-report.md`
+for the full audit.
 
 ## Checkpoint documentation
 
+- [Checkpoint 3 architecture](docs/checkpoint-3/checkpoint-3-architecture.md)
+- [Checkpoint 3 student auth and sync](docs/checkpoint-3/student-auth-and-sync.md)
+- [Checkpoint 3 privacy and data controls](docs/checkpoint-3/privacy-and-data-controls.md)
+- [Checkpoint 3 manual QA](docs/checkpoint-3/checkpoint-3-manual-qa.md)
+- [Checkpoint 3 traceability](docs/checkpoint-3/checkpoint-3-traceability.md)
+- [Checkpoint 3 completion report](docs/checkpoint-3/checkpoint-3-completion-report.md)
 - [Checkpoint 2 architecture](docs/checkpoint-2/checkpoint-2-architecture.md)
 - [Checkpoint 2 database schema](docs/checkpoint-2/database-schema.md)
 - [Checkpoint 2 staff roles and workflows](docs/checkpoint-2/staff-roles-and-workflows.md)

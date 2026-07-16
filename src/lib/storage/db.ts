@@ -2,7 +2,9 @@ import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import { SCHEMA_VERSION } from "./types";
 import type {
   BackupMetaRecord,
+  CloudCacheRecord,
   CustomOpportunityRecord,
+  OutboxEntry,
   PreferencesRecord,
   PublicCatalogueCacheRecord,
   WorkspaceRecord,
@@ -16,6 +18,8 @@ interface ScholarTrackSchema extends DBSchema {
   preferences: { key: string; value: PreferencesRecord };
   meta: { key: string; value: BackupMetaRecord };
   publicCatalogueCache: { key: string; value: PublicCatalogueCacheRecord };
+  cloudCache: { key: string; value: CloudCacheRecord };
+  syncOutbox: { key: string; value: OutboxEntry };
 }
 
 export type ScholarTrackDb = IDBPDatabase<ScholarTrackSchema>;
@@ -50,6 +54,12 @@ function upgrade(db: ScholarTrackDb): void {
   }
   if (!db.objectStoreNames.contains("publicCatalogueCache")) {
     db.createObjectStore("publicCatalogueCache", { keyPath: "key" });
+  }
+  if (!db.objectStoreNames.contains("cloudCache")) {
+    db.createObjectStore("cloudCache", { keyPath: "studentProfileId" });
+  }
+  if (!db.objectStoreNames.contains("syncOutbox")) {
+    db.createObjectStore("syncOutbox", { keyPath: "id" });
   }
 }
 

@@ -46,7 +46,7 @@ export function containsDangerousKeys(value: unknown): boolean {
   return false;
 }
 
-const checklistItemSchema = z
+export const checklistItemSchema = z
   .object({
     id: z.string().min(1),
     label: z.string(),
@@ -57,7 +57,7 @@ const checklistItemSchema = z
   })
   .strict();
 
-const workspaceRecordSchema = z
+export const workspaceRecordSchema = z
   .object({
     opportunityId: z.string().min(1),
     shortlisted: z.boolean(),
@@ -70,7 +70,7 @@ const workspaceRecordSchema = z
   })
   .strict();
 
-const customOpportunityRecordSchema = z
+export const customOpportunityRecordSchema = z
   .object({
     id: z.string().min(1),
     slug: z.string().min(1),
@@ -93,7 +93,7 @@ const customOpportunityRecordSchema = z
   })
   .strict();
 
-const preferencesRecordSchema = z
+export const preferencesRecordSchema = z
   .object({
     id: z.literal("singleton"),
     planning: z

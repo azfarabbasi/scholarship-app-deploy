@@ -1,5 +1,5 @@
 import { sql, type SQL } from "drizzle-orm";
-import { pgPolicy, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgPolicy, timestamp, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { anonRole, authenticatedRole, serviceRoleRole } from "./roles";
 
 /** Standard collision-resistant primary key: server-generated UUID v4. */
@@ -58,4 +58,49 @@ export function publicSelectPolicy(tableName: string, predicate: SQL) {
     to: [anonRole, authenticatedRole],
     using: predicate,
   });
+}
+
+/**
+ * Student workspace tables (Checkpoint 3) are owned by an individual student,
+ * never staff or the public. `ownerColumn` must be the table's own foreign
+ * key back to `student_profiles.id` (or `student_profiles.id` itself). This
+ * is the ONLY read/write policy those tables get — deliberately no
+ * `staffSelectPolicy`, so staff never get casual read access to private
+ * student workspace data (see `docs/checkpoint-3/privacy-and-data-controls.md`).
+ * As with every other table, this is defense-in-depth against Supabase's
+ * PostgREST data API; our own server bypasses RLS via the privileged
+ * connection and enforces ownership in `src/lib/auth/student-session.ts` /
+ * the Server Actions under `src/lib/db/actions/student/`.
+ */
+export function ownerAllPolicy(tableName: string, ownerColumn: AnyPgColumn) {
+  return pgPolicy(`${tableName}_owner_all`, {
+    as: "permissive",
+    for: "all",
+    to: authenticatedRole,
+    using: sql`${ownerColumn} = auth.uid()`,
+    withCheck: sql`${ownerColumn} = auth.uid()`,
+  });
+}
+
+/**
+ * Append-only variant for student-visible request logs (export/deletion
+ * requests): the student may read and create their own rows, but never
+ * edit or delete one after the fact — mirroring the staff audit log's
+ * immutability, scoped to the student's own records.
+ */
+export function ownerReadInsertPolicies(tableName: string, ownerColumn: AnyPgColumn) {
+  return [
+    pgPolicy(`${tableName}_owner_select`, {
+      as: "permissive",
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${ownerColumn} = auth.uid()`,
+    }),
+    pgPolicy(`${tableName}_owner_insert`, {
+      as: "permissive",
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`${ownerColumn} = auth.uid()`,
+    }),
+  ];
 }

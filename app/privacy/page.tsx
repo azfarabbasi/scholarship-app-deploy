@@ -2,60 +2,114 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/layout/Container";
 import { Alert } from "@/components/ui/Alert";
+import { getStudentSession } from "@/lib/auth/student-session";
 
 export const metadata: Metadata = {
   title: "Privacy",
-  description: "How ScholarTrack handles guest data, local storage, backups, and current privacy boundaries.",
+  description: "How ScholarTrack handles guest data, optional account data, cloud sync, and current privacy boundaries.",
   alternates: { canonical: "/privacy" },
 };
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const session = await getStudentSession();
+
   return (
     <Container className="max-w-3xl py-8 sm:py-10">
       <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">Privacy</h1>
-      <p className="mt-2 text-sm text-foreground-muted">Last reviewed for Checkpoint 1.</p>
+      <p className="mt-2 text-sm text-foreground-muted">Last reviewed for Checkpoint 3.</p>
 
       <div className="mt-6 flex flex-col gap-6 text-sm leading-relaxed text-foreground-muted">
-        <Alert tone="info" title="You are using ScholarTrack as a guest">
-          There are no accounts in Checkpoint 1. Everything you do — shortlisting, notes, checklists, custom
-          opportunities, and preferences — is stored only in this browser.
-        </Alert>
+        {session ? (
+          <Alert tone="info" title={`You're signed in as ${session.email}`}>
+            Your workspace data syncs to your ScholarTrack account. You can still use guest mode on other browsers or
+            devices without signing in there — see below for exactly what that means.
+          </Alert>
+        ) : (
+          <Alert tone="info" title="You are using ScholarTrack as a guest">
+            An account is entirely optional. Everything you do — shortlisting, notes, checklists, custom
+            opportunities, and preferences — is stored only in this browser unless you create an account and choose
+            to sync it.
+          </Alert>
+        )}
 
         <section>
-          <h2 className="text-base font-semibold text-foreground">Where your data lives</h2>
+          <h2 className="text-base font-semibold text-foreground">Guest data is local only</h2>
           <p className="mt-2">
             Guest data is stored locally using your browser&rsquo;s IndexedDB (and a small amount of localStorage for
-            your theme preference). It is not sent to, or synchronised with, any ScholarTrack server. We cannot see
-            your notes, checklists, or custom opportunities, because they never leave your device.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-base font-semibold text-foreground">Clearing your browser data</h2>
-          <p className="mt-2">
-            If you clear your browser&rsquo;s site data, uninstall the app, or switch devices or browsers, your guest
-            data will be lost unless you have exported a backup. Back up regularly from{" "}
-            <Link href="/settings" className="underline">
-              Settings
+            your theme preference). It is not sent to, or synchronised with, any ScholarTrack server unless you
+            create an account and explicitly choose to bring it in — see{" "}
+            <Link href="/account/sync" className="underline">
+              Sync &amp; migration
             </Link>
-            .
+            . Signing in alone never uploads anything.
           </p>
         </section>
 
         <section>
-          <h2 className="text-base font-semibold text-foreground">Backups are your responsibility</h2>
+          <h2 className="text-base font-semibold text-foreground">Account data is stored in ScholarTrack&rsquo;s database</h2>
           <p className="mt-2">
-            As a guest, you are responsible for exporting and keeping your own backups. ScholarTrack does not
-            currently store a copy of your data anywhere else.
+            If you create an account, your profile, shortlist, application stages, personal deadlines, notes,
+            checklists, custom opportunities, and preferences are stored in ScholarTrack&rsquo;s Supabase-hosted
+            database. This data is used only to provide your workspace and sync it across your devices — never for
+            advertising, never sold, and never shared with opportunity providers.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-base font-semibold text-foreground">Your notes and checklists are private</h2>
+          <p className="mt-2">
+            Notes and checklist tasks are your own private workspace data. Row-level security in the database
+            restricts every account-owned table to your own account; staff cannot casually browse another
+            student&rsquo;s private notes, checklist, or custom opportunities. Please don&rsquo;t paste passport
+            numbers, financial details, or other sensitive document contents into notes — there is nowhere in
+            ScholarTrack designed to protect that kind of data, guest or signed in.
           </p>
         </section>
 
         <section>
           <h2 className="text-base font-semibold text-foreground">No sensitive document uploads</h2>
           <p className="mt-2">
-            ScholarTrack does not currently accept uploads of passports, transcripts, certificates, financial
-            documents, or any other sensitive files. This is a deliberate boundary for the current release, not a
-            temporary limitation you can work around.
+            ScholarTrack does not accept uploads of passports, transcripts, certificates, financial documents, or any
+            other sensitive files — for guests or account holders. This is a deliberate boundary, not a temporary
+            limitation you can work around.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-base font-semibold text-foreground">Backups are user-controlled</h2>
+          <p className="mt-2">
+            Guests are responsible for exporting their own local backup from{" "}
+            <Link href="/settings" className="underline">
+              Settings
+            </Link>
+            . Account holders can additionally export their cloud data as JSON at any time from{" "}
+            <Link href="/account/data" className="underline">
+              Export &amp; import
+            </Link>
+            . The two exports are separate and are never combined automatically.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-base font-semibold text-foreground">You control deletion</h2>
+          <p className="mt-2">
+            Account holders can delete just their cloud workspace data (keeping the account) or delete their account
+            entirely from{" "}
+            <Link href="/account/delete" className="underline">
+              Delete data
+            </Link>
+            . Deleting your account never deletes guest/local data on any device — that is always a separate, local
+            action. Deleting your account also never deletes published catalogue data or staff audit records
+            unrelated to you.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-base font-semibold text-foreground">Public catalogue data is separate from your workspace</h2>
+          <p className="mt-2">
+            Published opportunity facts are public information, verified through ScholarTrack&rsquo;s staff review
+            workflow, and stored entirely separately from any personal workspace data. Your shortlist, notes, and
+            preferences are never attached to or visible from the public catalogue.
           </p>
         </section>
 
@@ -69,22 +123,12 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-base font-semibold text-foreground">Analytics and tracking</h2>
+          <h2 className="text-base font-semibold text-foreground">Analytics, AI, and advertising</h2>
           <p className="mt-2">
             No third-party analytics or tracking scripts run in this checkpoint. An internal analytics abstraction
-            exists in the codebase but is disabled by default and collects nothing; it exists only so a future,
-            privacy-reviewed analytics integration will not require scattering tracking calls through the app. It is
-            never permitted to collect notes, checklist text, application details, personal deadlines, custom
-            opportunity contents, or planning preferences.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-base font-semibold text-foreground">What&rsquo;s not part of Checkpoint 1</h2>
-          <p className="mt-2">
-            Optional accounts, cloud synchronisation, server-side storage of your workspace, advertising, and AI
-            features are not implemented in this checkpoint. Guest mode will remain available even after these are
-            introduced.
+            exists in the codebase but is disabled by default and collects nothing. AI is not used anywhere in
+            Checkpoint 3 — every planning feature here (preferences, tracking, sync) is deterministic, not
+            AI-generated. There is no advertising.
           </p>
         </section>
       </div>

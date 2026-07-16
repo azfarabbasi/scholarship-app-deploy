@@ -6,8 +6,13 @@ import type { StudyLevel } from "@/lib/schemas/opportunity-seed";
  * v2 adds the `publicCatalogueCache` store (Checkpoint 2: the public
  * catalogue moved from a build-time JSON import to a database-backed API
  * response, which now needs an offline cache with its own store).
+ * v3 adds `cloudCache` and `syncOutbox` (Checkpoint 3: signed-in accounts
+ * cache their last-fetched cloud workspace for offline reads, and queue
+ * mutations made while offline). Both are keyed to a specific
+ * `studentProfileId` and are cleared on sign-out — never shared with guest
+ * data or another account on the same device/browser.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /** Last successfully fetched snapshot of the public database catalogue, for offline use. */
 export interface PublicCatalogueCacheRecord {
@@ -130,3 +135,66 @@ export interface BackupMetaRecord {
   key: "backupMeta";
   lastBackupAt: string | null;
 }
+
+/**
+ * A minimal, JSON-serialisable mirror of the signed-in student's cloud rows,
+ * cached locally so the workspace UI can render (read-only) while offline.
+ * Field shapes intentionally match the Server Action return rows with dates
+ * as ISO strings rather than importing the Drizzle-inferred row types here
+ * (this module must stay usable outside a server context).
+ */
+export interface CloudWorkspaceSnapshot {
+  tracking: Array<{
+    id: string;
+    opportunityId: string;
+    shortlisted: boolean;
+    stage: ApplicationStageOption;
+    personalDeadline: string | null;
+    priority: number | null;
+    archived: boolean;
+    updatedAt: string;
+  }>;
+  notes: Array<{ id: string; targetType: "built-in" | "custom"; targetId: string; noteText: string; updatedAt: string }>;
+  checklistTasks: Array<{
+    id: string;
+    targetType: "built-in" | "custom";
+    targetId: string;
+    taskText: string;
+    completed: boolean;
+    sortOrder: number;
+    updatedAt: string;
+  }>;
+  customOpportunities: Array<{
+    id: string;
+    slug: string;
+    title: string;
+    opportunityType: string;
+    providerName: string | null;
+    countries: string[];
+    regions: string[];
+    studyLevels: string[];
+    benefitSummary: string;
+    eligibilitySummary: string;
+    officialUrl: string | null;
+    deadlineKind: CustomDeadlineKind;
+    deadlineRawText: string;
+    deadlineDate: string | null;
+    updatedAt: string;
+  }>;
+}
+
+export interface CloudCacheRecord {
+  studentProfileId: string;
+  snapshot: CloudWorkspaceSnapshot;
+  cachedAt: string;
+}
+
+export type OutboxEntry =
+  | { id: string; studentProfileId: string; createdAt: string; kind: "tracking"; opportunityId: string; patch: Record<string, unknown> }
+  | { id: string; studentProfileId: string; createdAt: string; kind: "note"; targetType: "built-in" | "custom"; targetId: string; noteText: string }
+  | { id: string; studentProfileId: string; createdAt: string; kind: "checklist-add"; targetType: "built-in" | "custom"; targetId: string; taskText: string }
+  | { id: string; studentProfileId: string; createdAt: string; kind: "checklist-toggle"; taskId: string }
+  | { id: string; studentProfileId: string; createdAt: string; kind: "checklist-rename"; taskId: string; taskText: string }
+  | { id: string; studentProfileId: string; createdAt: string; kind: "checklist-delete"; taskId: string }
+  | { id: string; studentProfileId: string; createdAt: string; kind: "planning-preferences"; patch: Record<string, unknown> }
+  | { id: string; studentProfileId: string; createdAt: string; kind: "display-preferences"; patch: Record<string, unknown> };

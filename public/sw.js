@@ -13,18 +13,23 @@
  *    API): stale-while-revalidate. The public catalogue API response itself
  *    carries a `syncedAt` timestamp so a stale cached read is never presented
  *    as freshly verified (see src/hooks/useBuiltInOpportunities.ts).
- *  - `/staff/**` and `/api/staff/**` are never intercepted at all — no staff
- *    page, staff API response, or authentication response is ever written to
- *    Cache Storage. A signed-out visit to a staff route while offline must
- *    fail honestly, not serve a stale privileged page.
+ *  - `/staff/**`, `/api/staff/**`, `/account/**`, `/api/account/**`, and
+ *    `/auth/**` are never intercepted at all — no staff page, student
+ *    account page, private API response, or authentication response is ever
+ *    written to Cache Storage. A signed-out visit to any of these routes
+ *    while offline must fail honestly, not serve a stale privileged page,
+ *    and a signed-in student's private data must never be served to a
+ *    different person who later uses this same browser/device.
  *  - Cross-origin requests (official scholarship websites, etc.) are never
  *    intercepted or cached — they always go straight to the network.
  *
  * Guest data lives in IndexedDB/localStorage, never in Cache Storage, so
  * activating a new version and clearing old caches here never touches guest
- * records.
+ * records. A signed-in student's cloud workspace is cached separately, in
+ * IndexedDB (`cloudCache`/`syncOutbox` — see `src/lib/sync/`), never in
+ * Cache Storage either.
  */
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const APP_SHELL_CACHE = `scholartrack-app-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `scholartrack-runtime-${CACHE_VERSION}`;
 const STATIC_ASSET_CACHE = `scholartrack-static-${CACHE_VERSION}`;
@@ -76,8 +81,16 @@ function isNextStaticAsset(url) {
 async function networkFirstNavigation(request) {
   try {
     const response = await fetch(request);
-    const cache = await caches.open(APP_SHELL_CACHE);
-    cache.put(request, response.clone());
+    // Pages that render session-dependent content for a signed-in student
+    // (e.g. /workspace, /privacy) mark themselves `Cache-Control: no-store`
+    // via middleware.ts when a user is signed in. Never write those to the
+    // shared app-shell cache — a stale copy could otherwise be served to a
+    // different person who later uses this same browser/device offline.
+    const cacheControl = response.headers.get("Cache-Control") || "";
+    if (!cacheControl.includes("no-store") && !cacheControl.includes("private")) {
+      const cache = await caches.open(APP_SHELL_CACHE);
+      cache.put(request, response.clone());
+    }
     return response;
   } catch {
     const cache = await caches.open(APP_SHELL_CACHE);
@@ -133,9 +146,16 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (url.pathname.startsWith("/staff") || url.pathname.startsWith("/api/staff")) {
-    // Staff pages, staff APIs, and Supabase auth callbacks are never
-    // intercepted or cached — always go straight to the network.
+  if (
+    url.pathname.startsWith("/staff") ||
+    url.pathname.startsWith("/api/staff") ||
+    url.pathname.startsWith("/account") ||
+    url.pathname.startsWith("/api/account") ||
+    url.pathname.startsWith("/auth")
+  ) {
+    // Staff pages/APIs, student account pages/APIs, and every Supabase auth
+    // route (staff or student) are never intercepted or cached — always go
+    // straight to the network.
     return;
   }
 

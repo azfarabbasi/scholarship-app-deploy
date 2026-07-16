@@ -22,6 +22,20 @@
       "when": 1784144964386,
       "tag": "0002_publication_invariants",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1784181234938,
+      "tag": "0003_student_workspace",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784181319919,
+      "tag": "0004_student_workspace_grants",
+      "breakpoints": true
     }
   ]
 }
