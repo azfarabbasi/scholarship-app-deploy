@@ -2,13 +2,17 @@ import Link from "next/link";
 import {
   canAssignReviewers,
   canCreateDraft,
+  canManageAiSources,
   canManageDocumentsAndEligibility,
   canManageDuplicates,
   canManageOrganisations,
   canManageStaff,
   canManageTaxonomies,
+  canRunAiEvaluations,
   canRunImports,
   canTriageCorrections,
+  canViewAiSafetyLog,
+  canViewAiUsage,
   canViewFullAuditLog,
   type StaffRole,
 } from "@/lib/auth/permissions";
@@ -34,6 +38,11 @@ const NAV_ITEMS: StaffNavItem[] = [
   { href: "/staff/imports", label: "Imports", visible: canRunImports },
   { href: "/staff/audit", label: "Audit log", visible: canViewFullAuditLog },
   { href: "/staff/team", label: "Team", visible: canManageStaff },
+  { href: "/staff/ai", label: "AI assistant", visible: canManageAiSources },
+  { href: "/staff/ai/sources", label: "AI sources", visible: canManageAiSources },
+  { href: "/staff/ai/evaluations", label: "AI evaluations", visible: canRunAiEvaluations },
+  { href: "/staff/ai/usage", label: "AI usage", visible: canViewAiUsage },
+  { href: "/staff/ai/safety", label: "AI safety log", visible: canViewAiSafetyLog },
 ];
 
 interface StaffNavProps {

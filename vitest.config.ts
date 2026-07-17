@@ -7,6 +7,12 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      // `import "server-only"` throws outside Next.js's "react-server" build
+      // condition, which plain Vitest never sets — alias it to the package's
+      // own no-op `empty.js` (see vitest.integration.config.ts) so pure
+      // server-side logic (e.g. rate limiting, RAG helpers) can be unit
+      // tested directly without a full Next.js runtime.
+      "server-only": fileURLToPath(new URL("./node_modules/server-only/empty.js", import.meta.url)),
     },
   },
   test: {

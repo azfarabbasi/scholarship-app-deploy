@@ -1,3 +1,4 @@
+export * from "./ai-assistant";
 export * from "./backup";
 export * from "./custom-opportunities";
 export * from "./db";

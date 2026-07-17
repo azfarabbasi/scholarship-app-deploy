@@ -4,7 +4,9 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/common/EmptyState";
+import { AssistantChat } from "@/components/assistant/AssistantChat";
 import { useCatalogue } from "@/hooks/useCatalogue";
 import { useComparisonSelection } from "@/hooks/useComparisonSelection";
 import { useMatchData } from "@/hooks/useMatchData";
@@ -14,9 +16,10 @@ import { checklistProgress } from "@/lib/storage/workspace";
 
 interface ComparisonViewProps {
   studentProfileId: string | null;
+  aiAvailable?: boolean;
 }
 
-export function ComparisonView({ studentProfileId }: ComparisonViewProps) {
+export function ComparisonView({ studentProfileId, aiAvailable = false }: ComparisonViewProps) {
   const { items, loading } = useCatalogue();
   const comparison = useComparisonSelection();
   const { answers, planning } = useMatchData(studentProfileId);
@@ -132,6 +135,23 @@ export function ComparisonView({ studentProfileId }: ComparisonViewProps) {
       <Button variant="outline" size="sm" className="w-fit" onClick={comparison.clear}>
         Clear comparison
       </Button>
+
+      {aiAvailable ? (
+        <Card>
+          <CardHeader>
+            <h2 className="text-base font-semibold text-foreground">Ask about these opportunities</h2>
+          </CardHeader>
+          <CardBody>
+            <AssistantChat
+              studentProfileId={studentProfileId}
+              scope="comparison"
+              opportunitySlugs={selected.map((item) => item.opportunity.slug)}
+              placeholder="Ask how these opportunities differ…"
+              emptyStateText="Ask how these opportunities differ — deadlines, funding, eligibility, or documents — grounded in ScholarTrack's stored source data, with citations for each one."
+            />
+          </CardBody>
+        </Card>
+      ) : null}
     </div>
   );
 }

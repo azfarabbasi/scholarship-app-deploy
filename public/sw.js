@@ -37,6 +37,13 @@
  *    GET route at all — they're read and written exclusively through
  *    Server Actions, which this worker never intercepts (GET-only, see the
  *    `fetch` listener below).
+ *  - Checkpoint 5 adds `/assistant`, `/assistant/history`,
+ *    `/assistant/settings`, and `/workspace/assistant` — same treatment as
+ *    the Checkpoint 4 pages above (not precached; `middleware.ts` marks them
+ *    `no-store` for a signed-in visit). Every AI question/answer/feedback
+ *    goes through a Server Action (POST), never a cached GET route, so no
+ *    AI conversation content is ever written to Cache Storage. `/staff/ai/**`
+ *    is already covered by the blanket `/staff` exclusion below.
  *
  * Guest data lives in IndexedDB/localStorage, never in Cache Storage, so
  * activating a new version and clearing old caches here never touches guest

@@ -55,8 +55,14 @@ function subscribe(callback: () => void): () => void {
   };
 }
 
+// A single stable reference, never a fresh `[]` literal per call — React's
+// `useSyncExternalStore` treats a changed reference as a changed snapshot and
+// would otherwise warn ("should be cached to avoid an infinite loop") or
+// re-render unnecessarily on every check during hydration.
+const EMPTY_IDS: string[] = [];
+
 function getServerSnapshot(): string[] {
-  return [];
+  return EMPTY_IDS;
 }
 
 export function useComparisonSelection() {

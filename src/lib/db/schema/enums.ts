@@ -512,3 +512,59 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "saved-search-alert",
   "system",
 ]);
+
+// AI / RAG assistant (Checkpoint 5) ------------------------------------------------
+
+/**
+ * Lifecycle for staff-curated AI source material — deliberately separate
+ * from `source_evidence_status`/`eligibility_rule_status`: being chunked or
+ * linked to evidence never implies AI-retrieval approval on its own (see
+ * ADR-010). Only `approved` chunks belonging to a published opportunity are
+ * ever retrievable by the public assistant.
+ */
+export const aiSourceStatusEnum = pgEnum("ai_source_status", ["draft", "approved", "rejected", "stale"]);
+
+/** Which assistant surface a conversation belongs to — never mixed, so retrieval scope stays predictable. */
+export const aiConversationScopeEnum = pgEnum("ai_conversation_scope", [
+  "general",
+  "opportunity",
+  "comparison",
+  "workspace",
+  "matching",
+]);
+
+export const aiMessageRoleEnum = pgEnum("ai_message_role", ["user", "assistant"]);
+
+/** Distinguishes an official-source citation from ScholarTrack's own structured data or the student's own workspace context. */
+export const aiCitationSourceTypeEnum = pgEnum("ai_citation_source_type", [
+  "official-source",
+  "structured-data",
+  "workspace-context",
+  "match-explanation",
+]);
+
+export const aiFeedbackRatingEnum = pgEnum("ai_feedback_rating", [
+  "helpful",
+  "not-helpful",
+  "incorrect",
+  "missing-citation",
+  "outdated-source",
+  "unsafe-misleading",
+  "other",
+]);
+
+export const aiSafetyEventKindEnum = pgEnum("ai_safety_event_kind", [
+  "hidden-prompt-request",
+  "secret-request",
+  "other-user-data-request",
+  "prompt-injection",
+  "invented-fact-request",
+  "output-claim-stripped",
+  "rate-limit-exceeded",
+  "provider-error",
+]);
+
+export const aiEvaluationResultEnum = pgEnum("ai_evaluation_result", ["pass", "fail", "error"]);
+
+/** Who (or what) a usage-limit counter row tracks — a guest's own limiting lives in a signed cookie, never this table. */
+export const aiUsageSubjectTypeEnum = pgEnum("ai_usage_subject_type", ["user"]);

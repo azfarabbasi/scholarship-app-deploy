@@ -12,7 +12,9 @@ export type StorageChannel =
   | "savedSearches"
   | "reminderPreferences"
   | "reminders"
-  | "notifications";
+  | "notifications"
+  | "aiConversations"
+  | "aiMessages";
 
 const target = new EventTarget();
 

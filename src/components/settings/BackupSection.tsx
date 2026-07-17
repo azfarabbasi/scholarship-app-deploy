@@ -34,9 +34,10 @@ export function BackupSection() {
   const [pending, setPending] = useState<BackupValidationSuccess | null>(null);
   const [importMode, setImportMode] = useState<ImportMode>("merge");
   const [fileError, setFileError] = useState<string | null>(null);
+  const [includeAiHistory, setIncludeAiHistory] = useState(false);
 
   async function handleExportJson() {
-    const payload = await buildBackupPayload();
+    const payload = await buildBackupPayload({ includeAiHistory });
     downloadTextFile(
       `scholartrack-backup-${timestampSuffix()}.json`,
       JSON.stringify(payload, null, 2),
@@ -110,6 +111,15 @@ export function BackupSection() {
           Your export contains tracking state, notes, checklists, custom opportunities, and preferences. It never
           includes cookies, analytics, or document files.
         </p>
+        <label className="mt-3 flex items-center gap-2 text-sm text-foreground-muted">
+          <input
+            type="checkbox"
+            checked={includeAiHistory}
+            onChange={(event) => setIncludeAiHistory(event.target.checked)}
+            className="h-4 w-4 rounded border-border"
+          />
+          Include assistant conversation history
+        </label>
         <div className="mt-3 flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => void handleExportJson()}>
             <Download className="h-4 w-4" aria-hidden="true" /> Export full backup (JSON)
@@ -190,8 +200,8 @@ export function BackupSection() {
       <div className="border-t border-border pt-6">
         <h3 className="text-sm font-semibold text-foreground">Clear all local data</h3>
         <p className="mt-1 text-sm text-foreground-muted">
-          Permanently removes your shortlist, notes, checklists, custom opportunities, and preferences from this
-          browser. This cannot be undone unless you have a backup.
+          Permanently removes your shortlist, notes, checklists, custom opportunities, preferences, and assistant
+          conversation history from this browser. This cannot be undone unless you have a backup.
         </p>
         <Dialog>
           <DialogTrigger asChild>

@@ -16,3 +16,4 @@ export * from "./imports";
 export * from "./audit";
 export * from "./student";
 export * from "./discovery";
+export * from "./ai";

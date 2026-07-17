@@ -16,22 +16,32 @@ guest IndexedDB data into an account with a previewed copy/merge/replace
 choice, sync shortlist/stages/notes/checklists/deadlines/custom
 opportunities/preferences across devices, work offline with a queued-sync
 model, and export/delete cloud data at will.
-**Checkpoint 4 adds advanced discovery** — typo-tolerant search with
+Checkpoint 4 adds advanced discovery — typo-tolerant search with
 relevance ranking, saved searches, an optional eligibility questionnaire, a
 deterministic (never-AI) rule-based matching engine, opportunity comparison,
-reminders, and a notification center. Guest mode remains fully functional
-and is not required anywhere — see
-[Checkpoint 3](#checkpoint-3-optional-student-accounts-and-cloud-sync) and
-[Checkpoint 4](#checkpoint-4-discovery-matching-reminders-and-notifications)
-below. AI, push notifications, advertising, and sensitive-document uploads
+reminders, and a notification center.
+**Checkpoint 5 adds a source-grounded AI assistant** — students can ask
+questions about published opportunities and get cited, cautious answers
+grounded only in ScholarTrack's own stored, staff-approved data (never live
+web browsing, never a final eligibility/admission/funding decision), with
+full guest-local-by-default privacy, opt-in signed-in history, rate
+limiting, and a staff source-management/evaluation/safety toolchain. AI is
+off by default and the rest of the app works identically with it disabled.
+Guest mode remains fully functional and is not required anywhere — see
+[Checkpoint 3](#checkpoint-3-optional-student-accounts-and-cloud-sync),
+[Checkpoint 4](#checkpoint-4-discovery-matching-reminders-and-notifications),
+and
+[Checkpoint 5](#checkpoint-5-ai-assistant)
+below. Push notifications, advertising, and sensitive-document uploads
 remain out of scope (see [Known limitations](#known-limitations-and-deferred-work)).
 
 Checkpoint 0 established repository boundaries, a Docker-first development
 contract, the domain model, and a documented audit of the legacy prototype.
 Checkpoint 1 built the guest-facing product. Checkpoint 2 built the verified
 data layer and staff tooling underneath it. Checkpoint 3 added optional
-accounts and cloud sync on top of both. Checkpoint 4 adds discovery,
-matching, and reminders on top of all three, without changing any of them.
+accounts and cloud sync on top of both. Checkpoint 4 added discovery,
+matching, and reminders on top of all three. Checkpoint 5 adds the AI
+assistant on top of all four, without changing any of them.
 
 ## What ScholarTrack does today
 
@@ -90,6 +100,14 @@ matching, and reminders on top of all three, without changing any of them.
   deadlines and for official deadlines that are exact and independently
   verified (never a guessed date), and see them all in a notification center
   — guest-local or cloud-synced, same as the rest of your workspace.
+- **Ask an AI assistant about opportunities** (Checkpoint 5, when enabled): a
+  general assistant, an opportunity-specific panel, a comparison assistant,
+  and a workspace planning assistant — every answer is grounded only in
+  ScholarTrack's own stored, staff-approved data (never live web browsing),
+  always cited, and never a final eligibility/admission/funding decision.
+  Guest conversations stay on your device by default (or use "temporary
+  chat" to save nothing at all); signed-in history is opt-in. See
+  [Checkpoint 5](#checkpoint-5-ai-assistant).
 
 ## Workspace rules
 
@@ -166,6 +184,12 @@ Copy-Item .env.example .env.local
   `ENABLE_STAFF_ADMIN` — Checkpoint 2's database/staff-admin configuration. See
   [docs/checkpoint-2/supabase-setup.md](docs/checkpoint-2/supabase-setup.md) for exact,
   beginner-friendly setup steps for every one of these.
+- `AI_ENABLED` (default `false`), `AI_PROVIDER` (`mock` or `groq`), `GROQ_API_KEY`,
+  `GROQ_MODEL`, `AI_MAX_INPUT_TOKENS`, `AI_MAX_OUTPUT_TOKENS`, `AI_DAILY_GUEST_LIMIT`,
+  `AI_DAILY_USER_LIMIT`, `AI_LOG_RETENTION_DAYS` — Checkpoint 5's AI assistant
+  configuration. Every value defaults to a safe "AI unavailable" state when unset; a
+  missing/malformed value here never breaks the build or any non-AI feature. See
+  [docs/checkpoint-5/checkpoint-5-architecture.md](docs/checkpoint-5/checkpoint-5-architecture.md).
 
 Never put real credentials in `.env.example`, source files, Dockerfiles, or
 Compose configuration. Local `.env*` files are ignored by both Git and the Docker
@@ -184,6 +208,9 @@ docker compose run --rm --no-deps web npm run checkpoint1:validate
 docker compose run --rm --no-deps web npm run checkpoint2:validate
 docker compose run --rm --no-deps web npm run checkpoint3:validate
 docker compose run --rm --no-deps web npm run checkpoint4:validate
+docker compose run --rm --no-deps web npm run checkpoint5:validate
+docker compose run --rm --no-deps web npm run ai:evaluate
+docker compose run --rm --no-deps web npm run ai:safety:test
 docker compose run --rm --no-deps web npm run typecheck
 docker compose run --rm --no-deps web npm run lint
 docker compose run --rm --no-deps -e NODE_ENV=production web npm run build
@@ -200,6 +227,9 @@ npm run checkpoint1:validate
 npm run checkpoint2:validate
 npm run checkpoint3:validate
 npm run checkpoint4:validate
+npm run checkpoint5:validate
+npm run ai:evaluate
+npm run ai:safety:test
 npm run typecheck
 npm run lint
 npm run build
@@ -245,7 +275,11 @@ accounts and are configuration-gated: `E2E_STAFF_EMAIL`/`E2E_STAFF_PASSWORD`
 `E2E_STUDENT2_EMAIL`/`E2E_STUDENT2_PASSWORD` (a second student account, for
 the cross-user isolation test). Without them set, those specific tests report
 a clear skip reason rather than a false pass — everything else in the suite
-runs unconditionally. Tear down the test containers with:
+runs unconditionally. The Checkpoint 5 assistant e2e scenarios
+(`tests/e2e/ai-assistant.spec.ts`) always use the deterministic mock provider
+(`AI_ENABLED=true AI_PROVIDER=mock` on the `web-e2e` service) — never a real
+Groq key — and follow the same staff/student credential-gating for the
+scenarios that need a signed-in account. Tear down the test containers with:
 
 ```powershell
 docker compose --profile test down --remove-orphans
@@ -485,6 +519,85 @@ for the full RLS/migration/grant model.
 - The staff discovery-quality queues are scoped to published opportunities only, matching exactly
   what students can currently discover.
 
+## Checkpoint 5: AI assistant
+
+### What it is, and isn't
+
+A source-grounded assistant students can ask about published opportunities. Every factual answer
+is grounded only in ScholarTrack's own stored, staff-approved data — approved source excerpts and
+the same deadline/eligibility/funding/document data the public catalogue already exposes — never
+live web browsing, and never invented. It is never a final eligibility, admission, or funding
+authority: the existing deterministic matching engine still produces match labels; the assistant
+may only explain that result in plain language. Off by default (`AI_ENABLED=false`); the rest of
+the app works identically whether AI is configured or not.
+
+### Providers
+
+A pluggable provider abstraction ships with two implementations: a deterministic, network-free
+`mock` provider (safe anywhere, used by every automated test) and a real `groq` provider (an
+OpenAI-compatible chat-completions call, requiring `GROQ_API_KEY`). See
+[Environment values](#environment-values) for the full variable list.
+
+### Where to find it
+
+- `/assistant`, `/assistant/history`, `/assistant/settings` — the general assistant, its saved
+  conversations, and privacy/history controls.
+- An "Ask about this opportunity" panel on every opportunity's detail page.
+- An "Ask about these opportunities" panel on `/compare`.
+- `/workspace/assistant` — cautious planning guidance across your own tracked opportunities
+  (never your private notes or checklist text).
+- `/staff/ai`, `/staff/ai/sources`, `/staff/ai/evaluations`, `/staff/ai/usage`, `/staff/ai/safety`
+  — staff source management, the evaluation harness, usage/feedback, and the safety log, plus a
+  runtime kill switch an Administrator can flip instantly during an incident.
+
+### Safety
+
+Every request passes through three independent layers before an answer is shown: a deterministic,
+regex-based pre-flight classifier refuses hidden-prompt, secret, other-user-data, prompt-injection,
+and invent-a-fact requests before any retrieval or provider call; retrieved source text is
+neutralized against embedded instructions; and a post-generation validator strips any eligibility/
+admission guarantee or invented-certainty claim and redacts secret-shaped strings, regardless of
+which provider produced the text. See
+[docs/checkpoint-5/ai-safety-policy.md](docs/checkpoint-5/ai-safety-policy.md).
+
+### Citations
+
+Every factual answer shows citations — opportunity, source label, official link (when available),
+checked/verification status, and a citation-type badge distinguishing an official-source excerpt
+from ScholarTrack's own structured data from a deterministic match explanation. If nothing supports
+a claim, the claim doesn't appear — the assistant says it doesn't have enough information instead.
+
+### Privacy
+
+Guest conversations stay on-device (IndexedDB) by default and are never uploaded automatically;
+"temporary chat" saves nothing at all, even locally. Signed-in history is off by default — a
+student must explicitly enable it in `/assistant/settings`, at which point it's included in the
+account JSON export and deleted with the rest of the workspace on account deletion. Local/cloud
+history can be cleared independently at any time. See
+[docs/checkpoint-5/checkpoint-5-architecture.md](docs/checkpoint-5/checkpoint-5-architecture.md)
+for the full privacy/RLS model.
+
+### Rate limiting and evaluation
+
+Guests are limited via a signed cookie (never a growing anonymous-device table); signed-in
+students via a durable, read-only-to-the-owner database counter. A 15-case deterministic
+evaluation harness (`npm run ai:evaluate`, or a 5-case safety-only subset via
+`npm run ai:safety:test`) checks citations, refusals, and cautious phrasing without a database or a
+real provider key — see [docs/checkpoint-5/ai-evaluation.md](docs/checkpoint-5/ai-evaluation.md).
+
+### Current limitations
+
+- **pgvector/embeddings are structural only** — the extension and an `embedding` column exist
+  (exception-guarded, same pattern as Checkpoint 4's `pg_trgm`), but nothing populates them; no
+  embeddings-provider key is part of the Checkpoint 5 configuration, so full-text search
+  (`tsvector`/GIN) is the only retrieval mechanism that actually runs.
+- **Citations are retrieval-level, not sentence-level** — every source/fact placed in the prompt
+  becomes a citation candidate rather than being matched to the specific sentence it supports.
+- **Guest feedback isn't sent to staff** — feedback requires a persisted, history-enabled message;
+  guests can use the assistant fully, just without a staff-visible feedback channel.
+- **Cloud account import doesn't restore AI history** — export includes it when enabled, but
+  re-importing a previous export restores every other section except AI conversations.
+
 ## PWA installation and offline behaviour
 
 - **Desktop Chrome/Edge**: visit the site, then use the browser's install
@@ -628,22 +741,33 @@ docker compose logs --follow web
 
 ## Known limitations and deferred work
 
-Checkpoint 4 now implements deterministic, rule-based eligibility matching (never AI — see
-[Checkpoint 4](#checkpoint-4-discovery-matching-reminders-and-notifications)) and reminders/an
-in-app notification center, closing two items that were previously on this list. Still deferred
-(see `docs/checkpoint-0/v1-product-backlog.md` for the full roadmap): Web Push (background browser
-notifications while the app is closed — only foreground notifications work today), any paid
+Checkpoint 4 implemented deterministic, rule-based eligibility matching (never AI) and reminders/an
+in-app notification center. **Checkpoint 5 adds an AI assistant** — see
+[Checkpoint 5](#checkpoint-5-ai-assistant) — closing that item, but deliberately as a
+source-grounded, cited, never-final-authority feature with its own documented limitations
+(pgvector/embeddings are structural only; citations are retrieval-level, not sentence-level; guest
+feedback isn't staff-visible; cloud import doesn't restore AI history — see
+[Checkpoint 5 § Current limitations](#current-limitations-3)). Still deferred (see
+`docs/checkpoint-0/v1-product-backlog.md` for the full roadmap): Web Push (background browser
+notifications while the app is closed — only foreground notifications work today) and any paid
 SMS/WhatsApp/email notification channel, live cross-tab/cross-device push sync (sync across all
-checkpoints is fetch-on-mount, not a realtime subscription), and any AI features anywhere in the
-product. No sensitive-document upload has been added. See
+checkpoints is fetch-on-mount, not a realtime subscription). No sensitive-document upload has been
+added, in any checkpoint. See
 [Checkpoint 2 § Current limitations](#current-limitations) for the two items Checkpoint 2 itself
 did not complete (the 100-record content target and live Supabase e2e execution),
 [Checkpoint 3 § Current limitations](#current-limitations-1), and
 [Checkpoint 4 § Current limitations](#current-limitations-2) for each checkpoint's own documented
-scope cuts. See `docs/checkpoint-4/checkpoint-4-completion-report.md` for the full audit.
+scope cuts. See `docs/checkpoint-5/checkpoint-5-completion-report.md` for the full audit.
 
 ## Checkpoint documentation
 
+- [Checkpoint 5 architecture](docs/checkpoint-5/checkpoint-5-architecture.md)
+- [Checkpoint 5 AI safety policy](docs/checkpoint-5/ai-safety-policy.md)
+- [Checkpoint 5 RAG source management](docs/checkpoint-5/rag-source-management.md)
+- [Checkpoint 5 AI evaluation](docs/checkpoint-5/ai-evaluation.md)
+- [Checkpoint 5 manual QA](docs/checkpoint-5/checkpoint-5-manual-qa.md)
+- [Checkpoint 5 traceability](docs/checkpoint-5/checkpoint-5-traceability.md)
+- [Checkpoint 5 completion report](docs/checkpoint-5/checkpoint-5-completion-report.md)
 - [Checkpoint 4 architecture](docs/checkpoint-4/checkpoint-4-architecture.md)
 - [Checkpoint 4 eligibility & matching spec](docs/checkpoint-4/eligibility-matching-spec.md)
 - [Checkpoint 4 reminders and notifications](docs/checkpoint-4/reminders-and-notifications.md)

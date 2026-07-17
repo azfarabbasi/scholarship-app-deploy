@@ -3,6 +3,7 @@
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { Alert } from "@/components/ui/Alert";
+import { OpportunityAssistantPanel } from "@/components/assistant/OpportunityAssistantPanel";
 import { GuestTrackingPanel } from "@/components/workspace/GuestTrackingPanel";
 import { MatchReasonsPanel } from "@/components/matching/MatchReasonsPanel";
 import { useDeadlineEvaluation } from "@/hooks/useDeadlineEvaluation";
@@ -22,9 +23,11 @@ const VERIFICATION_STATUS_LABELS: Record<CatalogueOpportunity["verification"]["s
 export function OpportunityDetailBody({
   opportunity,
   studentProfileId = null,
+  aiAvailable = false,
 }: {
   opportunity: CatalogueOpportunity;
   studentProfileId?: string | null;
+  aiAvailable?: boolean;
 }) {
   const evaluation = useDeadlineEvaluation(opportunity.deadlineInput);
   const location = [...opportunity.countries, ...opportunity.regions].join(", ");
@@ -178,6 +181,14 @@ export function OpportunityDetailBody({
       <div className="flex flex-col gap-6 lg:w-96 lg:shrink-0">
         {match ? <MatchReasonsPanel result={match} /> : null}
         <GuestTrackingPanel opportunityId={opportunity.id} title={opportunity.title} />
+        {opportunity.kind === "built-in" && aiAvailable ? (
+          <OpportunityAssistantPanel
+            studentProfileId={studentProfileId}
+            opportunitySlug={opportunity.slug}
+            opportunityTitle={opportunity.title}
+            match={match}
+          />
+        ) : null}
       </div>
     </div>
   );

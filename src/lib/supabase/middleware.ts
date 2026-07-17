@@ -28,7 +28,31 @@ const PUBLIC_AUTH_PATHS = ["/auth/login", "/auth/signup", "/auth/callback"];
  * network first when online — while a signed-in visit still gets the
  * stricter `no-store`.
  */
-const SESSION_AWARE_PUBLIC_PREFIXES = ["/workspace", "/privacy", "/eligibility", "/notifications", "/compare", "/opportunities", "/opportunities/"];
+const SESSION_AWARE_PUBLIC_PREFIXES = [
+  "/workspace",
+  "/privacy",
+  "/eligibility",
+  "/notifications",
+  "/compare",
+  "/opportunities",
+  "/opportunities/",
+];
+
+/**
+ * Checkpoint 5: unlike the pages above, the AI assistant provides genuinely
+ * zero useful functionality offline — every feature is a live Server Action
+ * call to a configured provider, with no meaningful cached/local fallback.
+ * Always `no-store`, for guests and signed-in visitors alike, so a stale
+ * cached shell is never served in place of the honest `/offline` fallback
+ * (found via the e2e offline test: giving `/assistant` the same guest
+ * `no-cache` treatment as `/workspace`/`/opportunities` let the service
+ * worker legitimately cache and replay its shell offline, which is correct
+ * for those pages' real offline value but not for a page whose only feature
+ * requires a live network call). `/workspace/assistant` is listed
+ * separately because it would otherwise also match the broader `/workspace`
+ * prefix above.
+ */
+const ALWAYS_NO_STORE_PREFIXES = ["/assistant", "/workspace/assistant"];
 
 /** Only ever redirect to a same-origin path under `prefix` — never an open redirect. */
 function sanitizeNextPath(path: string | null, prefix: string, fallback: string): string {
@@ -106,8 +130,12 @@ export async function updateSupabaseSession(request: NextRequest): Promise<NextR
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
+  const isAlwaysNoStorePath = ALWAYS_NO_STORE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
   const isSessionAwarePublicPath = SESSION_AWARE_PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
-  if (user && isSessionAwarePublicPath) {
+
+  if (isAlwaysNoStorePath) {
+    response.headers.set("Cache-Control", "no-store, private");
+  } else if (user && isSessionAwarePublicPath) {
     response.headers.set("Cache-Control", "no-store, private");
   } else if (pathname === "/" || isSessionAwarePublicPath) {
     // The homepage never renders session-dependent content at all, so it always gets the

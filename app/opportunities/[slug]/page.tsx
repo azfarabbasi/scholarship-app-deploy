@@ -5,6 +5,7 @@ import { OpportunityDetailBody } from "@/components/opportunities/OpportunityDet
 import { getPublishedOpportunityBySlug } from "@/lib/catalogue/db-repository";
 import { isDatabaseConfigured } from "@/lib/env";
 import { getStudentSession } from "@/lib/auth/student-session";
+import { isAiAvailableAction } from "@/lib/db/actions/student/ai-assistant";
 
 interface PageParams {
   params: Promise<{ slug: string }>;
@@ -43,12 +44,16 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 
 export default async function OpportunityDetailPage({ params }: PageParams) {
   const { slug } = await params;
-  const [opportunity, session] = await Promise.all([lookupPublishedOpportunity(slug), getStudentSession()]);
+  const [opportunity, session, aiAvailable] = await Promise.all([
+    lookupPublishedOpportunity(slug),
+    getStudentSession(),
+    isAiAvailableAction(),
+  ]);
 
   return (
     <Container className="py-8 sm:py-10">
       {opportunity ? (
-        <OpportunityDetailBody opportunity={opportunity} studentProfileId={session?.studentProfileId ?? null} />
+        <OpportunityDetailBody opportunity={opportunity} studentProfileId={session?.studentProfileId ?? null} aiAvailable={aiAvailable} />
       ) : (
         <CustomOpportunityDetailClient slug={slug} />
       )}

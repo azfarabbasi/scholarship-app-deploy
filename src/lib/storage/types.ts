@@ -16,8 +16,12 @@ import type { StudyLevel } from "@/lib/schemas/opportunity-seed";
  * `reminders`, and `notifications` (Checkpoint 4: optional eligibility
  * questionnaire, saved searches, reminders, and the notification center —
  * all guest-local here, same as every other guest store).
+ * v5 adds `aiConversations` and `aiMessages` (Checkpoint 5: guest AI
+ * assistant history stays local by default, exactly like every other guest
+ * store — it is never uploaded to Supabase unless the guest signs in AND
+ * explicitly enables cloud history during migration).
  */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 /** Last successfully fetched snapshot of the public database catalogue, for offline use. */
 export interface PublicCatalogueCacheRecord {
@@ -291,3 +295,39 @@ export type OutboxEntry =
   | { id: string; studentProfileId: string; createdAt: string; kind: "checklist-delete"; taskId: string }
   | { id: string; studentProfileId: string; createdAt: string; kind: "planning-preferences"; patch: Record<string, unknown> }
   | { id: string; studentProfileId: string; createdAt: string; kind: "display-preferences"; patch: Record<string, unknown> };
+
+// --- AI assistant (Checkpoint 5) --------------------------------------------------
+
+export type AiConversationScope = "general" | "opportunity" | "comparison" | "workspace" | "matching";
+export type AiMessageRole = "user" | "assistant";
+
+/** Mirrors `ai_answer_citations` shape but embedded directly on the local message record — no separate store needed for guest-local, single-device data. */
+export interface GuestAiCitationRecord {
+  citationType: "official-source" | "structured-data" | "workspace-context" | "match-explanation";
+  opportunityId: string | null;
+  officialSourceId: string | null;
+  sourceChunkId: string | null;
+  label: string;
+  url: string | null;
+  verificationStatus: string | null;
+  checkedAt: string | null;
+}
+
+export interface GuestAiConversationRecord {
+  id: string;
+  scope: AiConversationScope;
+  targetOpportunityId: string | null;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GuestAiMessageRecord {
+  id: string;
+  conversationId: string;
+  role: AiMessageRole;
+  content: string;
+  blockedReason: string | null;
+  citations: GuestAiCitationRecord[];
+  createdAt: string;
+}

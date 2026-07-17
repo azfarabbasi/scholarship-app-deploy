@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Container } from "@/components/layout/Container";
 import { ComparisonView } from "@/components/opportunities/ComparisonView";
 import { getStudentSession } from "@/lib/auth/student-session";
+import { isAiAvailableAction } from "@/lib/db/actions/student/ai-assistant";
 
 export const metadata: Metadata = {
   title: "Compare opportunities",
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ComparePage() {
-  const session = await getStudentSession();
+  const [session, aiAvailable] = await Promise.all([getStudentSession(), isAiAvailableAction()]);
 
   return (
     <Container className="py-8 sm:py-10">
@@ -19,7 +20,7 @@ export default async function ComparePage() {
         Select up to 4 opportunities from the catalogue to compare deadlines, funding, and match labels side by side.
       </p>
       <div className="mt-6">
-        <ComparisonView studentProfileId={session?.studentProfileId ?? null} />
+        <ComparisonView studentProfileId={session?.studentProfileId ?? null} aiAvailable={aiAvailable} />
       </div>
     </Container>
   );

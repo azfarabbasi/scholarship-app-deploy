@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getAllGuestAiConversations, getGuestAiMessages } from "./ai-assistant";
 import { getAllCustomOpportunities } from "./custom-opportunities";
 import { getDb } from "./db";
 import { getGuestEligibilityAnswers } from "./eligibility";
@@ -11,6 +12,8 @@ import { SCHEMA_VERSION } from "./types";
 import type {
   CustomOpportunityRecord,
   EligibilityAnswersRecord,
+  GuestAiConversationRecord,
+  GuestAiMessageRecord,
   NotificationRecord,
   PreferencesRecord,
   ReminderPreferencesRecord,
@@ -37,6 +40,9 @@ export interface BackupPayload {
     reminderPreferences: ReminderPreferencesRecord | null;
     reminders: ReminderRecord[];
     notifications: NotificationRecord[];
+    /** Absent unless the user explicitly opted in to including AI history in this export — never included by default (see Checkpoint 5 privacy controls). */
+    aiConversations?: GuestAiConversationRecord[];
+    aiMessages?: GuestAiMessageRecord[];
   };
 }
 
@@ -196,6 +202,42 @@ export const notificationRecordSchema = z
   })
   .strict();
 
+export const guestAiCitationRecordSchema = z
+  .object({
+    citationType: z.enum(["official-source", "structured-data", "workspace-context", "match-explanation"]),
+    opportunityId: z.string().nullable(),
+    officialSourceId: z.string().nullable(),
+    sourceChunkId: z.string().nullable(),
+    label: z.string(),
+    url: z.string().nullable(),
+    verificationStatus: z.string().nullable(),
+    checkedAt: z.string().nullable(),
+  })
+  .strict();
+
+export const guestAiConversationRecordSchema = z
+  .object({
+    id: z.string().min(1),
+    scope: z.enum(["general", "opportunity", "comparison", "workspace", "matching"]),
+    targetOpportunityId: z.string().nullable(),
+    title: z.string(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .strict();
+
+export const guestAiMessageRecordSchema = z
+  .object({
+    id: z.string().min(1),
+    conversationId: z.string().min(1),
+    role: z.enum(["user", "assistant"]),
+    content: z.string(),
+    blockedReason: z.string().nullable(),
+    citations: z.array(guestAiCitationRecordSchema),
+    createdAt: z.string(),
+  })
+  .strict();
+
 export const backupPayloadSchema = z
   .object({
     app: z.literal(BACKUP_APP_ID),
@@ -218,6 +260,9 @@ export const backupPayloadSchema = z
         reminderPreferences: reminderPreferencesRecordSchema.nullable().optional(),
         reminders: z.array(reminderRecordSchema).optional(),
         notifications: z.array(notificationRecordSchema).optional(),
+        // Optional: only present when the user explicitly chose to include AI history in this export.
+        aiConversations: z.array(guestAiConversationRecordSchema).optional(),
+        aiMessages: z.array(guestAiMessageRecordSchema).optional(),
       })
       .strict(),
   })
@@ -271,7 +316,12 @@ export function validateBackupPayload(json: unknown): BackupValidationSuccess | 
   };
 }
 
-export async function buildBackupPayload(): Promise<BackupPayload> {
+export interface BuildBackupPayloadOptions {
+  /** Off by default — AI conversation history is only ever included in an export when the user explicitly opts in (Checkpoint 5 privacy control). */
+  includeAiHistory?: boolean;
+}
+
+export async function buildBackupPayload(options: BuildBackupPayloadOptions = {}): Promise<BackupPayload> {
   const [workspace, customOpportunities, preferences, eligibilityAnswers, savedSearches, reminderPreferences, reminders, notifications] =
     await Promise.all([
       getAllWorkspaceRecords(),
@@ -284,25 +334,44 @@ export async function buildBackupPayload(): Promise<BackupPayload> {
       getAllGuestNotifications(),
     ]);
 
+  let aiConversations: GuestAiConversationRecord[] | undefined;
+  let aiMessages: GuestAiMessageRecord[] | undefined;
+  if (options.includeAiHistory) {
+    aiConversations = await getAllGuestAiConversations();
+    aiMessages = (await Promise.all(aiConversations.map((c) => getGuestAiMessages(c.id)))).flat();
+  }
+
   return {
     app: BACKUP_APP_ID,
     schemaVersion: SCHEMA_VERSION,
     createdAt: new Date().toISOString(),
     counts: { workspace: workspace.length, customOpportunities: customOpportunities.length },
-    data: { workspace, customOpportunities, preferences, eligibilityAnswers, savedSearches, reminderPreferences, reminders, notifications },
+    data: {
+      workspace,
+      customOpportunities,
+      preferences,
+      eligibilityAnswers,
+      savedSearches,
+      reminderPreferences,
+      reminders,
+      notifications,
+      aiConversations,
+      aiMessages,
+    },
   };
 }
 
 export type ImportMode = "merge" | "replace";
 
 const CHECKPOINT4_STORES = ["savedSearches", "reminders", "notifications", "eligibilityAnswers", "reminderPreferences"] as const;
+const CHECKPOINT5_STORES = ["aiConversations", "aiMessages"] as const;
 
 export async function importBackupPayload(
   payload: BackupPayload,
   mode: ImportMode,
 ): Promise<{ workspaceImported: number; customOpportunitiesImported: number }> {
   const db = await getDb();
-  const allStores = ["workspace", "customOpportunities", "preferences", ...CHECKPOINT4_STORES] as const;
+  const allStores = ["workspace", "customOpportunities", "preferences", ...CHECKPOINT4_STORES, ...CHECKPOINT5_STORES] as const;
 
   if (mode === "replace") {
     await Promise.all(allStores.map((store) => db.clear(store)));
@@ -318,6 +387,8 @@ export async function importBackupPayload(
     ...(payload.data.savedSearches ?? []).map((record) => tx.objectStore("savedSearches").put(record)),
     ...(payload.data.reminders ?? []).map((record) => tx.objectStore("reminders").put(record)),
     ...(payload.data.notifications ?? []).map((record) => tx.objectStore("notifications").put(record)),
+    ...(payload.data.aiConversations ?? []).map((record) => tx.objectStore("aiConversations").put(record)),
+    ...(payload.data.aiMessages ?? []).map((record) => tx.objectStore("aiMessages").put(record)),
   ]);
   await tx.done;
 
@@ -333,7 +404,7 @@ export async function importBackupPayload(
 
 export async function clearAllGuestData(): Promise<void> {
   const db = await getDb();
-  const allStores = ["workspace", "customOpportunities", "preferences", ...CHECKPOINT4_STORES] as const;
+  const allStores = ["workspace", "customOpportunities", "preferences", ...CHECKPOINT4_STORES, ...CHECKPOINT5_STORES] as const;
   await Promise.all(allStores.map((store) => db.clear(store)));
   for (const store of allStores) {
     emitStorageChange(store);

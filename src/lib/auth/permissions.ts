@@ -142,3 +142,35 @@ export function canViewFullAuditLog(roles: readonly StaffRole[]): boolean {
 export function isAdministrator(roles: readonly StaffRole[]): boolean {
   return hasAnyRole(roles, ["administrator"]);
 }
+
+// --- Checkpoint 5: AI assistant ------------------------------------------------------
+
+/** Drafting/editing an AI source excerpt is content curation, same roles as documents/eligibility. */
+export function canManageAiSources(roles: readonly StaffRole[]): boolean {
+  return hasAnyRole(roles, ["reviewer", "senior_reviewer", "administrator"]);
+}
+
+/** Approving/rejecting/marking-stale an AI source is the publish-equivalent action — same roles as `canPublish`. */
+export function canApproveAiSources(roles: readonly StaffRole[]): boolean {
+  return hasAnyRole(roles, ["senior_reviewer", "administrator"]);
+}
+
+/** Rebuilding chunks/embeddings and running the evaluation harness are operational actions, same roles as `canManageDuplicates`. */
+export function canRunAiEvaluations(roles: readonly StaffRole[]): boolean {
+  return hasAnyRole(roles, ["senior_reviewer", "administrator"]);
+}
+
+/** Aggregate AI usage dashboards — the same "assigned"/aggregate-visibility tier as taxonomies/organisations management. */
+export function canViewAiUsage(roles: readonly StaffRole[]): boolean {
+  return hasAnyRole(roles, ["senior_reviewer", "administrator"]);
+}
+
+/** Safety/abuse event logs are sensitive operational data, same tier as the full audit log. */
+export function canViewAiSafetyLog(roles: readonly StaffRole[]): boolean {
+  return hasAnyRole(roles, ["administrator"]);
+}
+
+/** The runtime AI kill switch is an Administrator-only incident-response action. */
+export function canDisableAi(roles: readonly StaffRole[]): boolean {
+  return hasAnyRole(roles, ["administrator"]);
+}

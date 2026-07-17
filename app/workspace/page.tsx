@@ -31,6 +31,12 @@ export default async function WorkspacePage() {
         <AccountStatusBanner signedIn={Boolean(session)} email={session?.email} />
       </div>
 
+      <p className="mt-2 text-sm">
+        <a href="/workspace/assistant" className="text-brand hover:underline">
+          Ask the assistant about your tracked opportunities →
+        </a>
+      </p>
+
       {session ? (
         <p className="mt-2 max-w-2xl text-sm text-foreground-muted">
           Back it up any time from{" "}

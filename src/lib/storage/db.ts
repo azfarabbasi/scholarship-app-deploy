@@ -5,6 +5,8 @@ import type {
   CloudCacheRecord,
   CustomOpportunityRecord,
   EligibilityAnswersRecord,
+  GuestAiConversationRecord,
+  GuestAiMessageRecord,
   NotificationRecord,
   OutboxEntry,
   PreferencesRecord,
@@ -30,6 +32,8 @@ interface ScholarTrackSchema extends DBSchema {
   reminderPreferences: { key: string; value: ReminderPreferencesRecord };
   reminders: { key: string; value: ReminderRecord };
   notifications: { key: string; value: NotificationRecord };
+  aiConversations: { key: string; value: GuestAiConversationRecord };
+  aiMessages: { key: string; value: GuestAiMessageRecord };
 }
 
 export type ScholarTrackDb = IDBPDatabase<ScholarTrackSchema>;
@@ -85,6 +89,12 @@ function upgrade(db: ScholarTrackDb): void {
   }
   if (!db.objectStoreNames.contains("notifications")) {
     db.createObjectStore("notifications", { keyPath: "id" });
+  }
+  if (!db.objectStoreNames.contains("aiConversations")) {
+    db.createObjectStore("aiConversations", { keyPath: "id" });
+  }
+  if (!db.objectStoreNames.contains("aiMessages")) {
+    db.createObjectStore("aiMessages", { keyPath: "id" });
   }
 }
 

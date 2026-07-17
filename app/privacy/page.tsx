@@ -16,7 +16,7 @@ export default async function PrivacyPage() {
   return (
     <Container className="max-w-3xl py-8 sm:py-10">
       <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">Privacy</h1>
-      <p className="mt-2 text-sm text-foreground-muted">Last reviewed for Checkpoint 4.</p>
+      <p className="mt-2 text-sm text-foreground-muted">Last reviewed for Checkpoint 5.</p>
 
       <div className="mt-6 flex flex-col gap-6 text-sm leading-relaxed text-foreground-muted">
         {session ? (
@@ -158,13 +158,60 @@ export default async function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-base font-semibold text-foreground">Analytics, AI, and advertising</h2>
+          <h2 className="text-base font-semibold text-foreground">The AI assistant</h2>
+          <p className="mt-2">
+            When enabled, the{" "}
+            <Link href="/assistant" className="underline">
+              assistant
+            </Link>{" "}
+            answers only from ScholarTrack&rsquo;s own stored, staff-approved source data and published catalogue
+            records — it does not browse the live web, and it cannot see draft, unpublished, or staff-internal
+            content. Every factual answer includes citations back to the specific record or excerpt it came from. The
+            assistant is never a final eligibility, admission, or funding authority: deterministic matching (see
+            above) still produces match labels, and the assistant may only explain that result in plain language, not
+            override or replace it. It also never invents a deadline, requirement, or fact that isn&rsquo;t in a
+            stored source — when the source doesn&rsquo;t confirm something, it says so honestly instead of guessing.
+          </p>
+          <p className="mt-2">
+            Your message is sent to a configured AI provider (Groq, when set up) to generate a response; if no
+            provider is configured, or you&rsquo;re offline, the assistant clearly shows an unavailable state and the
+            rest of ScholarTrack keeps working normally. Please don&rsquo;t paste passport numbers, financial
+            details, transcripts, or other sensitive document contents into a message — the same boundary as the rest
+            of the product.
+          </p>
+          <p className="mt-2">
+            As a guest, assistant conversations are stored only on this device (never uploaded) unless you choose
+            &ldquo;temporary chat,&rdquo; in which case nothing is stored at all, even locally. If you sign in, your
+            history is <em>only</em> saved to your account if you explicitly enable it in{" "}
+            <Link href="/assistant/settings" className="underline">
+              Assistant settings
+            </Link>
+            ; you can clear local or cloud history at any time from there, and cloud history is included in your{" "}
+            <Link href="/account/data" className="underline">
+              account export
+            </Link>{" "}
+            only when enabled, and is deleted along with the rest of your workspace if you{" "}
+            <Link href="/account/delete" className="underline">
+              delete your account
+            </Link>
+            . Row-level security restricts your conversations to your own account — staff cannot browse another
+            student&rsquo;s assistant conversations. Optional feedback you leave on an answer (helpful, incorrect,
+            missing citation, etc.) is used only to improve source quality and is reviewed by staff.
+          </p>
+          <p className="mt-2">
+            Requests are rate-limited (a small daily question limit for guests and signed-in users alike) to prevent
+            abuse, and attempts to make the assistant reveal internal instructions, secrets, or another person&rsquo;s
+            private data are automatically refused before any message reaches the AI provider.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-base font-semibold text-foreground">Analytics and advertising</h2>
           <p className="mt-2">
             No third-party analytics or tracking scripts run in this checkpoint. An internal analytics abstraction
-            exists in the codebase but is disabled by default and collects nothing. AI is not used anywhere in
-            ScholarTrack — every planning and matching feature (preferences, tracking, sync, search ranking,
-            eligibility matching, reminders) is deterministic and human-authored, not AI-generated. There is no
-            advertising.
+            exists in the codebase but is disabled by default and collects nothing. Every planning and matching
+            feature outside the assistant (preferences, tracking, sync, search ranking, eligibility matching,
+            reminders) remains deterministic and human-authored, not AI-generated. There is no advertising.
           </p>
         </section>
       </div>

@@ -5,6 +5,7 @@ import { getStudentSession } from "@/lib/auth/student-session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getDb, schema } from "@/lib/db/client";
+import { getMyAiHistoryEnabled } from "./ai-assistant";
 import {
   CLOUD_EXPORT_APP_ID,
   CLOUD_EXPORT_SCHEMA_VERSION,
@@ -66,6 +67,61 @@ export async function exportMyData(): Promise<CloudExportPayload | null> {
   const sync = syncRows[0] ?? null;
   const eligibility = eligibilityRows[0] ?? null;
   const reminderPreferences = reminderPreferencesRows[0] ?? null;
+
+  // AI history is only ever included when the student has explicitly enabled it (Checkpoint 5 privacy control) — never by default.
+  const aiHistoryEnabled = await getMyAiHistoryEnabled();
+  let aiConversationsExport: CloudExportPayload["aiConversations"];
+  let aiMessagesExport: CloudExportPayload["aiMessages"];
+  if (aiHistoryEnabled) {
+    const conversations = await db
+      .select()
+      .from(schema.aiConversations)
+      .where(eq(schema.aiConversations.studentProfileId, studentProfileId));
+    const conversationIds = conversations.map((c) => c.id);
+    const messages =
+      conversationIds.length > 0
+        ? await db.select().from(schema.aiMessages).where(eq(schema.aiMessages.studentProfileId, studentProfileId))
+        : [];
+    const citations =
+      messages.length > 0
+        ? await db.select().from(schema.aiAnswerCitations).where(eq(schema.aiAnswerCitations.studentProfileId, studentProfileId))
+        : [];
+    const citationsByMessage = new Map<string, typeof citations>();
+    for (const citation of citations) {
+      const list = citationsByMessage.get(citation.messageId) ?? [];
+      list.push(citation);
+      citationsByMessage.set(citation.messageId, list);
+    }
+
+    aiConversationsExport = conversations.map((c) => ({
+      id: c.id,
+      scope: c.scope,
+      targetOpportunityId: c.targetOpportunityId,
+      title: c.title,
+      createdAt: c.createdAt.toISOString(),
+      updatedAt: c.updatedAt.toISOString(),
+    }));
+    aiMessagesExport = messages
+      .filter((m) => conversationIds.includes(m.conversationId))
+      .map((m) => ({
+        id: m.id,
+        conversationId: m.conversationId,
+        role: m.role,
+        content: m.content,
+        blockedReason: m.blockedReason,
+        citations: (citationsByMessage.get(m.id) ?? []).map((citation) => ({
+          citationType: citation.citationType,
+          opportunityId: citation.opportunityId,
+          officialSourceId: citation.officialSourceId,
+          sourceChunkId: citation.sourceChunkId,
+          label: citation.label,
+          url: citation.url,
+          verificationStatus: citation.verificationStatus,
+          checkedAt: citation.checkedAt?.toISOString() ?? null,
+        })),
+        createdAt: m.createdAt.toISOString(),
+      }));
+  }
 
   return {
     app: CLOUD_EXPORT_APP_ID,
@@ -214,6 +270,8 @@ export async function exportMyData(): Promise<CloudExportPayload | null> {
       readAt: row.readAt?.toISOString() ?? null,
       createdAt: row.createdAt.toISOString(),
     })),
+    aiConversations: aiConversationsExport,
+    aiMessages: aiMessagesExport,
   };
 }
 
@@ -492,6 +550,9 @@ async function wipeWorkspaceRows(studentProfileId: string) {
     await tx.delete(schema.userReminderPreferences).where(eq(schema.userReminderPreferences.studentProfileId, studentProfileId));
     await tx.delete(schema.userReminders).where(eq(schema.userReminders.studentProfileId, studentProfileId));
     await tx.delete(schema.userNotifications).where(eq(schema.userNotifications.studentProfileId, studentProfileId));
+    // Cascades to ai_messages -> (ai_answer_citations, ai_retrieval_events, ai_feedback) automatically.
+    await tx.delete(schema.aiConversations).where(eq(schema.aiConversations.studentProfileId, studentProfileId));
+    await tx.delete(schema.aiUsageLimits).where(eq(schema.aiUsageLimits.studentProfileId, studentProfileId));
     await tx.insert(schema.userDataRequests).values({
       studentProfileId,
       requestType: "deletion",

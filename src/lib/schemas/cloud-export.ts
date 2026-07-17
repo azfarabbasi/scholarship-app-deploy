@@ -202,6 +202,42 @@ const notificationExportSchema = z
   })
   .strict();
 
+const aiCitationExportSchema = z
+  .object({
+    citationType: z.enum(["official-source", "structured-data", "workspace-context", "match-explanation"]),
+    opportunityId: z.string().nullable(),
+    officialSourceId: z.string().nullable(),
+    sourceChunkId: z.string().nullable(),
+    label: z.string(),
+    url: z.string().nullable(),
+    verificationStatus: z.string().nullable(),
+    checkedAt: isoDateTime.nullable(),
+  })
+  .strict();
+
+const aiConversationExportSchema = z
+  .object({
+    id: z.uuid(),
+    scope: z.enum(["general", "opportunity", "comparison", "workspace", "matching"]),
+    targetOpportunityId: z.string().nullable(),
+    title: z.string(),
+    createdAt: isoDateTime,
+    updatedAt: isoDateTime,
+  })
+  .strict();
+
+const aiMessageExportSchema = z
+  .object({
+    id: z.uuid(),
+    conversationId: z.uuid(),
+    role: z.enum(["user", "assistant"]),
+    content: z.string(),
+    blockedReason: z.string().nullable(),
+    citations: z.array(aiCitationExportSchema),
+    createdAt: isoDateTime,
+  })
+  .strict();
+
 export const cloudExportPayloadSchema = z
   .object({
     app: z.literal(CLOUD_EXPORT_APP_ID),
@@ -221,6 +257,9 @@ export const cloudExportPayloadSchema = z
     reminderPreferences: reminderPreferencesExportSchema.optional(),
     reminders: z.array(reminderExportSchema).optional(),
     notifications: z.array(notificationExportSchema).optional(),
+    // Optional: only present when the student has AI history enabled (Checkpoint 5) — never included otherwise.
+    aiConversations: z.array(aiConversationExportSchema).optional(),
+    aiMessages: z.array(aiMessageExportSchema).optional(),
   })
   .strict();
 

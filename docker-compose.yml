@@ -101,6 +101,12 @@ services:
       NEXT_TELEMETRY_DISABLED: "1"
       DATABASE_URL: postgres://scholartrack_test:scholartrack_test_password@db-test:5432/scholartrack_test
       DATABASE_MIGRATION_URL: postgres://scholartrack_test:scholartrack_test_password@db-test:5432/scholartrack_test
+      # Checkpoint 5: the e2e suite exercises the AI assistant with the
+      # deterministic mock provider only — never a real Groq key.
+      AI_ENABLED: "true"
+      AI_PROVIDER: mock
+      AI_DAILY_GUEST_LIMIT: "50"
+      AI_DAILY_USER_LIMIT: "50"
     volumes:
       - .:/app
       - node_modules:/app/node_modules
