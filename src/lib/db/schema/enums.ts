@@ -490,3 +490,25 @@ export const checklistTaskSourceEnum = pgEnum("checklist_task_source", ["generic
 export const dataRequestTypeEnum = pgEnum("data_request_type", ["export", "deletion"]);
 
 export const dataRequestStatusEnum = pgEnum("data_request_status", ["pending", "completed", "failed"]);
+
+// Discovery / reminders / notifications (Checkpoint 4) --------------------------------
+
+/** What produced a reminder — official deadlines and personal deadlines must stay visually separate. */
+export const reminderSourceEnum = pgEnum("reminder_source", [
+  "official-deadline",
+  "personal-deadline",
+  "checklist",
+  "saved-search",
+  "system",
+]);
+
+export const reminderStatusEnum = pgEnum("reminder_status", ["pending", "dismissed", "completed"]);
+
+export const notificationStatusEnum = pgEnum("notification_status", ["unread", "read", "dismissed"]);
+
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "reminder-upcoming",
+  "reminder-overdue",
+  "saved-search-alert",
+  "system",
+]);

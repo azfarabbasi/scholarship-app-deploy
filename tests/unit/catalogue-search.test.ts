@@ -29,6 +29,8 @@ function makeOpportunity(overrides: Partial<CatalogueOpportunity> & { deadlineIn
     eligibilitySummary: overrides.eligibilitySummary ?? "Open to all applicants with a strong record",
     officialUrl: "https://example.invalid",
     verificationNotes: null,
+    eligibilityRules: [],
+    fundingCategories: [],
     verification: UNVERIFIED_CATALOGUE_VERIFICATION,
     deadlineRawText: "Some date",
     createdAt: "2026-01-01T00:00:00Z",

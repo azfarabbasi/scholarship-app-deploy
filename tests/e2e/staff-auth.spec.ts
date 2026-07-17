@@ -10,6 +10,11 @@ test.describe("Staff authentication and route protection", () => {
     await expect(page.getByRole("heading", { name: "Staff sign-in" })).toBeVisible();
   });
 
+  test("the Checkpoint 4 discovery-quality page (/staff/discovery) is protected like every other staff route", async ({ page }) => {
+    await page.goto("/staff/discovery");
+    await expect(page).toHaveURL(/\/staff\/login\?next=%2Fstaff%2Fdiscovery/);
+  });
+
   test("the login page itself is reachable without a redirect loop", async ({ page }) => {
     await page.goto("/staff/login");
     await expect(page).toHaveURL(/\/staff\/login/);

@@ -22,6 +22,21 @@
  *    different person who later uses this same browser/device.
  *  - Cross-origin requests (official scholarship websites, etc.) are never
  *    intercepted or cached — they always go straight to the network.
+ *  - Checkpoint 4 adds several more session-dependent pages
+ *    (`/eligibility`, `/notifications`, `/compare`, `/opportunities/*`) —
+ *    they're deliberately NOT added to `APP_SHELL_URLS` below (precaching a
+ *    personalised page would bake one visitor's rendered HTML into the
+ *    shared cache), and every cache-write path (precache on install,
+ *    navigation, and the runtime stale-while-revalidate cache) checks the
+ *    same `Cache-Control: no-store`/`private` header `middleware.ts` sets
+ *    for a signed-in visit to any of them before writing anything. `/api/search`
+ *    is intentionally left cacheable via stale-while-revalidate — it only
+ *    ever returns published, public catalogue data, the same trust level as
+ *    the existing `/api/opportunities`. Eligibility answers, saved
+ *    searches, reminders, and notifications are never fetched via a cached
+ *    GET route at all — they're read and written exclusively through
+ *    Server Actions, which this worker never intercepts (GET-only, see the
+ *    `fetch` listener below).
  *
  * Guest data lives in IndexedDB/localStorage, never in Cache Storage, so
  * activating a new version and clearing old caches here never touches guest
@@ -29,7 +44,7 @@
  * IndexedDB (`cloudCache`/`syncOutbox` — see `src/lib/sync/`), never in
  * Cache Storage either.
  */
-const CACHE_VERSION = "v3";
+const CACHE_VERSION = "v5";
 const APP_SHELL_CACHE = `scholartrack-app-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `scholartrack-runtime-${CACHE_VERSION}`;
 const STATIC_ASSET_CACHE = `scholartrack-static-${CACHE_VERSION}`;
@@ -46,11 +61,32 @@ const APP_SHELL_URLS = [
   "/manifest.webmanifest",
 ];
 
+/** Never cache a response the server marked `no-store`/`private` — same check used everywhere below. */
+function isCacheable(response) {
+  const cacheControl = response.headers.get("Cache-Control") || "";
+  return !cacheControl.includes("no-store") && !cacheControl.includes("private");
+}
+
+/**
+ * Precaches one app-shell URL, honoring `Cache-Control` — unlike a plain
+ * `cache.add()`, which would write the response unconditionally. Matters
+ * because the precache list includes pages (`/workspace`, `/privacy`) that
+ * render session-dependent content and are marked `no-store` for a signed-in
+ * visitor; if the install step runs in that visitor's browser, their
+ * personalised response must never land in the shared app-shell cache.
+ */
+async function precacheAppShellUrl(cache, url) {
+  const response = await fetch(url);
+  if (response.ok && isCacheable(response)) {
+    await cache.put(url, response);
+  }
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(APP_SHELL_CACHE);
-      await Promise.allSettled(APP_SHELL_URLS.map((url) => cache.add(url)));
+      await Promise.allSettled(APP_SHELL_URLS.map((url) => precacheAppShellUrl(cache, url)));
       await self.skipWaiting();
     })(),
   );
@@ -82,14 +118,17 @@ async function networkFirstNavigation(request) {
   try {
     const response = await fetch(request);
     // Pages that render session-dependent content for a signed-in student
-    // (e.g. /workspace, /privacy) mark themselves `Cache-Control: no-store`
-    // via middleware.ts when a user is signed in. Never write those to the
+    // (e.g. /workspace, /privacy, /eligibility, /notifications, /compare,
+    // /opportunities/*) mark themselves `Cache-Control: no-store` via
+    // middleware.ts when a user is signed in. Never write those to the
     // shared app-shell cache — a stale copy could otherwise be served to a
     // different person who later uses this same browser/device offline.
-    const cacheControl = response.headers.get("Cache-Control") || "";
-    if (!cacheControl.includes("no-store") && !cacheControl.includes("private")) {
+    if (isCacheable(response)) {
       const cache = await caches.open(APP_SHELL_CACHE);
-      cache.put(request, response.clone());
+      // Awaited deliberately: an un-awaited cache.put() is a dangling microtask the browser
+      // is free to abandon once this handler returns, with no guarantee it lands before a
+      // subsequent "go offline" — exactly what an offline-after-visiting-online-first test needs.
+      await cache.put(request, response.clone());
     }
     return response;
   } catch {
@@ -114,7 +153,7 @@ async function cacheFirst(request) {
   }
   const response = await fetch(request);
   if (response.ok) {
-    cache.put(request, response.clone());
+    await cache.put(request, response.clone());
   }
   return response;
 }
@@ -123,9 +162,9 @@ async function staleWhileRevalidate(request) {
   const cache = await caches.open(RUNTIME_CACHE);
   const cached = await cache.match(request);
   const networkPromise = fetch(request)
-    .then((response) => {
-      if (response.ok) {
-        cache.put(request, response.clone());
+    .then(async (response) => {
+      if (response.ok && isCacheable(response)) {
+        await cache.put(request, response.clone());
       }
       return response;
     })

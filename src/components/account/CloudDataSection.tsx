@@ -70,8 +70,9 @@ export function CloudDataSection() {
       <div>
         <h3 className="text-sm font-semibold text-foreground">Export your cloud data</h3>
         <p className="mt-1 text-sm text-foreground-muted">
-          Contains your profile, tracking state, notes, checklists, custom opportunities, and preferences — your own
-          data only. Never includes your password, session tokens, cookies, or any staff/admin data.
+          Contains your profile, tracking state, notes, checklists, custom opportunities, preferences, eligibility
+          answers, saved searches, reminders, and notifications — your own data only. Never includes your password,
+          session tokens, cookies, or any staff/admin data.
         </p>
         <Button variant="outline" size="sm" className="mt-3" onClick={() => void handleExport()} disabled={exporting}>
           <Download className="h-4 w-4" aria-hidden="true" /> {exporting ? "Preparing…" : "Export account data (JSON)"}
@@ -111,7 +112,7 @@ export function CloudDataSection() {
         {importResult ? (
           <Alert tone={importResult.ok ? "success" : "danger"} className="mt-3">
             {importResult.ok
-              ? `Imported ${importResult.trackingImported} tracked opportunities, ${importResult.notesImported} notes, ${importResult.checklistTasksImported} checklist tasks, ${importResult.customOpportunitiesImported} custom opportunities.`
+              ? `Imported ${importResult.trackingImported} tracked opportunities, ${importResult.notesImported} notes, ${importResult.checklistTasksImported} checklist tasks, ${importResult.customOpportunitiesImported} custom opportunities, ${importResult.savedSearchesImported} saved searches, ${importResult.remindersImported} reminders, ${importResult.notificationsImported} notifications${importResult.eligibilityAnswersImported ? ", eligibility answers" : ""}${importResult.reminderPreferencesImported ? ", reminder preferences" : ""}.`
               : importResult.error}
           </Alert>
         ) : null}
@@ -125,6 +126,8 @@ export function CloudDataSection() {
               <li>{pending.summary.notesCount} notes</li>
               <li>{pending.summary.checklistTaskCount} checklist tasks</li>
               <li>{pending.summary.customOpportunityCount} custom opportunities</li>
+              <li>{pending.summary.savedSearchCount} saved searches</li>
+              <li>{pending.summary.reminderCount} reminders</li>
             </ul>
 
             <div className="mt-3">

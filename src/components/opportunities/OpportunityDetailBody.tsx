@@ -4,7 +4,10 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { Alert } from "@/components/ui/Alert";
 import { GuestTrackingPanel } from "@/components/workspace/GuestTrackingPanel";
+import { MatchReasonsPanel } from "@/components/matching/MatchReasonsPanel";
 import { useDeadlineEvaluation } from "@/hooks/useDeadlineEvaluation";
+import { useMatchData } from "@/hooks/useMatchData";
+import { evaluateMatch } from "@/lib/matching/engine";
 import type { CatalogueOpportunity } from "@/lib/catalogue/types";
 import { DeadlineBadge, DeadlineCountdownText, OriginBadge, VerificationBadge } from "./badges";
 import { ReportCorrectionDialog } from "./ReportCorrectionDialog";
@@ -16,9 +19,17 @@ const VERIFICATION_STATUS_LABELS: Record<CatalogueOpportunity["verification"]["s
   stale: "Verified previously — due for re-check",
 };
 
-export function OpportunityDetailBody({ opportunity }: { opportunity: CatalogueOpportunity }) {
+export function OpportunityDetailBody({
+  opportunity,
+  studentProfileId = null,
+}: {
+  opportunity: CatalogueOpportunity;
+  studentProfileId?: string | null;
+}) {
   const evaluation = useDeadlineEvaluation(opportunity.deadlineInput);
   const location = [...opportunity.countries, ...opportunity.regions].join(", ");
+  const { answers, planning, loading: matchLoading } = useMatchData(studentProfileId);
+  const match = !matchLoading && opportunity.kind === "built-in" && evaluation ? evaluateMatch(opportunity, answers, planning, evaluation) : null;
 
   return (
     <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
@@ -164,7 +175,8 @@ export function OpportunityDetailBody({ opportunity }: { opportunity: CatalogueO
         ) : null}
       </div>
 
-      <div className="lg:w-96 lg:shrink-0">
+      <div className="flex flex-col gap-6 lg:w-96 lg:shrink-0">
+        {match ? <MatchReasonsPanel result={match} /> : null}
         <GuestTrackingPanel opportunityId={opportunity.id} title={opportunity.title} />
       </div>
     </div>

@@ -58,6 +58,8 @@ export function customOpportunityToCatalogueOpportunity(record: CustomOpportunit
     eligibilitySummary: record.eligibilitySummary,
     officialUrl: record.officialUrl,
     verificationNotes: record.verificationNotes,
+    eligibilityRules: [],
+    fundingCategories: [],
     verification: UNVERIFIED_CATALOGUE_VERIFICATION,
     deadlineInput: customOpportunityDeadlineInput(record),
     deadlineRawText: record.deadlineRawText,

@@ -37,6 +37,21 @@ export const UNVERIFIED_CATALOGUE_VERIFICATION: CatalogueVerificationInfo = {
 };
 
 /**
+ * A public projection of one approved (`active`) structured eligibility rule
+ * — only ever populated from rows the public RLS policy already exposes.
+ * Consumed by the deterministic matching engine (`src/lib/matching/engine.ts`);
+ * never contains staff notes or draft rules.
+ */
+export interface PublicEligibilityRule {
+  kind: string;
+  fieldKey: string;
+  operator: string;
+  expectedValue: unknown;
+  unit: string | null;
+  explanation: string;
+}
+
+/**
  * The unified, display-ready shape used across the catalogue, workspace, and
  * calendar. Built-in records are derived from the versioned seed at build
  * time; custom records are supplied by the guest-local storage layer at
@@ -59,6 +74,10 @@ export interface CatalogueOpportunity {
   officialUrl: string | null;
   verificationNotes: string | null;
   verification: CatalogueVerificationInfo;
+  /** Approved structured eligibility rules (empty for custom opportunities and for records without rule data). */
+  eligibilityRules: PublicEligibilityRule[];
+  /** Distinct published funding-benefit categories (e.g. "tuition", "stipend") — empty when none are recorded yet. */
+  fundingCategories: string[];
   deadlineInput: DeadlineEvaluationInput;
   deadlineRawText: string;
   createdAt: string;

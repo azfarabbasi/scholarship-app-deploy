@@ -144,11 +144,23 @@ export async function getPublishedOpportunities(): Promise<CatalogueOpportunity[
         .innerJoin(schema.studyLevels, eq(schema.opportunityStudyLevels.studyLevelId, schema.studyLevels.id))
         .where(inArray(schema.opportunityStudyLevels.opportunityId, ids)),
       db
-        .select({ opportunityId: schema.fundingBenefits.opportunityId, summary: schema.fundingBenefits.summary })
+        .select({
+          opportunityId: schema.fundingBenefits.opportunityId,
+          summary: schema.fundingBenefits.summary,
+          kind: schema.fundingBenefits.kind,
+        })
         .from(schema.fundingBenefits)
         .where(and(inArray(schema.fundingBenefits.opportunityId, ids), eq(schema.fundingBenefits.status, "published"))),
       db
-        .select({ opportunityId: schema.eligibilityRules.opportunityId, explanation: schema.eligibilityRules.explanation })
+        .select({
+          opportunityId: schema.eligibilityRules.opportunityId,
+          kind: schema.eligibilityRules.kind,
+          fieldKey: schema.eligibilityRules.fieldKey,
+          operator: schema.eligibilityRules.operator,
+          expectedValue: schema.eligibilityRules.expectedValue,
+          unit: schema.eligibilityRules.unit,
+          explanation: schema.eligibilityRules.explanation,
+        })
         .from(schema.eligibilityRules)
         .where(and(inArray(schema.eligibilityRules.opportunityId, ids), eq(schema.eligibilityRules.status, "active"))),
       db
@@ -233,6 +245,15 @@ export async function getPublishedOpportunities(): Promise<CatalogueOpportunity[
       officialUrl,
       verificationNotes: null,
       verification,
+      eligibilityRules: (eligibilityRulesByOpportunity.get(row.id) ?? []).map((rule) => ({
+        kind: rule.kind,
+        fieldKey: rule.fieldKey,
+        operator: rule.operator,
+        expectedValue: rule.expectedValue,
+        unit: rule.unit,
+        explanation: rule.explanation,
+      })),
+      fundingCategories: [...new Set((benefitsByOpportunity.get(row.id) ?? []).map((b) => b.kind))],
       deadlineInput: buildDeadlineInput(
         cyclesByOpportunity.get(row.id) ?? [],
         occurrencesByCycle,

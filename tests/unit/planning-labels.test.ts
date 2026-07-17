@@ -28,6 +28,8 @@ function makeOpportunity(overrides: Partial<CatalogueOpportunity> = {}): Catalog
     eligibilitySummary: "Open to all",
     officialUrl: null,
     verificationNotes: null,
+    eligibilityRules: [],
+    fundingCategories: [],
     verification: UNVERIFIED_CATALOGUE_VERIFICATION,
     deadlineInput: rollingInput,
     deadlineRawText: "Rolling",

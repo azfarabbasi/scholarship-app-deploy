@@ -16,7 +16,7 @@ export default async function PrivacyPage() {
   return (
     <Container className="max-w-3xl py-8 sm:py-10">
       <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">Privacy</h1>
-      <p className="mt-2 text-sm text-foreground-muted">Last reviewed for Checkpoint 3.</p>
+      <p className="mt-2 text-sm text-foreground-muted">Last reviewed for Checkpoint 4.</p>
 
       <div className="mt-6 flex flex-col gap-6 text-sm leading-relaxed text-foreground-muted">
         {session ? (
@@ -27,8 +27,8 @@ export default async function PrivacyPage() {
         ) : (
           <Alert tone="info" title="You are using ScholarTrack as a guest">
             An account is entirely optional. Everything you do — shortlisting, notes, checklists, custom
-            opportunities, and preferences — is stored only in this browser unless you create an account and choose
-            to sync it.
+            opportunities, eligibility answers, saved searches, reminders, and preferences — is stored only in this
+            browser unless you create an account and choose to sync it.
           </Alert>
         )}
 
@@ -49,20 +49,55 @@ export default async function PrivacyPage() {
           <h2 className="text-base font-semibold text-foreground">Account data is stored in ScholarTrack&rsquo;s database</h2>
           <p className="mt-2">
             If you create an account, your profile, shortlist, application stages, personal deadlines, notes,
-            checklists, custom opportunities, and preferences are stored in ScholarTrack&rsquo;s Supabase-hosted
-            database. This data is used only to provide your workspace and sync it across your devices — never for
-            advertising, never sold, and never shared with opportunity providers.
+            checklists, custom opportunities, preferences, eligibility answers, saved searches, reminders, and
+            notifications are stored in ScholarTrack&rsquo;s Supabase-hosted database. This data is used only to
+            provide your workspace and sync it across your devices — never for advertising, never sold, and never
+            shared with opportunity providers.
           </p>
         </section>
 
         <section>
-          <h2 className="text-base font-semibold text-foreground">Your notes and checklists are private</h2>
+          <h2 className="text-base font-semibold text-foreground">Eligibility answers are optional, and matching is never AI</h2>
           <p className="mt-2">
-            Notes and checklist tasks are your own private workspace data. Row-level security in the database
-            restricts every account-owned table to your own account; staff cannot casually browse another
-            student&rsquo;s private notes, checklist, or custom opportunities. Please don&rsquo;t paste passport
-            numbers, financial details, or other sensitive document contents into notes — there is nowhere in
-            ScholarTrack designed to protect that kind of data, guest or signed in.
+            The{" "}
+            <Link href="/eligibility" className="underline">
+              eligibility questionnaire
+            </Link>{" "}
+            is entirely optional and every field can be left blank. It deliberately never asks for passport or ID
+            numbers, your address, financial or medical information, religious or ethnic identity, or the contents
+            of a transcript, CV, or recommendation letter. Match labels (like &ldquo;Strong potential fit&rdquo; or
+            &ldquo;Needs verification&rdquo;) are produced entirely by a fixed, human-authored rule engine that
+            compares your answers against an opportunity&rsquo;s structured eligibility rules and deadline data — no
+            AI or machine-learning model is used anywhere in this comparison. A match label is a planning aid only:
+            it is never a final eligibility, admission, or funding decision, and it is always shown next to a plain
+            explanation of the specific rules it used (or, honestly, that it didn&rsquo;t have enough data to judge).
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-base font-semibold text-foreground">Reminders and browser notifications</h2>
+          <p className="mt-2">
+            Reminders are generated deterministically from official exact-and-verified deadlines and from your own
+            personal deadlines — ScholarTrack never invents or estimates a date for you. There is no paid SMS,
+            WhatsApp, or email notification service anywhere in the product. If you explicitly enable browser
+            notifications (only ever after you click a button asking for permission — never automatically), the
+            notification is delivered by your own browser and is visible on the device you granted permission on; it
+            is not a message sent through any ScholarTrack-operated push service. Notifications and reminders are
+            never shared across devices except via the same account sync as the rest of your workspace.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-base font-semibold text-foreground">Your notes, eligibility answers, and discovery data are private</h2>
+          <p className="mt-2">
+            Notes, checklist tasks, eligibility answers, saved searches, and reminders are your own private workspace
+            data. Row-level security in the database restricts every account-owned table to your own account —
+            staff cannot casually browse another student&rsquo;s private notes, checklist, custom opportunities,
+            eligibility answers, saved searches, or reminders. The one staff-facing page that touches this data at
+            all (the discovery-quality support tooling) only ever shows aggregate counts across all students, never
+            an individual student&rsquo;s saved search text, reminder title, or note contents. Please don&rsquo;t
+            paste passport numbers, financial details, or other sensitive document contents into notes — there is
+            nowhere in ScholarTrack designed to protect that kind of data, guest or signed in.
           </p>
         </section>
 
@@ -127,8 +162,9 @@ export default async function PrivacyPage() {
           <p className="mt-2">
             No third-party analytics or tracking scripts run in this checkpoint. An internal analytics abstraction
             exists in the codebase but is disabled by default and collects nothing. AI is not used anywhere in
-            Checkpoint 3 — every planning feature here (preferences, tracking, sync) is deterministic, not
-            AI-generated. There is no advertising.
+            ScholarTrack — every planning and matching feature (preferences, tracking, sync, search ranking,
+            eligibility matching, reminders) is deterministic and human-authored, not AI-generated. There is no
+            advertising.
           </p>
         </section>
       </div>

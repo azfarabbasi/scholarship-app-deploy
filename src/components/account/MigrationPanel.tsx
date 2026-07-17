@@ -13,7 +13,14 @@ type LoadState =
   | {
       status: "ready";
       guest: BackupPayload;
-      cloudCounts: { tracking: number; notes: number; checklistTasks: number; customOpportunities: number };
+      cloudCounts: {
+        tracking: number;
+        notes: number;
+        checklistTasks: number;
+        customOpportunities: number;
+        savedSearches: number;
+        reminders: number;
+      };
       collisions: number;
     };
 
@@ -63,9 +70,17 @@ export function MigrationPanel() {
     customOpportunities: state.guest.data.customOpportunities.length,
     notes: state.guest.data.workspace.filter((r) => r.notes.trim().length > 0).length,
     checklistTasks: state.guest.data.workspace.reduce((sum, r) => sum + r.checklist.length, 0),
+    savedSearches: state.guest.data.savedSearches?.length ?? 0,
+    reminders: state.guest.data.reminders?.length ?? 0,
+    hasEligibilityAnswers: Boolean(state.guest.data.eligibilityAnswers),
   };
 
-  const hasNothingToMigrate = guestCounts.tracking === 0 && guestCounts.customOpportunities === 0;
+  const hasNothingToMigrate =
+    guestCounts.tracking === 0 &&
+    guestCounts.customOpportunities === 0 &&
+    guestCounts.savedSearches === 0 &&
+    guestCounts.reminders === 0 &&
+    !guestCounts.hasEligibilityAnswers;
 
   return (
     <Card>
@@ -78,7 +93,11 @@ export function MigrationPanel() {
             {result.trackingCreated} opportunity{result.trackingCreated === 1 ? "" : "ies"} copied, {result.trackingSkipped}{" "}
             skipped as duplicates, {result.customOpportunitiesCreated} custom opportunit
             {result.customOpportunitiesCreated === 1 ? "y" : "ies"} copied, {result.notesWritten} note(s) written,{" "}
-            {result.checklistTasksWritten} checklist task(s) written.
+            {result.checklistTasksWritten} checklist task(s) written, {result.savedSearchesCreated} saved search
+            {result.savedSearchesCreated === 1 ? "" : "es"} copied, {result.remindersCreated} reminder
+            {result.remindersCreated === 1 ? "" : "s"} copied
+            {result.eligibilityAnswersMigrated ? ", eligibility answers copied" : ""}
+            {result.reminderPreferencesMigrated ? ", reminder preferences copied" : ""}.
             {result.conflicts.length > 0 ? (
               <span className="mt-1 block font-medium">
                 {result.conflicts.length} item(s) need review — the cloud version was newer and was kept.
@@ -107,6 +126,18 @@ export function MigrationPanel() {
               <div>
                 <p className="text-xs text-foreground-muted">Custom opportunities (local)</p>
                 <p className="font-semibold text-foreground">{guestCounts.customOpportunities}</p>
+              </div>
+              <div>
+                <p className="text-xs text-foreground-muted">Saved searches (local)</p>
+                <p className="font-semibold text-foreground">{guestCounts.savedSearches}</p>
+              </div>
+              <div>
+                <p className="text-xs text-foreground-muted">Reminders (local)</p>
+                <p className="font-semibold text-foreground">{guestCounts.reminders}</p>
+              </div>
+              <div>
+                <p className="text-xs text-foreground-muted">Eligibility answers (local)</p>
+                <p className="font-semibold text-foreground">{guestCounts.hasEligibilityAnswers ? "Saved" : "None"}</p>
               </div>
             </div>
 

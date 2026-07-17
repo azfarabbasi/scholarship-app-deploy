@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test } from "./fixtures";
 
 const STUDENT_EMAIL = process.env.E2E_STUDENT_EMAIL;
@@ -135,6 +136,50 @@ test.describe("Authenticated student flows (require a real Supabase project + te
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toMatch(/scholartrack-account-.*\.json/);
   });
+
+  test("cloud export includes the Checkpoint 4 data sections, not just the Checkpoint 3 workspace shape", async ({ page }) => {
+    await signIn(page);
+
+    // Create at least one Checkpoint 4 record so the export isn't trivially empty.
+    await page.goto("/opportunities");
+    await page.getByLabel("Search opportunities").fill("DAAD");
+    await page.getByRole("button", { name: "Save this search" }).click();
+    await page.getByLabel("Saved search name").fill("Export inclusion check");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+
+    await page.goto("/account/data");
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: /export account data/i }).click();
+    const download = await downloadPromise;
+    const path = await download.path();
+    expect(path).not.toBeNull();
+    const payload = JSON.parse(readFileSync(path as string, "utf-8"));
+
+    for (const key of ["eligibilityAnswers", "savedSearches", "reminderPreferences", "reminders", "notifications"]) {
+      expect(Object.keys(payload)).toContain(key);
+    }
+    expect(payload.savedSearches.some((s: { name: string }) => s.name === "Export inclusion check")).toBe(true);
+  });
+
+  test("a saved search created while signed in is still there after logging out and back in", async ({ page }) => {
+    const searchName = `Sync check ${Date.now()}`;
+    await signIn(page);
+    await page.goto("/opportunities");
+    await page.getByLabel("Search opportunities").fill("DAAD");
+    await page.getByRole("button", { name: "Save this search" }).click();
+    await page.getByLabel("Saved search name").fill(searchName);
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await page.getByText("Saved searches", { exact: true }).click();
+    await expect(page.getByText(searchName)).toBeVisible();
+
+    await page.locator('form[action="/auth/logout"] button').click();
+    await expect(page).toHaveURL("/");
+
+    await signIn(page);
+    await page.goto("/opportunities");
+    await page.getByText("Saved searches", { exact: true }).click();
+    await expect(page.getByText(searchName)).toBeVisible();
+  });
 });
 
 test.describe("Cross-user isolation (requires two real, confirmed student accounts)", () => {
@@ -151,5 +196,44 @@ test.describe("Cross-user isolation (requires two real, confirmed student accoun
     await page.getByRole("button", { name: /^sign in$/i }).click();
     await expect(page).toHaveURL(/\/account/, { timeout: 15_000 });
     await expect(page.getByText(STUDENT_EMAIL as string)).toHaveCount(0);
+  });
+
+  test("a second student cannot see the first student's saved search or eligibility answers", async ({ page }) => {
+    const isolationSearchName = `Isolation check ${Date.now()}`;
+
+    // Student 1 creates a saved search and an eligibility answer.
+    await page.goto("/auth/login");
+    await page.getByLabel("Email").fill(STUDENT_EMAIL as string);
+    await page.getByLabel("Password").fill(STUDENT_PASSWORD as string);
+    await page.getByRole("button", { name: /^sign in$/i }).click();
+    await expect(page).toHaveURL(/\/account/, { timeout: 15_000 });
+
+    await page.goto("/opportunities");
+    await page.getByLabel("Search opportunities").fill("DAAD");
+    await page.getByRole("button", { name: "Save this search" }).click();
+    await page.getByLabel("Saved search name").fill(isolationSearchName);
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+
+    await page.goto("/eligibility");
+    await page.getByLabel("Nationality / citizenship").fill("Country Only Student One Should Have");
+    await page.getByRole("button", { name: "Save answers" }).click();
+    await expect(page.getByText("Saved to your account")).toBeVisible();
+
+    await page.locator('form[action="/auth/logout"] button').click();
+    await expect(page).toHaveURL("/");
+
+    // Student 2 must see neither.
+    await page.goto("/auth/login");
+    await page.getByLabel("Email").fill(STUDENT2_EMAIL as string);
+    await page.getByLabel("Password").fill(STUDENT2_PASSWORD as string);
+    await page.getByRole("button", { name: /^sign in$/i }).click();
+    await expect(page).toHaveURL(/\/account/, { timeout: 15_000 });
+
+    await page.goto("/opportunities");
+    await page.getByText("Saved searches", { exact: true }).click();
+    await expect(page.getByText(isolationSearchName)).toHaveCount(0);
+
+    await page.goto("/eligibility");
+    await expect(page.getByLabel("Nationality / citizenship")).not.toHaveValue("Country Only Student One Should Have");
   });
 });

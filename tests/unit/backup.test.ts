@@ -17,6 +17,10 @@ import { createCustomOpportunity } from "@/lib/storage/custom-opportunities";
 import { toggleShortlisted } from "@/lib/storage/workspace";
 import { SCHEMA_VERSION } from "@/lib/storage/types";
 import type { CustomOpportunityInput } from "@/lib/schemas/custom-opportunity";
+import { setGuestEligibilityAnswers, getGuestEligibilityAnswers } from "@/lib/storage/eligibility";
+import { createGuestSavedSearch, getAllGuestSavedSearches } from "@/lib/storage/saved-searches";
+import { setGuestReminderPreferences, upsertGuestReminders, getAllGuestReminders, getGuestReminderPreferences } from "@/lib/storage/reminders";
+import { createGuestNotification, getAllGuestNotifications } from "@/lib/storage/notifications";
 
 async function resetDatabase() {
   await resetDbConnectionForTests();
@@ -66,6 +70,59 @@ describe("backup export", () => {
   });
 });
 
+describe("backup export: Checkpoint 4 data types", () => {
+  it("includes the Checkpoint 4 sections (defaulted, not omitted) even with nothing set", async () => {
+    const payload = await buildBackupPayload();
+    expect(payload.data.eligibilityAnswers).not.toBeNull();
+    expect(payload.data.savedSearches).toEqual([]);
+    expect(payload.data.reminderPreferences).not.toBeNull();
+    expect(payload.data.reminders).toEqual([]);
+    expect(payload.data.notifications).toEqual([]);
+  });
+
+  it("captures eligibility answers, saved searches, reminder preferences, reminders, and notifications", async () => {
+    await setGuestEligibilityAnswers({ nationality: "Germany", fieldsOfInterest: [], preferredCountries: [], preferredRegions: [] });
+    await createGuestSavedSearch({
+      name: "Germany scholarships",
+      queryText: "engineering",
+      filters: {},
+      sortMode: "relevance",
+      resultCountSnapshot: 3,
+      resultSnapshot: ["a", "b", "c"],
+    });
+    await setGuestReminderPreferences({ remindersEnabled: true, officialLeadDays: [7], personalLeadDays: [1] });
+    await upsertGuestReminders([
+      {
+        stableKey: "official-deadline:opp-1:2027-03-01:7",
+        source: "official-deadline",
+        targetType: "built-in",
+        targetId: "opp-1",
+        title: "Official deadline for \"Test Scholarship\"",
+        dueAt: "2027-03-01",
+        leadDays: 7,
+      },
+    ]);
+    await createGuestNotification({
+      type: "saved-search-alert",
+      source: "saved-search",
+      title: "New match",
+      message: "A new opportunity matches one of your saved searches.",
+      targetType: null,
+      targetId: null,
+      savedSearchId: null,
+      dueAt: null,
+    });
+
+    const payload = await buildBackupPayload();
+    expect(payload.data.eligibilityAnswers?.answers.nationality).toBe("Germany");
+    expect(payload.data.savedSearches).toHaveLength(1);
+    expect(payload.data.savedSearches[0].name).toBe("Germany scholarships");
+    expect(payload.data.reminderPreferences?.officialLeadDays).toEqual([7]);
+    expect(payload.data.reminders).toHaveLength(1);
+    expect(payload.data.notifications).toHaveLength(1);
+  });
+});
+
 describe("backup validation", () => {
   it("accepts a well-formed backup payload", async () => {
     const payload = await buildBackupPayload();
@@ -99,6 +156,37 @@ describe("backup validation", () => {
   it("does not flag an ordinary payload as dangerous", async () => {
     const payload = await buildBackupPayload();
     expect(containsDangerousKeys(payload)).toBe(false);
+  });
+
+  it("still validates a pre-Checkpoint-4 backup that has no Checkpoint 4 fields at all", () => {
+    const legacyPayload = {
+      app: BACKUP_APP_ID,
+      schemaVersion: 3,
+      createdAt: "2026-01-01T00:00:00Z",
+      counts: { workspace: 0, customOpportunities: 0 },
+      data: { workspace: [], customOpportunities: [], preferences: null },
+    };
+    const result = validateBackupPayload(legacyPayload);
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.summary.savedSearchCount).toBe(0);
+      expect(result.summary.reminderCount).toBe(0);
+    }
+  });
+
+  it("reports accurate saved-search and reminder counts in the validation summary", async () => {
+    await createGuestSavedSearch({ name: "A", queryText: "", filters: {}, sortMode: "relevance", resultCountSnapshot: 0, resultSnapshot: [] });
+    await upsertGuestReminders([
+      { stableKey: "personal-deadline:built-in:opp-1:2027-01-01:1", source: "personal-deadline", targetType: "built-in", targetId: "opp-1", title: "x", dueAt: "2027-01-01", leadDays: 1 },
+      { stableKey: "personal-deadline:built-in:opp-2:2027-02-01:1", source: "personal-deadline", targetType: "built-in", targetId: "opp-2", title: "y", dueAt: "2027-02-01", leadDays: 1 },
+    ]);
+    const payload = await buildBackupPayload();
+    const result = validateBackupPayload(payload);
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.summary.savedSearchCount).toBe(1);
+      expect(result.summary.reminderCount).toBe(2);
+    }
   });
 });
 
@@ -146,6 +234,69 @@ describe("backup import: merge vs replace", () => {
   });
 });
 
+describe("backup import: Checkpoint 4 data types round-trip", () => {
+  it("restores eligibility answers, saved searches, reminder preferences, reminders, and notifications on import", async () => {
+    await setGuestEligibilityAnswers({ nationality: "France", fieldsOfInterest: [], preferredCountries: [], preferredRegions: [] });
+    await createGuestSavedSearch({ name: "Round trip search", queryText: "", filters: {}, sortMode: "relevance", resultCountSnapshot: 0, resultSnapshot: [] });
+    await setGuestReminderPreferences({ remindersEnabled: false, officialLeadDays: [14], personalLeadDays: [3] });
+    await upsertGuestReminders([
+      { stableKey: "official-deadline:opp-1:2027-05-01:14", source: "official-deadline", targetType: "built-in", targetId: "opp-1", title: "Round trip reminder", dueAt: "2027-05-01", leadDays: 14 },
+    ]);
+    await createGuestNotification({
+      type: "system",
+      source: "system",
+      title: "Round trip notification",
+      message: "",
+      targetType: null,
+      targetId: null,
+      savedSearchId: null,
+      dueAt: null,
+    });
+
+    const payload = await buildBackupPayload();
+
+    // Simulate restoring onto a different, empty browser/profile.
+    await clearAllGuestData();
+    expect(await getAllGuestSavedSearches()).toHaveLength(0);
+
+    await importBackupPayload(payload, "replace");
+
+    expect((await getGuestEligibilityAnswers()).answers.nationality).toBe("France");
+    const searches = await getAllGuestSavedSearches();
+    expect(searches).toHaveLength(1);
+    expect(searches[0].name).toBe("Round trip search");
+    expect((await getGuestReminderPreferences()).officialLeadDays).toEqual([14]);
+    const reminders = await getAllGuestReminders();
+    expect(reminders).toHaveLength(1);
+    expect(reminders[0].title).toBe("Round trip reminder");
+    const notifications = await getAllGuestNotifications();
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].title).toBe("Round trip notification");
+  });
+
+  it("merge mode adds Checkpoint 4 records from the backup without deleting ones already present locally", async () => {
+    await createGuestSavedSearch({ name: "Kept locally", queryText: "", filters: {}, sortMode: "relevance", resultCountSnapshot: 0, resultSnapshot: [] });
+    const payload = await buildBackupPayload();
+    payload.data.savedSearches.push({
+      id: crypto.randomUUID(),
+      name: "From the backup file",
+      queryText: "",
+      filters: {},
+      sortMode: "relevance",
+      resultCountSnapshot: 0,
+      resultSnapshot: [],
+      lastCheckedAt: null,
+      alertsEnabled: true,
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+
+    await importBackupPayload(payload, "merge");
+    const names = (await getAllGuestSavedSearches()).map((s) => s.name).sort();
+    expect(names).toEqual(["From the backup file", "Kept locally"]);
+  });
+});
+
 describe("clear all local data", () => {
   it("clears workspace, custom opportunities, and preferences", async () => {
     await toggleShortlisted("built-in-1");
@@ -155,6 +306,25 @@ describe("clear all local data", () => {
     const db = await getDb();
     expect(await db.getAll("workspace")).toHaveLength(0);
     expect(await db.getAll("customOpportunities")).toHaveLength(0);
+  });
+
+  it("also clears every Checkpoint 4 store: saved searches, reminders, notifications, eligibility answers, reminder preferences", async () => {
+    await setGuestEligibilityAnswers({ nationality: "Germany", fieldsOfInterest: [], preferredCountries: [], preferredRegions: [] });
+    await createGuestSavedSearch({ name: "A", queryText: "", filters: {}, sortMode: "relevance", resultCountSnapshot: 0, resultSnapshot: [] });
+    await setGuestReminderPreferences({ remindersEnabled: false, officialLeadDays: [30], personalLeadDays: [30] });
+    await upsertGuestReminders([
+      { stableKey: "personal-deadline:built-in:opp-1:2027-01-01:1", source: "personal-deadline", targetType: "built-in", targetId: "opp-1", title: "x", dueAt: "2027-01-01", leadDays: 1 },
+    ]);
+    await createGuestNotification({ type: "system", source: "system", title: "x", message: "", targetType: null, targetId: null, savedSearchId: null, dueAt: null });
+
+    await clearAllGuestData();
+
+    expect(await getAllGuestSavedSearches()).toHaveLength(0);
+    expect(await getAllGuestReminders()).toHaveLength(0);
+    expect(await getAllGuestNotifications()).toHaveLength(0);
+    // Singletons reset to defaults rather than "not found", matching getGuestEligibilityAnswers()/getGuestReminderPreferences().
+    expect((await getGuestEligibilityAnswers()).answers.nationality).toBeUndefined();
+    expect((await getGuestReminderPreferences()).officialLeadDays).toEqual([7]);
   });
 });
 

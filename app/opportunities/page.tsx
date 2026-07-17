@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { CatalogueExplorer } from "@/components/opportunities/CatalogueExplorer";
 import { isDatabaseConfigured } from "@/lib/env";
 import { getPublishedOpportunityCount } from "@/lib/catalogue/db-repository";
+import { getStudentSession } from "@/lib/auth/student-session";
 
 // The published-opportunity count is live database state (publish/archive
 // changes it), so this page must never be served from a build-time snapshot.
@@ -34,7 +35,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function OpportunitiesPage() {
-  const count = await getBuiltInCount();
+  const [count, session] = await Promise.all([getBuiltInCount(), getStudentSession()]);
 
   return (
     <Container className="py-8 sm:py-10">
@@ -46,7 +47,7 @@ export default async function OpportunitiesPage() {
         </p>
       </div>
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-        <CatalogueExplorer />
+        <CatalogueExplorer studentProfileId={session?.studentProfileId ?? null} />
       </Suspense>
     </Container>
   );

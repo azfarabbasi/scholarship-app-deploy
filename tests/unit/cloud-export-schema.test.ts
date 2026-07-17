@@ -104,3 +104,135 @@ describe("validateCloudExportPayload", () => {
     expect(result.valid).toBe(false);
   });
 });
+
+describe("validateCloudExportPayload: Checkpoint 4 fields", () => {
+  it("still accepts an export with no Checkpoint 4 fields at all (pre-Checkpoint-4 shape)", () => {
+    const result = validateCloudExportPayload(samplePayload());
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.summary.savedSearchCount).toBe(0);
+      expect(result.summary.reminderCount).toBe(0);
+    }
+  });
+
+  it("accepts and counts eligibility answers, saved searches, reminder preferences, reminders, and notifications", () => {
+    const payload = samplePayload({
+      eligibilityAnswers: {
+        countryOfResidence: null,
+        nationality: "Germany",
+        currentStudyLevel: null,
+        intendedStudyLevel: null,
+        fieldsOfInterest: [],
+        graduationYear: null,
+        targetIntakeYear: null,
+        targetIntakeTerm: null,
+        preferredCountries: [],
+        preferredRegions: [],
+        languageTestStatus: null,
+        researchExperience: null,
+        workExperienceYears: null,
+        finalYearStatus: null,
+        fundingPreference: null,
+        studyMode: null,
+      },
+      savedSearches: [
+        {
+          id: validUuid,
+          name: "Germany scholarships",
+          queryText: "",
+          filters: {},
+          sortMode: "relevance",
+          resultCountSnapshot: 0,
+          resultSnapshot: [],
+          lastCheckedAt: null,
+          alertsEnabled: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      reminderPreferences: { remindersEnabled: true, officialLeadDays: [7], personalLeadDays: [1], savedSearchAlertsEnabled: true },
+      reminders: [
+        {
+          id: validUuid,
+          stableKey: "official-deadline:opp-1:2027-03-01:7",
+          source: "official-deadline",
+          targetType: "built-in",
+          targetId: opportunityUuid,
+          title: "Official deadline",
+          dueAt: new Date().toISOString(),
+          leadDays: 7,
+          status: "pending",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      notifications: [
+        {
+          id: validUuid,
+          type: "system",
+          source: "system",
+          title: "Hello",
+          message: "",
+          targetType: null,
+          targetId: null,
+          savedSearchId: null,
+          dueAt: null,
+          status: "unread",
+          readAt: null,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    });
+
+    const result = validateCloudExportPayload(payload);
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.payload.eligibilityAnswers?.nationality).toBe("Germany");
+      expect(result.summary.savedSearchCount).toBe(1);
+      expect(result.summary.reminderCount).toBe(1);
+    }
+  });
+
+  it("rejects a saved search with an unrecognised extra field (strict schema)", () => {
+    const payload = samplePayload({
+      savedSearches: [
+        {
+          id: validUuid,
+          name: "x",
+          queryText: "",
+          filters: {},
+          sortMode: "relevance",
+          resultCountSnapshot: 0,
+          resultSnapshot: [],
+          lastCheckedAt: null,
+          alertsEnabled: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          notAllowedField: true,
+        },
+      ],
+    });
+    expect(validateCloudExportPayload(payload).valid).toBe(false);
+  });
+
+  it("rejects an invalid reminder status enum value", () => {
+    const payload = samplePayload({
+      reminders: [
+        {
+          id: validUuid,
+          stableKey: "x",
+          source: "personal-deadline",
+          targetType: "built-in",
+          targetId: opportunityUuid,
+          title: "x",
+          dueAt: new Date().toISOString(),
+          leadDays: 1,
+          status: "not-a-real-status",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+    });
+    expect(validateCloudExportPayload(payload).valid).toBe(false);
+  });
+});

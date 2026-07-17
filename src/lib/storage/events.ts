@@ -3,7 +3,16 @@
  * without a state-management dependency. Cross-tab sync is intentionally out
  * of scope for Checkpoint 1 (guest data is single-browser, single-tab first).
  */
-export type StorageChannel = "workspace" | "customOpportunities" | "preferences" | "backup";
+export type StorageChannel =
+  | "workspace"
+  | "customOpportunities"
+  | "preferences"
+  | "backup"
+  | "eligibilityAnswers"
+  | "savedSearches"
+  | "reminderPreferences"
+  | "reminders"
+  | "notifications";
 
 const target = new EventTarget();
 

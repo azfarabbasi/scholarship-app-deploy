@@ -36,6 +36,20 @@
       "when": 1784181319919,
       "tag": "0004_student_workspace_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784188766853,
+      "tag": "0005_discovery_reminders",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784188800139,
+      "tag": "0006_discovery_grants_and_search",
+      "breakpoints": true
     }
   ]
 }

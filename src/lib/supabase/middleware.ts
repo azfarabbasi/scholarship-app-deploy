@@ -7,15 +7,28 @@ const PUBLIC_AUTH_PATHS = ["/auth/login", "/auth/signup", "/auth/callback"];
 
 /**
  * Public pages that render session-dependent content (a signed-in student's
- * email, profile id, etc.) via a Server Component, but are NOT under
- * `/account` and so are otherwise eligible for the service worker's
- * app-shell cache. Marking the response `Cache-Control: no-store` when a
- * user is signed in stops the service worker from ever writing that
- * specific person's rendered page into the shared cache — see the matching
- * check in `public/sw.js`'s `networkFirstNavigation`. Guest (signed-out)
- * responses are unaffected and remain cacheable for offline use.
+ * email, profile id, eligibility-based match labels, etc.) via a Server
+ * Component, but are NOT under `/account` and so are otherwise eligible for
+ * the service worker's app-shell cache. Marking the response
+ * `Cache-Control: no-store` when a user is signed in stops the service
+ * worker from ever writing that specific person's rendered page into the
+ * shared cache — see the matching check in `public/sw.js`'s
+ * `networkFirstNavigation`.
+ *
+ * All of these call `getStudentSession()`, which reads cookies — Next.js's
+ * own default for a `force-dynamic` route that reads cookies is an
+ * aggressive `Cache-Control: private, no-cache, no-store, must-revalidate`,
+ * applied regardless of whether a session actually exists. Left alone, that
+ * default silently defeats the service worker's offline caching for a guest
+ * too (found via the e2e offline test: a fresh service-worker install could
+ * no longer serve `/opportunities` offline after `getStudentSession()` was
+ * added here for Checkpoint 4's match/saved-search features). So a GUEST
+ * visit to one of these paths gets an explicit `no-cache` override instead
+ * — safe to store for offline use, but always revalidated against the
+ * network first when online — while a signed-in visit still gets the
+ * stricter `no-store`.
  */
-const SESSION_AWARE_PUBLIC_PATHS = ["/workspace", "/privacy"];
+const SESSION_AWARE_PUBLIC_PREFIXES = ["/workspace", "/privacy", "/eligibility", "/notifications", "/compare", "/opportunities", "/opportunities/"];
 
 /** Only ever redirect to a same-origin path under `prefix` — never an open redirect. */
 function sanitizeNextPath(path: string | null, prefix: string, fallback: string): string {
@@ -93,8 +106,13 @@ export async function updateSupabaseSession(request: NextRequest): Promise<NextR
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
-  if (user && SESSION_AWARE_PUBLIC_PATHS.includes(pathname)) {
+  const isSessionAwarePublicPath = SESSION_AWARE_PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
+  if (user && isSessionAwarePublicPath) {
     response.headers.set("Cache-Control", "no-store, private");
+  } else if (pathname === "/" || isSessionAwarePublicPath) {
+    // The homepage never renders session-dependent content at all, so it always gets the
+    // cacheable override, independent of sign-in state.
+    response.headers.set("Cache-Control", "no-cache");
   }
 
   return response;

@@ -15,3 +15,4 @@ export * from "./duplicates";
 export * from "./imports";
 export * from "./audit";
 export * from "./student";
+export * from "./discovery";

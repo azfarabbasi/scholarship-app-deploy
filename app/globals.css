@@ -20,7 +20,11 @@
 
   --color-success: #0f7a3d;
   --color-success-tint: #e6f6ec;
-  --color-warning: #96690a;
+  /* #96690a measured 4.38:1 on --color-warning-tint (needs 4.5:1 for WCAG AA
+     at this font size) — darkened slightly so every badge reusing this pair
+     (Badge.tsx's "amber" variant, MatchBadge's needs-verification/deadline-risk)
+     passes, found via the e2e axe-core accessibility suite. */
+  --color-warning: #875f09;
   --color-warning-tint: #fdf2e0;
   --color-danger: #b3261e;
   --color-danger-tint: #fbe9e7;

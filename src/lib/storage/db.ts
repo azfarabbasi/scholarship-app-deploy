@@ -4,9 +4,14 @@ import type {
   BackupMetaRecord,
   CloudCacheRecord,
   CustomOpportunityRecord,
+  EligibilityAnswersRecord,
+  NotificationRecord,
   OutboxEntry,
   PreferencesRecord,
   PublicCatalogueCacheRecord,
+  ReminderPreferencesRecord,
+  ReminderRecord,
+  SavedSearchRecord,
   WorkspaceRecord,
 } from "./types";
 
@@ -20,6 +25,11 @@ interface ScholarTrackSchema extends DBSchema {
   publicCatalogueCache: { key: string; value: PublicCatalogueCacheRecord };
   cloudCache: { key: string; value: CloudCacheRecord };
   syncOutbox: { key: string; value: OutboxEntry };
+  eligibilityAnswers: { key: string; value: EligibilityAnswersRecord };
+  savedSearches: { key: string; value: SavedSearchRecord };
+  reminderPreferences: { key: string; value: ReminderPreferencesRecord };
+  reminders: { key: string; value: ReminderRecord };
+  notifications: { key: string; value: NotificationRecord };
 }
 
 export type ScholarTrackDb = IDBPDatabase<ScholarTrackSchema>;
@@ -60,6 +70,21 @@ function upgrade(db: ScholarTrackDb): void {
   }
   if (!db.objectStoreNames.contains("syncOutbox")) {
     db.createObjectStore("syncOutbox", { keyPath: "id" });
+  }
+  if (!db.objectStoreNames.contains("eligibilityAnswers")) {
+    db.createObjectStore("eligibilityAnswers", { keyPath: "id" });
+  }
+  if (!db.objectStoreNames.contains("savedSearches")) {
+    db.createObjectStore("savedSearches", { keyPath: "id" });
+  }
+  if (!db.objectStoreNames.contains("reminderPreferences")) {
+    db.createObjectStore("reminderPreferences", { keyPath: "id" });
+  }
+  if (!db.objectStoreNames.contains("reminders")) {
+    db.createObjectStore("reminders", { keyPath: "id" });
+  }
+  if (!db.objectStoreNames.contains("notifications")) {
+    db.createObjectStore("notifications", { keyPath: "id" });
   }
 }
 

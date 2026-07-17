@@ -1,12 +1,21 @@
 import { z } from "zod";
 import { getAllCustomOpportunities } from "./custom-opportunities";
 import { getDb } from "./db";
+import { getGuestEligibilityAnswers } from "./eligibility";
 import { emitStorageChange } from "./events";
+import { getAllGuestNotifications } from "./notifications";
 import { getPreferences } from "./preferences";
+import { getGuestReminderPreferences, getAllGuestReminders } from "./reminders";
+import { getAllGuestSavedSearches } from "./saved-searches";
 import { SCHEMA_VERSION } from "./types";
 import type {
   CustomOpportunityRecord,
+  EligibilityAnswersRecord,
+  NotificationRecord,
   PreferencesRecord,
+  ReminderPreferencesRecord,
+  ReminderRecord,
+  SavedSearchRecord,
   WorkspaceRecord,
 } from "./types";
 import { getAllWorkspaceRecords } from "./workspace";
@@ -23,6 +32,11 @@ export interface BackupPayload {
     workspace: WorkspaceRecord[];
     customOpportunities: CustomOpportunityRecord[];
     preferences: PreferencesRecord | null;
+    eligibilityAnswers: EligibilityAnswersRecord | null;
+    savedSearches: SavedSearchRecord[];
+    reminderPreferences: ReminderPreferencesRecord | null;
+    reminders: ReminderRecord[];
+    notifications: NotificationRecord[];
   };
 }
 
@@ -114,6 +128,74 @@ export const preferencesRecordSchema = z
   })
   .strict();
 
+export const eligibilityAnswersRecordSchema = z
+  .object({
+    id: z.literal("singleton"),
+    answers: z.record(z.string(), z.unknown()),
+    updatedAt: z.string(),
+  })
+  .strict();
+
+export const savedSearchRecordSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string(),
+    queryText: z.string(),
+    filters: z.record(z.string(), z.unknown()),
+    sortMode: z.string(),
+    resultCountSnapshot: z.number().nullable(),
+    resultSnapshot: z.array(z.string()),
+    lastCheckedAt: z.string().nullable(),
+    alertsEnabled: z.boolean(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .strict();
+
+export const reminderPreferencesRecordSchema = z
+  .object({
+    id: z.literal("singleton"),
+    remindersEnabled: z.boolean(),
+    officialLeadDays: z.array(z.number()),
+    personalLeadDays: z.array(z.number()),
+    savedSearchAlertsEnabled: z.boolean(),
+    updatedAt: z.string(),
+  })
+  .strict();
+
+export const reminderRecordSchema = z
+  .object({
+    id: z.string().min(1),
+    stableKey: z.string(),
+    source: z.enum(["official-deadline", "personal-deadline", "checklist", "saved-search", "system"]),
+    targetType: z.enum(["built-in", "custom"]).nullable(),
+    targetId: z.string().nullable(),
+    title: z.string(),
+    dueAt: z.string(),
+    leadDays: z.number(),
+    status: z.enum(["pending", "dismissed", "completed"]),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .strict();
+
+export const notificationRecordSchema = z
+  .object({
+    id: z.string().min(1),
+    type: z.enum(["reminder-upcoming", "reminder-overdue", "saved-search-alert", "system"]),
+    source: z.enum(["official-deadline", "personal-deadline", "checklist", "saved-search", "system"]),
+    title: z.string(),
+    message: z.string(),
+    targetType: z.enum(["built-in", "custom"]).nullable(),
+    targetId: z.string().nullable(),
+    savedSearchId: z.string().nullable(),
+    dueAt: z.string().nullable(),
+    status: z.enum(["unread", "read", "dismissed"]),
+    readAt: z.string().nullable(),
+    createdAt: z.string(),
+  })
+  .strict();
+
 export const backupPayloadSchema = z
   .object({
     app: z.literal(BACKUP_APP_ID),
@@ -130,6 +212,12 @@ export const backupPayloadSchema = z
         workspace: z.array(workspaceRecordSchema),
         customOpportunities: z.array(customOpportunityRecordSchema),
         preferences: preferencesRecordSchema.nullable(),
+        // Optional: absent in a backup exported before Checkpoint 4.
+        eligibilityAnswers: eligibilityAnswersRecordSchema.nullable().optional(),
+        savedSearches: z.array(savedSearchRecordSchema).optional(),
+        reminderPreferences: reminderPreferencesRecordSchema.nullable().optional(),
+        reminders: z.array(reminderRecordSchema).optional(),
+        notifications: z.array(notificationRecordSchema).optional(),
       })
       .strict(),
   })
@@ -144,6 +232,8 @@ export interface BackupValidationSuccess {
     workspaceCount: number;
     customOpportunityCount: number;
     hasPreferences: boolean;
+    savedSearchCount: number;
+    reminderCount: number;
   };
 }
 
@@ -175,55 +265,65 @@ export function validateBackupPayload(json: unknown): BackupValidationSuccess | 
       workspaceCount: payload.data.workspace.length,
       customOpportunityCount: payload.data.customOpportunities.length,
       hasPreferences: payload.data.preferences !== null,
+      savedSearchCount: payload.data.savedSearches?.length ?? 0,
+      reminderCount: payload.data.reminders?.length ?? 0,
     },
   };
 }
 
 export async function buildBackupPayload(): Promise<BackupPayload> {
-  const [workspace, customOpportunities, preferences] = await Promise.all([
-    getAllWorkspaceRecords(),
-    getAllCustomOpportunities(),
-    getPreferences(),
-  ]);
+  const [workspace, customOpportunities, preferences, eligibilityAnswers, savedSearches, reminderPreferences, reminders, notifications] =
+    await Promise.all([
+      getAllWorkspaceRecords(),
+      getAllCustomOpportunities(),
+      getPreferences(),
+      getGuestEligibilityAnswers(),
+      getAllGuestSavedSearches(),
+      getGuestReminderPreferences(),
+      getAllGuestReminders(),
+      getAllGuestNotifications(),
+    ]);
 
   return {
     app: BACKUP_APP_ID,
     schemaVersion: SCHEMA_VERSION,
     createdAt: new Date().toISOString(),
     counts: { workspace: workspace.length, customOpportunities: customOpportunities.length },
-    data: { workspace, customOpportunities, preferences },
+    data: { workspace, customOpportunities, preferences, eligibilityAnswers, savedSearches, reminderPreferences, reminders, notifications },
   };
 }
 
 export type ImportMode = "merge" | "replace";
+
+const CHECKPOINT4_STORES = ["savedSearches", "reminders", "notifications", "eligibilityAnswers", "reminderPreferences"] as const;
 
 export async function importBackupPayload(
   payload: BackupPayload,
   mode: ImportMode,
 ): Promise<{ workspaceImported: number; customOpportunitiesImported: number }> {
   const db = await getDb();
+  const allStores = ["workspace", "customOpportunities", "preferences", ...CHECKPOINT4_STORES] as const;
 
   if (mode === "replace") {
-    await Promise.all([
-      db.clear("workspace"),
-      db.clear("customOpportunities"),
-      db.clear("preferences"),
-    ]);
+    await Promise.all(allStores.map((store) => db.clear(store)));
   }
 
-  const tx = db.transaction(["workspace", "customOpportunities", "preferences"], "readwrite");
+  const tx = db.transaction(allStores, "readwrite");
   await Promise.all([
     ...payload.data.workspace.map((record) => tx.objectStore("workspace").put(record)),
     ...payload.data.customOpportunities.map((record) => tx.objectStore("customOpportunities").put(record)),
-    payload.data.preferences
-      ? tx.objectStore("preferences").put(payload.data.preferences)
-      : Promise.resolve(),
+    payload.data.preferences ? tx.objectStore("preferences").put(payload.data.preferences) : Promise.resolve(),
+    payload.data.eligibilityAnswers ? tx.objectStore("eligibilityAnswers").put(payload.data.eligibilityAnswers) : Promise.resolve(),
+    payload.data.reminderPreferences ? tx.objectStore("reminderPreferences").put(payload.data.reminderPreferences) : Promise.resolve(),
+    ...(payload.data.savedSearches ?? []).map((record) => tx.objectStore("savedSearches").put(record)),
+    ...(payload.data.reminders ?? []).map((record) => tx.objectStore("reminders").put(record)),
+    ...(payload.data.notifications ?? []).map((record) => tx.objectStore("notifications").put(record)),
   ]);
   await tx.done;
 
-  emitStorageChange("workspace");
-  emitStorageChange("customOpportunities");
-  emitStorageChange("preferences");
+  for (const store of allStores) {
+    emitStorageChange(store);
+  }
 
   return {
     workspaceImported: payload.data.workspace.length,
@@ -233,14 +333,11 @@ export async function importBackupPayload(
 
 export async function clearAllGuestData(): Promise<void> {
   const db = await getDb();
-  await Promise.all([
-    db.clear("workspace"),
-    db.clear("customOpportunities"),
-    db.clear("preferences"),
-  ]);
-  emitStorageChange("workspace");
-  emitStorageChange("customOpportunities");
-  emitStorageChange("preferences");
+  const allStores = ["workspace", "customOpportunities", "preferences", ...CHECKPOINT4_STORES] as const;
+  await Promise.all(allStores.map((store) => db.clear(store)));
+  for (const store of allStores) {
+    emitStorageChange(store);
+  }
 }
 
 export async function recordBackupCreated(): Promise<void> {

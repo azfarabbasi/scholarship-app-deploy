@@ -10,7 +10,7 @@ import { applicationStageValueSchema, workspaceTargetTypeSchema } from "./studen
  * rather than silently ignored or assigned.
  */
 export const CLOUD_EXPORT_APP_ID = "scholartrack-account";
-export const CLOUD_EXPORT_SCHEMA_VERSION = 1;
+export const CLOUD_EXPORT_SCHEMA_VERSION = 2;
 export const MAX_CLOUD_IMPORT_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
 const isoDateTime = z.string().refine((value) => !Number.isNaN(Date.parse(value)), { message: "Invalid timestamp" });
@@ -121,6 +121,87 @@ const syncMetadataExportSchema = z
   .strict()
   .nullable();
 
+const eligibilityAnswersExportSchema = z
+  .object({
+    countryOfResidence: z.string().nullable(),
+    nationality: z.string().nullable(),
+    currentStudyLevel: z.string().nullable(),
+    intendedStudyLevel: z.string().nullable(),
+    fieldsOfInterest: z.array(z.string()),
+    graduationYear: z.number().int().nullable(),
+    targetIntakeYear: z.number().int().nullable(),
+    targetIntakeTerm: z.string().nullable(),
+    preferredCountries: z.array(z.string()),
+    preferredRegions: z.array(z.string()),
+    languageTestStatus: z.string().nullable(),
+    researchExperience: z.string().nullable(),
+    workExperienceYears: z.number().int().nullable(),
+    finalYearStatus: z.string().nullable(),
+    fundingPreference: z.string().nullable(),
+    studyMode: z.string().nullable(),
+  })
+  .strict()
+  .nullable();
+
+const savedSearchExportSchema = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    queryText: z.string(),
+    filters: z.record(z.string(), z.unknown()),
+    sortMode: z.string(),
+    resultCountSnapshot: z.number().int().nullable(),
+    resultSnapshot: z.array(z.string()),
+    lastCheckedAt: isoDateTime.nullable(),
+    alertsEnabled: z.boolean(),
+    createdAt: isoDateTime,
+    updatedAt: isoDateTime,
+  })
+  .strict();
+
+const reminderPreferencesExportSchema = z
+  .object({
+    remindersEnabled: z.boolean(),
+    officialLeadDays: z.array(z.number().int()),
+    personalLeadDays: z.array(z.number().int()),
+    savedSearchAlertsEnabled: z.boolean(),
+  })
+  .strict()
+  .nullable();
+
+const reminderExportSchema = z
+  .object({
+    id: z.uuid(),
+    stableKey: z.string(),
+    source: z.enum(["official-deadline", "personal-deadline", "checklist", "saved-search", "system"]),
+    targetType: z.enum(["built-in", "custom"]).nullable(),
+    targetId: z.string().nullable(),
+    title: z.string(),
+    dueAt: isoDateTime,
+    leadDays: z.number().int(),
+    status: z.enum(["pending", "dismissed", "completed"]),
+    createdAt: isoDateTime,
+    updatedAt: isoDateTime,
+  })
+  .strict();
+
+const notificationExportSchema = z
+  .object({
+    id: z.uuid(),
+    type: z.enum(["reminder-upcoming", "reminder-overdue", "saved-search-alert", "system"]),
+    source: z.enum(["official-deadline", "personal-deadline", "checklist", "saved-search", "system"]),
+    title: z.string(),
+    message: z.string(),
+    targetType: z.enum(["built-in", "custom"]).nullable(),
+    targetId: z.string().nullable(),
+    savedSearchId: z.string().nullable(),
+    dueAt: isoDateTime.nullable(),
+    status: z.enum(["unread", "read", "dismissed"]),
+    readAt: isoDateTime.nullable(),
+    createdAt: isoDateTime,
+  })
+  .strict();
+
 export const cloudExportPayloadSchema = z
   .object({
     app: z.literal(CLOUD_EXPORT_APP_ID),
@@ -134,6 +215,12 @@ export const cloudExportPayloadSchema = z
     planningPreferences: planningPreferencesExportSchema,
     displayPreferences: displayPreferencesExportSchema,
     syncMetadata: syncMetadataExportSchema,
+    // Optional: absent in an export produced before Checkpoint 4.
+    eligibilityAnswers: eligibilityAnswersExportSchema.optional(),
+    savedSearches: z.array(savedSearchExportSchema).optional(),
+    reminderPreferences: reminderPreferencesExportSchema.optional(),
+    reminders: z.array(reminderExportSchema).optional(),
+    notifications: z.array(notificationExportSchema).optional(),
   })
   .strict();
 
@@ -167,6 +254,8 @@ export interface CloudImportValidationSuccess {
     notesCount: number;
     checklistTaskCount: number;
     customOpportunityCount: number;
+    savedSearchCount: number;
+    reminderCount: number;
     exportedAt: string;
   };
 }
@@ -198,6 +287,8 @@ export function validateCloudExportPayload(json: unknown): CloudImportValidation
       notesCount: payload.notes.length,
       checklistTaskCount: payload.checklistTasks.length,
       customOpportunityCount: payload.customOpportunities.length,
+      savedSearchCount: payload.savedSearches?.length ?? 0,
+      reminderCount: payload.reminders?.length ?? 0,
       exportedAt: payload.exportedAt,
     },
   };

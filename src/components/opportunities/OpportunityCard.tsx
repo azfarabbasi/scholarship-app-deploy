@@ -1,18 +1,32 @@
 "use client";
 
-import { Bookmark, BookmarkCheck, ExternalLink, MapPin } from "lucide-react";
+import { Bookmark, BookmarkCheck, ExternalLink, MapPin, Scale } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardFooter } from "@/components/ui/Card";
+import { Checkbox } from "@/components/ui/Field";
 import type { EnrichedOpportunity } from "@/lib/catalogue/types";
 import { checklistProgress, toggleShortlisted } from "@/lib/storage/workspace";
+import { useComparisonSelection } from "@/hooks/useComparisonSelection";
+import { evaluateMatch } from "@/lib/matching/engine";
+import type { EligibilityAnswers } from "@/lib/schemas/eligibility-answers";
+import type { PlanningPreferences } from "@/lib/storage/types";
+import { MatchBadge } from "@/components/matching/MatchBadge";
 import { DeadlineBadge, DeadlineCountdownText, OriginBadge, StageBadge, VerificationBadge } from "./badges";
 
-export function OpportunityCard({ item }: { item: EnrichedOpportunity }) {
+export interface OpportunityCardProps {
+  item: EnrichedOpportunity;
+  matchContext?: { answers: EligibilityAnswers; planning: PlanningPreferences };
+}
+
+export function OpportunityCard({ item, matchContext }: OpportunityCardProps) {
   const { opportunity, evaluation, workspace } = item;
   const progress = workspace ? checklistProgress(workspace.checklist) : null;
   const shortlisted = workspace?.shortlisted ?? false;
   const location = [...opportunity.countries, ...opportunity.regions].join(", ");
+  const comparison = useComparisonSelection();
+  const isComparing = comparison.ids.includes(opportunity.id);
+  const match = matchContext && opportunity.kind === "built-in" ? evaluateMatch(opportunity, matchContext.answers, matchContext.planning, evaluation) : null;
 
   return (
     <Card className="flex h-full flex-col" data-testid="opportunity-card" data-opportunity-slug={opportunity.slug}>
@@ -21,6 +35,7 @@ export function OpportunityCard({ item }: { item: EnrichedOpportunity }) {
           <div className="flex flex-wrap gap-1.5">
             <OriginBadge kind={opportunity.kind} />
             {workspace && workspace.stage !== "not-started" ? <StageBadge stage={workspace.stage} /> : null}
+            {match ? <MatchBadge label={match.label} /> : null}
           </div>
           <button
             type="button"
@@ -79,9 +94,22 @@ export function OpportunityCard({ item }: { item: EnrichedOpportunity }) {
         ) : null}
       </CardBody>
       <CardFooter className="flex flex-wrap items-center justify-between gap-2">
-        <Button variant="outline" size="sm" asChild>
-          <Link href={`/opportunities/${opportunity.slug}`}>View details</Link>
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/opportunities/${opportunity.slug}`}>View details</Link>
+          </Button>
+          <Checkbox
+            id={`compare-${opportunity.id}`}
+            label={
+              <span className="inline-flex items-center gap-1 text-xs">
+                <Scale className="h-3.5 w-3.5" aria-hidden="true" /> Compare
+              </span>
+            }
+            checked={isComparing}
+            disabled={!isComparing && comparison.isFull}
+            onChange={() => comparison.toggle(opportunity.id)}
+          />
+        </div>
         {opportunity.officialUrl ? (
           <a
             href={opportunity.officialUrl}

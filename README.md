@@ -9,23 +9,29 @@ opportunity records, official sources, verification history, a draft →
 review → approve → publish workflow with separation of duties, required
 documents and eligibility rules, correction reports, duplicate detection and
 merging, CSV import/export, and an append-only audit log.
-**Checkpoint 3 adds optional student accounts and cloud sync for the
-personal workspace** — sign up/sign in via the same Supabase Auth used by
+Checkpoint 3 adds optional student accounts and cloud sync for the
+personal workspace — sign up/sign in via the same Supabase Auth used by
 staff (but on a completely independent, non-overlapping session), migrate
 guest IndexedDB data into an account with a previewed copy/merge/replace
 choice, sync shortlist/stages/notes/checklists/deadlines/custom
 opportunities/preferences across devices, work offline with a queued-sync
-model, and export/delete cloud data at will. Guest mode remains fully
-functional and is not required — see
-[Checkpoint 3](#checkpoint-3-optional-student-accounts-and-cloud-sync) below.
-AI, push notifications, advertising, and sensitive-document uploads remain
-out of scope (see [Known limitations](#known-limitations-and-deferred-work)).
+model, and export/delete cloud data at will.
+**Checkpoint 4 adds advanced discovery** — typo-tolerant search with
+relevance ranking, saved searches, an optional eligibility questionnaire, a
+deterministic (never-AI) rule-based matching engine, opportunity comparison,
+reminders, and a notification center. Guest mode remains fully functional
+and is not required anywhere — see
+[Checkpoint 3](#checkpoint-3-optional-student-accounts-and-cloud-sync) and
+[Checkpoint 4](#checkpoint-4-discovery-matching-reminders-and-notifications)
+below. AI, push notifications, advertising, and sensitive-document uploads
+remain out of scope (see [Known limitations](#known-limitations-and-deferred-work)).
 
 Checkpoint 0 established repository boundaries, a Docker-first development
 contract, the domain model, and a documented audit of the legacy prototype.
 Checkpoint 1 built the guest-facing product. Checkpoint 2 built the verified
-data layer and staff tooling underneath it. Checkpoint 3 adds optional
-accounts and cloud sync on top of both, without changing either.
+data layer and staff tooling underneath it. Checkpoint 3 added optional
+accounts and cloud sync on top of both. Checkpoint 4 adds discovery,
+matching, and reminders on top of all three, without changing any of them.
 
 ## What ScholarTrack does today
 
@@ -71,6 +77,19 @@ accounts and cloud sync on top of both, without changing either.
   opportunities, and preferences to your own ScholarTrack account and use
   the same workspace on another device. Entirely optional — guest mode never
   requires it. See [Checkpoint 3](#checkpoint-3-optional-student-accounts-and-cloud-sync).
+- **Search with typos and see why something matches** (Checkpoint 4): a
+  typo-tolerant, relevance-ranked search (client-side and a real
+  `/api/search` route), saveable searches with a deterministic new-match/
+  no-longer-matching alert, and an optional eligibility questionnaire feeding
+  a pure rule-based matching engine — never AI — that shows a cautious label
+  ("Strong potential fit," "Needs verification," "Missing information," …)
+  with the specific reasons behind it, always next to a disclaimer that it's
+  a planning aid, never a final decision. See
+  [Checkpoint 4](#checkpoint-4-discovery-matching-reminders-and-notifications).
+- **Compare 2-4 opportunities side by side**, get reminders for personal
+  deadlines and for official deadlines that are exact and independently
+  verified (never a guessed date), and see them all in a notification center
+  — guest-local or cloud-synced, same as the rest of your workspace.
 
 ## Workspace rules
 
@@ -164,6 +183,7 @@ docker compose run --rm --no-deps web npm run checkpoint0:validate
 docker compose run --rm --no-deps web npm run checkpoint1:validate
 docker compose run --rm --no-deps web npm run checkpoint2:validate
 docker compose run --rm --no-deps web npm run checkpoint3:validate
+docker compose run --rm --no-deps web npm run checkpoint4:validate
 docker compose run --rm --no-deps web npm run typecheck
 docker compose run --rm --no-deps web npm run lint
 docker compose run --rm --no-deps -e NODE_ENV=production web npm run build
@@ -179,6 +199,7 @@ npm run checkpoint0:validate
 npm run checkpoint1:validate
 npm run checkpoint2:validate
 npm run checkpoint3:validate
+npm run checkpoint4:validate
 npm run typecheck
 npm run lint
 npm run build
@@ -394,6 +415,76 @@ for how the RLS/grant model, sync layer, and migration flow fit together.
 - Cloud custom-opportunity edits aren't queued for offline replay (tracking/notes/checklist are).
 - Sync is fetch-on-mount, not a live cross-tab/cross-device push subscription.
 
+## Checkpoint 4: discovery, matching, reminders, and notifications
+
+### Search and saved searches
+
+`/opportunities` supports a typo-tolerant, relevance-ranked search (works offline, client-side)
+and the same ranking is also available as a real, paginated, database-backed `/api/search` route
+(server-side, `pg_trgm`-boosted when the extension is installed, gracefully falling back to the
+same JS scorer when it isn't). Save any combination of query + filters + sort as a named search —
+guest-local or cloud-synced — and it's checked for new/changed results every time you open the
+app, with an honest "N newly published" / "N no longer matching" message rather than a fabricated
+real-time alert.
+
+### Eligibility profile and match labels
+
+`/eligibility` is an entirely optional questionnaire — every field can be left blank, and it
+never asks for a passport/ID number, your address, financial or medical information, religious or
+ethnic identity, or the contents of a transcript, CV, or recommendation letter. Answering some or
+all of it powers a **deterministic, rule-based matching engine — never AI** — that shows a
+cautious label (Strong potential fit / Possible fit / Needs verification / Missing information /
+Likely not a fit / Deadline risk / Not enough rule data) on opportunity cards, the detail page, and
+the comparison view, always with the specific reasons behind it and a disclaimer that it's a
+planning aid, never a final eligibility, admission, or funding decision. See
+[docs/checkpoint-4/eligibility-matching-spec.md](docs/checkpoint-4/eligibility-matching-spec.md)
+for the full label logic.
+
+### Comparison
+
+Select 2-4 opportunities from the catalogue and compare them side by side at `/compare` (a table
+on desktop, stacked cards on mobile) — country/region, provider, funding, deadline state,
+verification, structured eligibility, match label, your own tracking stage and personal deadline,
+and checklist progress. This selection lives only in your browser's local storage; it's never
+synced to an account.
+
+### Reminders and notifications
+
+Set a personal deadline on any tracked opportunity and get a reminder ahead of it (configurable
+lead time: 0/1/3/7/14/30 days). Official-deadline reminders are only ever created when an
+opportunity's deadline is exact, independently verified, and unambiguous — every rolling,
+estimated, unverified, or multi-candidate deadline is deliberately never turned into a reminder,
+rather than guessed. `/notifications` shows overdue, upcoming, and dismissed/completed reminders
+plus saved-search alerts — never a staff diagnostic, never your private note or checklist text.
+Browser notifications (if you explicitly enable them) are only ever requested after you click a
+button — never automatically on page load — and only deliver while the app is open in a tab; full
+background delivery (Web Push) isn't implemented yet, documented honestly rather than silently
+missing. See
+[docs/checkpoint-4/reminders-and-notifications.md](docs/checkpoint-4/reminders-and-notifications.md).
+
+### Privacy boundary
+
+The five new database tables (saved searches, eligibility answers, reminder preferences,
+reminders, notifications) use the same owner-only Row Level Security as the Checkpoint 3 workspace
+tables — no staff-select policy on any of them, so staff have no default read access to your
+eligibility answers or discovery activity. The one staff-facing page that touches this data at all
+(`/staff/discovery`, a support tool for catalogue-quality queues) only ever computes aggregate
+counts across all students, never an individual saved-search name or reminder title. See
+[docs/checkpoint-4/checkpoint-4-architecture.md](docs/checkpoint-4/checkpoint-4-architecture.md)
+for the full RLS/migration/grant model.
+
+### Current limitations
+
+- Web Push (background browser notifications while the tab/browser is closed) isn't implemented —
+  only foreground notifications work today. `NEXT_PUBLIC_VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/
+  `VAPID_SUBJECT` are documented in `.env.example` as reserved for a future implementation, not
+  currently read anywhere.
+- No standalone `search:reindex`/`reminders:dispatch`/`saved-searches:check` CLI scripts — there is
+  no server-side batch job for any of these in this design (reminders/alerts regenerate
+  deterministically whenever the app is opened, not via cron).
+- The staff discovery-quality queues are scoped to published opportunities only, matching exactly
+  what students can currently discover.
+
 ## PWA installation and offline behaviour
 
 - **Desktop Chrome/Edge**: visit the site, then use the browser's install
@@ -537,19 +628,28 @@ docker compose logs --follow web
 
 ## Known limitations and deferred work
 
-Still deferred beyond Checkpoint 3 (see `docs/checkpoint-0/v1-product-backlog.md` for the full
-roadmap): deterministic AI-assisted eligibility *matching* against a student profile
-(eligibility rules are stored and manageable, per Checkpoint 2, but not yet evaluated),
-push/email/SMS notifications, live cross-tab/cross-device push sync (Checkpoint 3's sync is
-fetch-on-mount), and any AI features anywhere in the product. No sensitive-document upload has
-been added. See [Checkpoint 2 § Current limitations](#current-limitations) for the two items
-Checkpoint 2 itself did not complete (the 100-record content target and live Supabase e2e
-execution) and [Checkpoint 3 § Current limitations](#current-limitations-1) for this
-checkpoint's own documented scope cuts. See `docs/checkpoint-3/checkpoint-3-completion-report.md`
-for the full audit.
+Checkpoint 4 now implements deterministic, rule-based eligibility matching (never AI — see
+[Checkpoint 4](#checkpoint-4-discovery-matching-reminders-and-notifications)) and reminders/an
+in-app notification center, closing two items that were previously on this list. Still deferred
+(see `docs/checkpoint-0/v1-product-backlog.md` for the full roadmap): Web Push (background browser
+notifications while the app is closed — only foreground notifications work today), any paid
+SMS/WhatsApp/email notification channel, live cross-tab/cross-device push sync (sync across all
+checkpoints is fetch-on-mount, not a realtime subscription), and any AI features anywhere in the
+product. No sensitive-document upload has been added. See
+[Checkpoint 2 § Current limitations](#current-limitations) for the two items Checkpoint 2 itself
+did not complete (the 100-record content target and live Supabase e2e execution),
+[Checkpoint 3 § Current limitations](#current-limitations-1), and
+[Checkpoint 4 § Current limitations](#current-limitations-2) for each checkpoint's own documented
+scope cuts. See `docs/checkpoint-4/checkpoint-4-completion-report.md` for the full audit.
 
 ## Checkpoint documentation
 
+- [Checkpoint 4 architecture](docs/checkpoint-4/checkpoint-4-architecture.md)
+- [Checkpoint 4 eligibility & matching spec](docs/checkpoint-4/eligibility-matching-spec.md)
+- [Checkpoint 4 reminders and notifications](docs/checkpoint-4/reminders-and-notifications.md)
+- [Checkpoint 4 manual QA](docs/checkpoint-4/checkpoint-4-manual-qa.md)
+- [Checkpoint 4 traceability](docs/checkpoint-4/checkpoint-4-traceability.md)
+- [Checkpoint 4 completion report](docs/checkpoint-4/checkpoint-4-completion-report.md)
 - [Checkpoint 3 architecture](docs/checkpoint-3/checkpoint-3-architecture.md)
 - [Checkpoint 3 student auth and sync](docs/checkpoint-3/student-auth-and-sync.md)
 - [Checkpoint 3 privacy and data controls](docs/checkpoint-3/privacy-and-data-controls.md)

@@ -30,6 +30,8 @@ const opportunity: CatalogueOpportunity = {
   eligibilitySummary: "Open to applicants from any country.",
   officialUrl: "https://example.invalid/daad",
   verificationNotes: null,
+  eligibilityRules: [],
+  fundingCategories: [],
   verification: UNVERIFIED_CATALOGUE_VERIFICATION,
   deadlineInput: rollingInput,
   deadlineRawText: "Rolling / program-specific",

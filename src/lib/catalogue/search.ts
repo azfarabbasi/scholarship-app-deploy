@@ -1,12 +1,23 @@
 import type { DeadlineLifecycleStatus, DeadlinePrecision } from "@/lib/domain";
-import type { ApplicationStageOption } from "@/lib/storage/types";
+import type { ApplicationStageOption, PlanningPreferences } from "@/lib/storage/types";
+import { evaluateMatch } from "@/lib/matching/engine";
+import type { MatchLabel } from "@/lib/matching/types";
+import type { EligibilityAnswers } from "@/lib/schemas/eligibility-answers";
+import { scoreOpportunityAgainstQuery, totalRelevanceScore } from "@/lib/search/rank";
 import type { CatalogueOpportunity, CatalogueOpportunityKind, EnrichedOpportunity } from "./types";
+
+export interface MatchContext {
+  answers: EligibilityAnswers;
+  planning: PlanningPreferences;
+}
 
 export interface CatalogueFilterOptions {
   countries: string[];
   regions: string[];
   studyLevels: string[];
   opportunityTypes: string[];
+  providers: string[];
+  fundingCategories: string[];
 }
 
 export const DEADLINE_PRECISION_OPTIONS = [
@@ -28,10 +39,13 @@ export function deriveFilterOptions(opportunities: readonly CatalogueOpportunity
     regions: uniqueSorted(opportunities.flatMap((o) => o.regions)),
     studyLevels: uniqueSorted(opportunities.flatMap((o) => o.studyLevels)),
     opportunityTypes: uniqueSorted(opportunities.map((o) => o.opportunityType)),
+    providers: uniqueSorted(opportunities.flatMap((o) => (o.providerName ? [o.providerName] : []))),
+    fundingCategories: uniqueSorted(opportunities.flatMap((o) => o.fundingCategories)),
   };
 }
 
 export type CatalogueSortKey =
+  | "relevance"
   | "nearest-deadline"
   | "personal-deadline"
   | "title-asc"
@@ -46,6 +60,8 @@ export interface CatalogueFilters {
   regions: string[];
   studyLevels: string[];
   opportunityTypes: string[];
+  providers: string[];
+  fundingCategories: string[];
   deadlineStates: DeadlineLifecycleStatus[];
   precisions: DeadlinePrecision[];
   origin: CatalogueOpportunityKind[];
@@ -55,6 +71,9 @@ export interface CatalogueFilters {
   passedOnly: boolean;
   rollingOnly: boolean;
   verificationRequiredOnly: boolean;
+  requiredDocumentsOnly: boolean;
+  eligibilityRulesOnly: boolean;
+  matchLabels: MatchLabel[];
 }
 
 export const DEFAULT_CATALOGUE_FILTERS: CatalogueFilters = {
@@ -63,6 +82,8 @@ export const DEFAULT_CATALOGUE_FILTERS: CatalogueFilters = {
   regions: [],
   studyLevels: [],
   opportunityTypes: [],
+  providers: [],
+  fundingCategories: [],
   deadlineStates: [],
   precisions: [],
   origin: [],
@@ -72,6 +93,9 @@ export const DEFAULT_CATALOGUE_FILTERS: CatalogueFilters = {
   passedOnly: false,
   rollingOnly: false,
   verificationRequiredOnly: false,
+  requiredDocumentsOnly: false,
+  eligibilityRulesOnly: false,
+  matchLabels: [],
 };
 
 export function countActiveFilters(filters: CatalogueFilters): number {
@@ -81,6 +105,8 @@ export function countActiveFilters(filters: CatalogueFilters): number {
   count += filters.regions.length > 0 ? 1 : 0;
   count += filters.studyLevels.length > 0 ? 1 : 0;
   count += filters.opportunityTypes.length > 0 ? 1 : 0;
+  count += filters.providers.length > 0 ? 1 : 0;
+  count += filters.fundingCategories.length > 0 ? 1 : 0;
   count += filters.deadlineStates.length > 0 ? 1 : 0;
   count += filters.precisions.length > 0 ? 1 : 0;
   count += filters.origin.length > 0 ? 1 : 0;
@@ -90,25 +116,20 @@ export function countActiveFilters(filters: CatalogueFilters): number {
   if (filters.passedOnly) count += 1;
   if (filters.rollingOnly) count += 1;
   if (filters.verificationRequiredOnly) count += 1;
+  if (filters.requiredDocumentsOnly) count += 1;
+  if (filters.eligibilityRulesOnly) count += 1;
+  count += filters.matchLabels.length > 0 ? 1 : 0;
   return count;
 }
 
+/** Typo-tolerant relevance score against the same public fields `/api/search` scores server-side — 0 means "no match". */
+export function relevanceScore(item: EnrichedOpportunity, query: string): number {
+  if (query.trim().length === 0) return 1; // no query: everything "matches" equally
+  return totalRelevanceScore(scoreOpportunityAgainstQuery(item.opportunity, query));
+}
+
 function matchesQuery(item: EnrichedOpportunity, query: string): boolean {
-  if (query.trim().length === 0) {
-    return true;
-  }
-  const haystack = [
-    item.opportunity.title,
-    ...item.opportunity.countries,
-    ...item.opportunity.regions,
-    item.opportunity.benefitSummary,
-    item.opportunity.eligibilitySummary,
-    ...item.opportunity.studyLevels,
-    item.opportunity.opportunityType,
-  ]
-    .join(" \n ")
-    .toLowerCase();
-  return haystack.includes(query.trim().toLowerCase());
+  return relevanceScore(item, query) > 0;
 }
 
 function intersects(values: readonly string[], selected: readonly string[]): boolean {
@@ -121,8 +142,14 @@ function intersects(values: readonly string[], selected: readonly string[]): boo
 export function filterOpportunities(
   items: readonly EnrichedOpportunity[],
   filters: CatalogueFilters,
+  matchContext?: MatchContext,
 ): EnrichedOpportunity[] {
   return items.filter((item) => {
+    if (filters.matchLabels.length > 0) {
+      if (!matchContext || item.opportunity.kind !== "built-in") return false;
+      const result = evaluateMatch(item.opportunity, matchContext.answers, matchContext.planning, item.evaluation);
+      if (!filters.matchLabels.includes(result.label)) return false;
+    }
     if (!matchesQuery(item, filters.query)) return false;
     if (!intersects(item.opportunity.countries, filters.countries)) return false;
     if (!intersects(item.opportunity.regions, filters.regions)) return false;
@@ -130,6 +157,10 @@ export function filterOpportunities(
     if (filters.opportunityTypes.length > 0 && !filters.opportunityTypes.includes(item.opportunity.opportunityType)) {
       return false;
     }
+    if (filters.providers.length > 0 && !(item.opportunity.providerName && filters.providers.includes(item.opportunity.providerName))) {
+      return false;
+    }
+    if (!intersects(item.opportunity.fundingCategories, filters.fundingCategories)) return false;
     if (filters.deadlineStates.length > 0 && !filters.deadlineStates.includes(item.evaluation.lifecycleStatus)) {
       return false;
     }
@@ -148,6 +179,8 @@ export function filterOpportunities(
     if (filters.passedOnly && item.evaluation.lifecycleStatus !== "passed-current-cycle") return false;
     if (filters.rollingOnly && item.evaluation.lifecycleStatus !== "rolling") return false;
     if (filters.verificationRequiredOnly && !item.evaluation.verificationRequired) return false;
+    if (filters.requiredDocumentsOnly && item.opportunity.verification.documentCount === 0) return false;
+    if (filters.eligibilityRulesOnly && item.opportunity.eligibilityRules.length === 0) return false;
     return true;
   });
 }
@@ -188,10 +221,14 @@ function nearestDeadlineRank(item: EnrichedOpportunity): number {
 export function sortOpportunities(
   items: readonly EnrichedOpportunity[],
   sortKey: CatalogueSortKey,
+  query = "",
 ): EnrichedOpportunity[] {
   const copy = [...items];
 
   switch (sortKey) {
+    case "relevance":
+      if (query.trim().length === 0) return copy.sort((a, b) => nearestDeadlineRank(a) - nearestDeadlineRank(b));
+      return copy.sort((a, b) => relevanceScore(b, query) - relevanceScore(a, query) || a.opportunity.title.localeCompare(b.opportunity.title));
     case "nearest-deadline":
       return copy.sort((a, b) => nearestDeadlineRank(a) - nearestDeadlineRank(b));
     case "personal-deadline":

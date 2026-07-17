@@ -30,6 +30,8 @@ function toCatalogueOpportunity(seed: OpportunitySeed): CatalogueOpportunity {
     eligibilitySummary: seed.eligibilitySummary,
     officialUrl: seed.officialUrl,
     verificationNotes: null,
+    eligibilityRules: [],
+    fundingCategories: [],
     verification: UNVERIFIED_CATALOGUE_VERIFICATION,
     deadlineInput: seedDeadlineToEvaluationInput(seed.deadline, seed.source),
     deadlineRawText: seed.deadline.rawText,

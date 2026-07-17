@@ -6,6 +6,7 @@ import { cn } from "@/lib/cn";
 import type { CatalogueSortKey } from "@/lib/catalogue/search";
 
 const SORT_OPTIONS: { value: CatalogueSortKey; label: string }[] = [
+  { value: "relevance", label: "Relevance" },
   { value: "nearest-deadline", label: "Nearest reliable deadline" },
   { value: "personal-deadline", label: "Personal deadline" },
   { value: "title-asc", label: "Title (A–Z)" },

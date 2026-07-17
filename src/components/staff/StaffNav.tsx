@@ -30,6 +30,7 @@ const NAV_ITEMS: StaffNavItem[] = [
   { href: "/staff/eligibility-rules", label: "Eligibility rules", visible: canManageDocumentsAndEligibility },
   { href: "/staff/corrections", label: "Corrections", visible: canTriageCorrections },
   { href: "/staff/duplicates", label: "Duplicates", visible: canManageDuplicates },
+  { href: "/staff/discovery", label: "Discovery quality", visible: canCreateDraft },
   { href: "/staff/imports", label: "Imports", visible: canRunImports },
   { href: "/staff/audit", label: "Audit log", visible: canViewFullAuditLog },
   { href: "/staff/team", label: "Team", visible: canManageStaff },

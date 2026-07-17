@@ -18,6 +18,7 @@
     "checkpoint1:validate": "tsx scripts/validate-checkpoint1.ts",
     "checkpoint2:validate": "tsx scripts/validate-checkpoint2.ts",
     "checkpoint3:validate": "tsx scripts/validate-checkpoint3.ts",
+    "checkpoint4:validate": "tsx scripts/validate-checkpoint4.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/db-migrate.ts",
     "db:check": "drizzle-kit check",

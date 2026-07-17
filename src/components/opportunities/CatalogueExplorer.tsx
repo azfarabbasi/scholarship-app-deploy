@@ -7,7 +7,11 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/common/EmptyState";
+import { SaveSearchButton } from "@/components/discovery/SaveSearchButton";
+import { SavedSearchesPanel } from "@/components/discovery/SavedSearchesPanel";
 import { useCatalogue } from "@/hooks/useCatalogue";
+import { useComparisonSelection } from "@/hooks/useComparisonSelection";
+import { useMatchData } from "@/hooks/useMatchData";
 import { updateDisplayPreferences } from "@/lib/storage/preferences";
 import { usePreferences } from "@/hooks/usePreferences";
 import {
@@ -35,10 +39,15 @@ function filtersFromSearchParams(params: URLSearchParams): { filters: CatalogueF
       regions: readArray("regions"),
       studyLevels: readArray("levels"),
       opportunityTypes: readArray("types"),
+      providers: readArray("providers"),
+      fundingCategories: readArray("funding"),
       deadlineStates: readArray("states") as DeadlineLifecycleStatus[],
       precisions: readArray("precisions") as DeadlinePrecision[],
       origin: readArray("origin") as ("built-in" | "custom")[],
       stages: readArray("stages") as ApplicationStageOption[],
+      requiredDocumentsOnly: params.get("hasDocuments") === "true",
+      eligibilityRulesOnly: params.get("hasEligibility") === "true",
+      matchLabels: readArray("match") as CatalogueFilters["matchLabels"],
     },
     sort: (params.get("sort") as CatalogueSortKey) || "nearest-deadline",
   };
@@ -51,17 +60,30 @@ function searchParamsFromFilters(filters: CatalogueFilters, sort: CatalogueSortK
   if (filters.regions.length) params.set("regions", filters.regions.join(","));
   if (filters.studyLevels.length) params.set("levels", filters.studyLevels.join(","));
   if (filters.opportunityTypes.length) params.set("types", filters.opportunityTypes.join(","));
+  if (filters.providers.length) params.set("providers", filters.providers.join(","));
+  if (filters.fundingCategories.length) params.set("funding", filters.fundingCategories.join(","));
   if (filters.deadlineStates.length) params.set("states", filters.deadlineStates.join(","));
   if (filters.precisions.length) params.set("precisions", filters.precisions.join(","));
   if (filters.origin.length) params.set("origin", filters.origin.join(","));
   if (filters.stages.length) params.set("stages", filters.stages.join(","));
+  if (filters.requiredDocumentsOnly) params.set("hasDocuments", "true");
+  if (filters.eligibilityRulesOnly) params.set("hasEligibility", "true");
+  if (filters.matchLabels.length) params.set("match", filters.matchLabels.join(","));
   if (sort !== "nearest-deadline") params.set("sort", sort);
   return params;
 }
 
-export function CatalogueExplorer({ showFilters = true }: { showFilters?: boolean }) {
+export function CatalogueExplorer({
+  showFilters = true,
+  studentProfileId = null,
+}: {
+  showFilters?: boolean;
+  studentProfileId?: string | null;
+}) {
   const { items, loading, lastSyncedAt, isStale, isServiceUnavailable } = useCatalogue();
   const { preferences } = usePreferences();
+  const comparison = useComparisonSelection();
+  const { answers, planning } = useMatchData(studentProfileId);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -92,8 +114,8 @@ export function CatalogueExplorer({ showFilters = true }: { showFilters?: boolea
   }, [filters, sortKey, pathname]);
 
   const options = useMemo(() => deriveFilterOptions(items.map((item) => item.opportunity)), [items]);
-  const filtered = useMemo(() => filterOpportunities(items, filters), [items, filters]);
-  const sorted = useMemo(() => sortOpportunities(filtered, sortKey), [filtered, sortKey]);
+  const filtered = useMemo(() => filterOpportunities(items, filters, { answers, planning }), [items, filters, answers, planning]);
+  const sorted = useMemo(() => sortOpportunities(filtered, sortKey, filters.query), [filtered, sortKey, filters.query]);
   const activeFilterCount = countActiveFilters(filters);
 
   const changeView = useCallback((next: "grid" | "list") => {
@@ -113,6 +135,21 @@ export function CatalogueExplorer({ showFilters = true }: { showFilters?: boolea
 
   return (
     <div className="flex flex-col gap-4">
+      {comparison.ids.length > 0 ? (
+        <div className="sticky top-16 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-surface p-3 shadow-sm">
+          <p className="text-sm text-foreground">
+            {comparison.ids.length} of {comparison.maxItems} selected for comparison
+          </p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="ghost" onClick={comparison.clear}>
+              Clear
+            </Button>
+            <Button size="sm" asChild disabled={comparison.ids.length < 2}>
+              <a href={`/compare?ids=${comparison.ids.join(",")}`}>Compare now</a>
+            </Button>
+          </div>
+        </div>
+      ) : null}
       {isServiceUnavailable ? (
         <Alert tone="danger" title="Catalogue unavailable offline">
           This device has never successfully synced the opportunity catalogue, and there is no connection right now.
@@ -144,6 +181,31 @@ export function CatalogueExplorer({ showFilters = true }: { showFilters?: boolea
             activeFilterCount={activeFilterCount}
           />
 
+          {showFilters ? (
+            <div className="mt-3 flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <SaveSearchButton
+                  studentProfileId={studentProfileId}
+                  filters={filters}
+                  sortKey={sortKey}
+                  resultIds={sorted.map((item) => item.opportunity.id)}
+                />
+              </div>
+              <details className="rounded-lg border border-border p-3">
+                <summary className="cursor-pointer text-sm font-semibold text-foreground">Saved searches</summary>
+                <div className="mt-3">
+                  <SavedSearchesPanel
+                    studentProfileId={studentProfileId}
+                    onRun={(nextFilters, nextSort) => {
+                      setFilters(nextFilters);
+                      setSortKey(nextSort);
+                    }}
+                  />
+                </div>
+              </details>
+            </div>
+          ) : null}
+
           <div className="mt-4">
             {sorted.length === 0 ? (
               <EmptyState
@@ -165,7 +227,7 @@ export function CatalogueExplorer({ showFilters = true }: { showFilters?: boolea
                 }
               >
                 {sorted.map((item) => (
-                  <OpportunityCard key={item.opportunity.id} item={item} />
+                  <OpportunityCard key={item.opportunity.id} item={item} matchContext={{ answers, planning }} />
                 ))}
               </div>
             )}

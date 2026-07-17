@@ -1,5 +1,6 @@
 import type { OpportunityTypeCode } from "@/lib/domain";
 import type { CatalogueOpportunity } from "@/lib/catalogue/types";
+import type { EligibilityAnswersInput } from "@/lib/schemas/eligibility-answers";
 import type { StudyLevel } from "@/lib/schemas/opportunity-seed";
 
 /**
@@ -11,8 +12,12 @@ import type { StudyLevel } from "@/lib/schemas/opportunity-seed";
  * mutations made while offline). Both are keyed to a specific
  * `studentProfileId` and are cleared on sign-out — never shared with guest
  * data or another account on the same device/browser.
+ * v4 adds `eligibilityAnswers`, `savedSearches`, `reminderPreferences`,
+ * `reminders`, and `notifications` (Checkpoint 4: optional eligibility
+ * questionnaire, saved searches, reminders, and the notification center —
+ * all guest-local here, same as every other guest store).
  */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /** Last successfully fetched snapshot of the public database catalogue, for offline use. */
 export interface PublicCatalogueCacheRecord {
@@ -187,6 +192,94 @@ export interface CloudCacheRecord {
   studentProfileId: string;
   snapshot: CloudWorkspaceSnapshot;
   cachedAt: string;
+}
+
+// --- Checkpoint 4: eligibility answers, saved searches, reminders, notifications ---
+
+export interface EligibilityAnswersRecord {
+  id: "singleton";
+  answers: EligibilityAnswersInput;
+  updatedAt: string;
+}
+
+export function defaultEligibilityAnswersRecord(): EligibilityAnswersRecord {
+  return {
+    id: "singleton",
+    answers: { fieldsOfInterest: [], preferredCountries: [], preferredRegions: [] },
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export interface SavedSearchRecord {
+  id: string;
+  name: string;
+  queryText: string;
+  /** A serialised `CatalogueFilters` — kept as an untyped bag here to avoid a storage↔catalogue import cycle. */
+  filters: Record<string, unknown>;
+  sortMode: string;
+  resultCountSnapshot: number | null;
+  /** Opportunity ids present the last time this search was checked — the alert diff compares against this. */
+  resultSnapshot: string[];
+  lastCheckedAt: string | null;
+  alertsEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const REMINDER_LEAD_DAY_OPTIONS = [0, 1, 3, 7, 14, 30] as const;
+export type ReminderLeadDays = (typeof REMINDER_LEAD_DAY_OPTIONS)[number];
+
+export interface ReminderPreferencesRecord {
+  id: "singleton";
+  remindersEnabled: boolean;
+  officialLeadDays: number[];
+  personalLeadDays: number[];
+  savedSearchAlertsEnabled: boolean;
+  updatedAt: string;
+}
+
+export const DEFAULT_REMINDER_PREFERENCES: ReminderPreferencesRecord = {
+  id: "singleton",
+  remindersEnabled: true,
+  officialLeadDays: [7],
+  personalLeadDays: [1, 7],
+  savedSearchAlertsEnabled: true,
+  updatedAt: new Date(0).toISOString(),
+};
+
+export type ReminderSource = "official-deadline" | "personal-deadline" | "checklist" | "saved-search" | "system";
+export type ReminderStatus = "pending" | "dismissed" | "completed";
+
+export interface ReminderRecord {
+  id: string;
+  stableKey: string;
+  source: ReminderSource;
+  targetType: "built-in" | "custom" | null;
+  targetId: string | null;
+  title: string;
+  dueAt: string;
+  leadDays: number;
+  status: ReminderStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type NotificationType = "reminder-upcoming" | "reminder-overdue" | "saved-search-alert" | "system";
+export type NotificationStatus = "unread" | "read" | "dismissed";
+
+export interface NotificationRecord {
+  id: string;
+  type: NotificationType;
+  source: ReminderSource;
+  title: string;
+  message: string;
+  targetType: "built-in" | "custom" | null;
+  targetId: string | null;
+  savedSearchId: string | null;
+  dueAt: string | null;
+  status: NotificationStatus;
+  readAt: string | null;
+  createdAt: string;
 }
 
 export type OutboxEntry =

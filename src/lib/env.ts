@@ -19,6 +19,12 @@ const publicEnvSchema = z.object({
   NEXT_PUBLIC_FEEDBACK_EMAIL: z.string().email().optional().or(z.literal("")),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1).optional(),
+  /**
+   * Gates the browser-notification permission UI (Checkpoint 4). Defaults
+   * to off — with it unset, no notification-permission prompt or button is
+   * ever rendered. See `src/components/notifications/NotificationPermissionSection.tsx`.
+   */
+  NEXT_PUBLIC_ENABLE_BROWSER_NOTIFICATIONS: booleanFlag,
 });
 
 export type PublicEnv = z.infer<typeof publicEnvSchema>;
@@ -35,6 +41,7 @@ export function getPublicEnv(): PublicEnv {
     NEXT_PUBLIC_FEEDBACK_EMAIL: process.env.NEXT_PUBLIC_FEEDBACK_EMAIL,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    NEXT_PUBLIC_ENABLE_BROWSER_NOTIFICATIONS: process.env.NEXT_PUBLIC_ENABLE_BROWSER_NOTIFICATIONS,
   });
   // Public values are shaped, not secret; a parse failure here is a build
   // configuration bug, so surfacing the raw Zod error is safe and useful.

@@ -9,6 +9,8 @@ const options = {
   regions: ["EU-wide"],
   studyLevels: ["Master", "PhD"],
   opportunityTypes: ["scholarship"],
+  providers: ["Test Provider"],
+  fundingCategories: ["tuition"],
 };
 
 describe("FilterPanel", () => {
