@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import type { AssistantResultKind } from "@/lib/ai/assistant";
+import { trackEvent } from "@/lib/analytics";
 import { addGuestAiMessage, createGuestAiConversation } from "@/lib/storage/ai-assistant";
 import {
   askAssistantAction,
@@ -130,6 +131,7 @@ export function useAssistantChat(options: UseAssistantChatOptions) {
     const result = await submitAiFeedback({ messageId: message.assistantMessageId, rating, comment });
     if (result.ok) {
       setMessages((prev) => prev.map((m) => (m.id === message.id ? { ...m, feedbackSubmitted: true } : m)));
+      trackEvent("ai_answer_feedback_category", { rating });
     }
     return result;
   }, []);

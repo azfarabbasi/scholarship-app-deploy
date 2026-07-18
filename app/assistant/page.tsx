@@ -21,7 +21,7 @@ export default async function AssistantPage() {
       <p className="mt-2 max-w-2xl text-sm text-foreground-muted">
         Ask about published opportunities. Answers are grounded in ScholarTrack&apos;s stored source data and always include
         citations — the assistant never makes a final eligibility, admission, or funding decision.{" "}
-        <Link href="/assistant/settings" className="text-brand hover:underline">
+        <Link href="/assistant/settings" className="text-brand underline">
           History &amp; privacy settings
         </Link>
         .

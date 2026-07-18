@@ -27,13 +27,20 @@ web browsing, never a final eligibility/admission/funding decision), with
 full guest-local-by-default privacy, opt-in signed-in history, rate
 limiting, and a staff source-management/evaluation/safety toolchain. AI is
 off by default and the rest of the app works identically with it disabled.
+**Checkpoint 6 prepares the app for production deployment** — security headers and a nonce-based
+Content-Security-Policy, SEO (sitemap, robots.txt, structured data, twelve new content/legal pages),
+observability endpoints, a privacy-friendly analytics abstraction and an ad-readiness abstraction (both
+disabled by default), CI quality gates, and deployment/backup runbooks. Nothing about how the app behaves
+changed — see [Checkpoint 6](#checkpoint-6-production-readiness) below.
 Guest mode remains fully functional and is not required anywhere — see
 [Checkpoint 3](#checkpoint-3-optional-student-accounts-and-cloud-sync),
 [Checkpoint 4](#checkpoint-4-discovery-matching-reminders-and-notifications),
+[Checkpoint 5](#checkpoint-5-ai-assistant),
 and
-[Checkpoint 5](#checkpoint-5-ai-assistant)
-below. Push notifications, advertising, and sensitive-document uploads
-remain out of scope (see [Known limitations](#known-limitations-and-deferred-work)).
+[Checkpoint 6](#checkpoint-6-production-readiness)
+below. Push notifications and sensitive-document uploads remain out of scope; advertising is prepared but
+off by default and not actually running anywhere (see
+[Known limitations](#known-limitations-and-deferred-work)).
 
 Checkpoint 0 established repository boundaries, a Docker-first development
 contract, the domain model, and a documented audit of the legacy prototype.
@@ -190,6 +197,20 @@ Copy-Item .env.example .env.local
   configuration. Every value defaults to a safe "AI unavailable" state when unset; a
   missing/malformed value here never breaks the build or any non-AI feature. See
   [docs/checkpoint-5/checkpoint-5-architecture.md](docs/checkpoint-5/checkpoint-5-architecture.md).
+- `APP_ENV` (default `development`; `test`/`preview`/`production`), `SECURITY_CONTACT_EMAIL`,
+  `SUPPORT_EMAIL`, `SENTRY_DSN`/`NEXT_PUBLIC_SENTRY_DSN` — Checkpoint 6 production-environment
+  configuration. Only `APP_ENV=production` is held to a stricter boot-time check
+  (`validateProductionEnvironment()`, run once from `instrumentation.ts`); local dev, test, and preview
+  never require Supabase/database configuration just to start.
+- `NEXT_PUBLIC_ANALYTICS_ENABLED` (default `false`), `NEXT_PUBLIC_ANALYTICS_PROVIDER` (`none` or
+  `cloudflare`), `NEXT_PUBLIC_CLOUDFLARE_WEB_ANALYTICS_TOKEN` — Checkpoint 6's privacy-friendly analytics
+  abstraction. Off by default; no third-party script loads and no event is recorded otherwise. See
+  [docs/checkpoint-6/analytics-and-ads-policy.md](docs/checkpoint-6/analytics-and-ads-policy.md).
+- `NEXT_PUBLIC_ADS_ENABLED` (default `false`), `NEXT_PUBLIC_AD_PROVIDER` (`none` or `adsense`),
+  `NEXT_PUBLIC_ADSENSE_CLIENT_ID` — Checkpoint 6's ad-readiness abstraction. Off by default; no ad slot
+  renders and no ad script loads otherwise, and never on auth/account/staff/privacy/security/assistant
+  pages regardless. See
+  [docs/checkpoint-6/analytics-and-ads-policy.md](docs/checkpoint-6/analytics-and-ads-policy.md).
 
 Never put real credentials in `.env.example`, source files, Dockerfiles, or
 Compose configuration. Local `.env*` files are ignored by both Git and the Docker
@@ -209,11 +230,16 @@ docker compose run --rm --no-deps web npm run checkpoint2:validate
 docker compose run --rm --no-deps web npm run checkpoint3:validate
 docker compose run --rm --no-deps web npm run checkpoint4:validate
 docker compose run --rm --no-deps web npm run checkpoint5:validate
+docker compose run --rm --no-deps web npm run checkpoint6:validate
 docker compose run --rm --no-deps web npm run ai:evaluate
 docker compose run --rm --no-deps web npm run ai:safety:test
+docker compose run --rm --no-deps web npm run security:secrets
+docker compose run --rm --no-deps web npm run security:headers
+docker compose run --rm --no-deps web npm run seo:validate
 docker compose run --rm --no-deps web npm run typecheck
 docker compose run --rm --no-deps web npm run lint
 docker compose run --rm --no-deps -e NODE_ENV=production web npm run build
+docker compose run --rm --no-deps -e PERF_AUDIT_SKIP_BUILD=1 web npm run perf:audit
 ```
 
 Equivalent host commands (if Node.js is intentionally installed locally):
@@ -228,12 +254,30 @@ npm run checkpoint2:validate
 npm run checkpoint3:validate
 npm run checkpoint4:validate
 npm run checkpoint5:validate
+npm run checkpoint6:validate
 npm run ai:evaluate
 npm run ai:safety:test
+npm run security:secrets
+npm run security:headers
+npm run seo:validate
 npm run typecheck
 npm run lint
 npm run build
+npm run perf:audit
 ```
+
+## Security, SEO, and performance commands (Checkpoint 6)
+
+```powershell
+npm run security:secrets      # scans for accidentally committed secret-shaped values
+npm run security:headers      # verifies the security-header/CSP implementation statically
+npm run seo:validate          # verifies sitemap/robots/metadata/structured data
+npm run accessibility:test    # runs the axe-core Playwright suite alone
+npm run perf:audit            # measures real .next/static/chunks output against a budget
+```
+
+`npm run accessibility:test` requires a running app (Playwright's configured `baseURL`); the others run
+standalone with no server or database needed.
 
 ## Automated tests
 
@@ -250,9 +294,23 @@ see [Checkpoint 2 § Local database workflow](#local-database-workflow)):
 
 ```powershell
 docker compose up -d db-test
-docker compose run --rm --no-deps -e DATABASE_URL=postgres://scholartrack_test:scholartrack_test_password@db-test:5432/scholartrack_test web npm run db:reset:test
-docker compose run --rm --no-deps -e DATABASE_URL=postgres://scholartrack_test:scholartrack_test_password@db-test:5432/scholartrack_test web npm run db:test
+docker compose run --rm --no-deps `
+  -e DATABASE_URL=postgres://scholartrack_test:scholartrack_test_password@db-test:5432/scholartrack_test `
+  -e DATABASE_MIGRATION_URL=postgres://scholartrack_test:scholartrack_test_password@db-test:5432/scholartrack_test `
+  web npm run db:reset:test
+docker compose run --rm --no-deps `
+  -e DATABASE_URL=postgres://scholartrack_test:scholartrack_test_password@db-test:5432/scholartrack_test `
+  -e DATABASE_MIGRATION_URL=postgres://scholartrack_test:scholartrack_test_password@db-test:5432/scholartrack_test `
+  web npm run db:test
 ```
+
+Both `-e` overrides are required: the `web` service's own `docker-compose.yml` definition hardcodes
+*both* `DATABASE_URL` and `DATABASE_MIGRATION_URL` to point at the `db` (development) service, and
+`scripts/db-migrate.ts` prefers `DATABASE_MIGRATION_URL` when both are set — overriding only
+`DATABASE_URL` silently runs migrations against the wrong database while the rest of the reset script
+correctly targets `db-test`, producing a confusing "relation ... does not exist" failure. (Checkpoint 6
+found and fixed this gap in the documented command; the dedicated `web-e2e` Compose service used by the
+full e2e suite was never affected, since it hardcodes both variables to `db-test` directly.)
 
 End-to-end tests (Playwright) run through a dedicated Compose test profile
 that builds a **production** instance of the app (`web-e2e`) and drives it
@@ -598,6 +656,76 @@ real provider key — see [docs/checkpoint-5/ai-evaluation.md](docs/checkpoint-5
 - **Cloud account import doesn't restore AI history** — export includes it when enabled, but
   re-importing a previous export restores every other section except AI conversations.
 
+## Checkpoint 6: production readiness
+
+### What it is, and isn't
+
+Checkpoint 6 prepares ScholarTrack for a real deployment — it does not perform one (that's Checkpoint 7).
+No existing feature's behaviour changed: this checkpoint hardens the edges (headers, SEO, observability,
+analytics/ads readiness, documentation) around everything built in Checkpoints 0–5.
+
+### Security
+
+A nonce-based Content-Security-Policy (matching Next.js's own recommended App Router pattern), HSTS in
+production only, `X-Content-Type-Options`/`X-Frame-Options`/`Referrer-Policy`/`Permissions-Policy` on
+every response, `X-Robots-Tag: noindex` + `Cache-Control: no-store` for every private route, and a new
+cookie-based rate limiter on the public correction-report endpoint. See
+[docs/checkpoint-6/security-hardening.md](docs/checkpoint-6/security-hardening.md) for the full header
+table and every documented CSP exception (Supabase Auth, `next-themes`, Radix UI, and the optional
+analytics/ads integrations).
+
+### SEO
+
+`/sitemap.xml` (published opportunities only — the same query the public catalogue uses),
+`/robots.txt`, Open Graph/Twitter metadata and canonical URLs on every public page, and structured data
+(`WebSite`/`Organization`/`SearchAction` on the homepage, `BreadcrumbList`/`EducationalOccupationalProgram`
+on opportunity pages — the latter only ever asserting a deadline when it's independently verified and
+exact, `FAQPage` on `/faq`). See
+[docs/checkpoint-6/seo-and-content-strategy.md](docs/checkpoint-6/seo-and-content-strategy.md).
+
+### New public pages
+
+`/about`, `/methodology`, `/terms`, `/disclaimer`, `/contact`, `/faq`, `/status`, `/security`,
+`/accessibility`, `/advertising-policy`, `/data-sources`, `/verification-policy` — all linked from the
+footer.
+
+### Analytics and ads — both off by default
+
+A privacy-friendly analytics abstraction (`src/lib/analytics`) that never sends notes, checklist text, AI
+chat text, eligibility answers, or a raw search query, and an ad-readiness abstraction
+(`src/components/ads/AdSlot.tsx`) that never renders on auth/account/staff/privacy/security/assistant
+pages and never influences catalogue ranking, matching, or AI answers. Both require explicit, full
+configuration to do anything at all. See
+[docs/checkpoint-6/analytics-and-ads-policy.md](docs/checkpoint-6/analytics-and-ads-policy.md).
+
+### Observability
+
+`/api/health` (liveness), `/api/ready` (real database + AI-config readiness check), `/api/version` (safe
+build metadata), a staff-only `/staff/ops` diagnostics page, and route-level + root-layout error
+boundaries that always show a safe, generic message.
+
+### CI and deployment
+
+A GitHub Actions workflow (`.github/workflows/ci.yml`) requiring no real Supabase/Groq secrets, and
+deployment/backup runbooks that are honest about a real limitation: this app's Node.js/Postgres-driver
+architecture is not a clean fit for Cloudflare Pages' edge-only runtime without a real migration — see
+[docs/checkpoint-6/production-deployment-runbook.md](docs/checkpoint-6/production-deployment-runbook.md)
+for the recommended free-first alternatives instead.
+
+### Current limitations
+
+- The GitHub Actions workflow was authored and mirrors commands verified locally in this session, but was
+  not (and could not be) executed on GitHub's own infrastructure from here.
+- Ad readiness is structural only — no live AdSense unit or publisher slot ID is wired in (no approved
+  publisher account exists for this project); enabling ads today shows a labelled placeholder, not a real
+  ad.
+- The analytics abstraction's one supported provider (Cloudflare Web Analytics) is a passive page-view
+  beacon with no custom-event API — `trackEvent()` is a safe, tested no-op today, wired to four real call
+  sites, ready for a future custom-event-capable provider.
+- No dedicated 1200×630 Open Graph image exists yet — social cards currently reuse the PWA app icon.
+- A full "unnecessary client component" refactor audit was not performed this checkpoint; the new
+  `perf:audit` budget guards against regressions going forward instead.
+
 ## PWA installation and offline behaviour
 
 - **Desktop Chrome/Edge**: visit the site, then use the browser's install
@@ -759,8 +887,26 @@ did not complete (the 100-record content target and live Supabase e2e execution)
 [Checkpoint 4 § Current limitations](#current-limitations-2) for each checkpoint's own documented
 scope cuts. See `docs/checkpoint-5/checkpoint-5-completion-report.md` for the full audit.
 
+**Checkpoint 6 prepares production readiness** — see
+[Checkpoint 6 § Current limitations](#current-limitations-4): the CI workflow was authored and mirrors
+locally-verified commands but was never executed on GitHub's own infrastructure from this environment; ad
+readiness is structural only (no approved AdSense account exists); the analytics abstraction's one
+supported provider has no custom-event API; no dedicated social-share image exists yet; and a full
+"unnecessary client component" performance refactor audit was not performed (the new `perf:audit` budget
+guards against regressions instead). Public launch itself — a real domain, real deployment, real
+monitoring — is Checkpoint 7's responsibility, not this one's.
+
 ## Checkpoint documentation
 
+- [Checkpoint 6 architecture](docs/checkpoint-6/checkpoint-6-architecture.md)
+- [Checkpoint 6 production deployment runbook](docs/checkpoint-6/production-deployment-runbook.md)
+- [Checkpoint 6 security hardening](docs/checkpoint-6/security-hardening.md)
+- [Checkpoint 6 SEO and content strategy](docs/checkpoint-6/seo-and-content-strategy.md)
+- [Checkpoint 6 analytics and ads policy](docs/checkpoint-6/analytics-and-ads-policy.md)
+- [Checkpoint 6 backup and recovery](docs/checkpoint-6/backup-and-recovery.md)
+- [Checkpoint 6 manual QA](docs/checkpoint-6/checkpoint-6-manual-qa.md)
+- [Checkpoint 6 traceability](docs/checkpoint-6/checkpoint-6-traceability.md)
+- [Checkpoint 6 completion report](docs/checkpoint-6/checkpoint-6-completion-report.md)
 - [Checkpoint 5 architecture](docs/checkpoint-5/checkpoint-5-architecture.md)
 - [Checkpoint 5 AI safety policy](docs/checkpoint-5/ai-safety-policy.md)
 - [Checkpoint 5 RAG source management](docs/checkpoint-5/rag-source-management.md)

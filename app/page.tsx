@@ -6,18 +6,20 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Container } from "@/components/layout/Container";
+import { JsonLd } from "@/components/common/JsonLd";
 import { CurrentDate } from "@/components/home/CurrentDate";
 import { StatsGrid } from "@/components/home/StatsGrid";
 import { CatalogueExplorer } from "@/components/opportunities/CatalogueExplorer";
 import { getPublishedOpportunityCount } from "@/lib/catalogue/db-repository";
-import { isDatabaseConfigured } from "@/lib/env";
+import { getAppBaseUrl, isDatabaseConfigured } from "@/lib/env";
+import { buildMetadata, SITE_NAME } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "ScholarTrack — Verified scholarship & internship tracking",
   description:
     "Discover, track, and plan verified scholarship and internship opportunities. Your shortlist, notes, and checklists stay on your device.",
-  alternates: { canonical: "/" },
-};
+  path: "/",
+});
 
 // The published-opportunity count is live database state (publish/archive
 // changes it), so this page must never be served from a build-time snapshot.
@@ -36,8 +38,31 @@ async function getBuiltInCount(): Promise<number | null> {
 
 export default async function HomePage() {
   const count = await getBuiltInCount();
+  const baseUrl = getAppBaseUrl();
   return (
     <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              name: SITE_NAME,
+              url: baseUrl,
+            },
+            {
+              "@type": "WebSite",
+              name: SITE_NAME,
+              url: baseUrl,
+              potentialAction: {
+                "@type": "SearchAction",
+                target: `${baseUrl}/opportunities?q={search_term_string}`,
+                "query-input": "required name=search_term_string",
+              },
+            },
+          ],
+        }}
+      />
       <section className="border-b border-border bg-surface">
         <Container className="flex flex-col gap-6 py-10 sm:py-14">
           <div className="max-w-2xl">

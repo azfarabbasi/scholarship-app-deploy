@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import type { ReactNode } from "react";
 import { LiveAnnouncerProvider } from "@/components/common/LiveAnnouncer";
+import { AnalyticsInit } from "@/components/layout/AnalyticsInit";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { HydrationMarker } from "@/components/layout/HydrationMarker";
@@ -8,10 +10,10 @@ import { OfflineBanner } from "@/components/layout/OfflineBanner";
 import { ServiceWorkerRegistration } from "@/components/layout/ServiceWorkerRegistration";
 import { SkipLink } from "@/components/layout/SkipLink";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
+import { getAppBaseUrl } from "@/lib/env";
 import "./globals.css";
 
-const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL;
-const appUrl = configuredAppUrl?.startsWith("http") ? configuredAppUrl : "http://localhost:3000";
+const appUrl = getAppBaseUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
@@ -38,11 +40,16 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  // Set per-request by src/lib/supabase/middleware.ts and consumed here so
+  // next-themes' blocking pre-hydration script carries the same nonce as the
+  // Content-Security-Policy header — see src/lib/security/csp.ts.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="flex min-h-screen flex-col bg-background text-foreground antialiased">
-        <ThemeProvider>
+        <ThemeProvider nonce={nonce}>
           <LiveAnnouncerProvider>
             <SkipLink />
             <OfflineBanner />
@@ -52,6 +59,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
             </main>
             <Footer />
             <ServiceWorkerRegistration />
+            <AnalyticsInit />
             <HydrationMarker />
           </LiveAnnouncerProvider>
         </ThemeProvider>

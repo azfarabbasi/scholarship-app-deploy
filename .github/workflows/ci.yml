@@ -1,0 +1,155 @@
+name: CI
+
+# Checkpoint 6 quality gates. Every job runs on plain GitHub-hosted runners
+# with no required repository secrets — real Supabase/Groq credentials are
+# never needed. Database-backed checks spin up their own ephemeral Postgres
+# service container (mirroring docker-compose.yml's `db-test` service); the
+# AI assistant always uses the deterministic `mock` provider. See
+# docs/checkpoint-6/checkpoint-6-architecture.md for the full reasoning and
+# docs/checkpoint-6/production-deployment-runbook.md for the (separate,
+# documented-not-required-here) secrets a real deployment needs.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  checks:
+    name: Typecheck, lint, unit tests, validators, secrets, build
+    runs-on: ubuntu-latest
+    env:
+      # Non-empty placeholder only — satisfies drizzle.config.ts's presence
+      # check for `db:check`, which validates migration consistency and
+      # does not require a reachable database.
+      DATABASE_URL: postgres://ci:ci@localhost:5432/ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Secret scan
+        run: npm run security:secrets
+
+      - name: Security header checks
+        run: npm run security:headers
+
+      - name: SEO checks
+        run: npm run seo:validate
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Data and deadline validation
+        run: |
+          npm run data:validate
+          npm run deadlines:audit
+
+      - name: Checkpoint validators
+        run: |
+          npm run checkpoint0:validate
+          npm run checkpoint1:validate
+          npm run checkpoint2:validate
+          npm run checkpoint3:validate
+          npm run checkpoint4:validate
+          npm run checkpoint5:validate
+          npm run checkpoint6:validate
+
+      - name: AI safety and evaluation (mock provider — no key required)
+        run: |
+          npm run ai:safety:test
+          npm run ai:evaluate
+
+      - name: Drizzle schema consistency check
+        run: npm run db:check
+
+      - name: Production build
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Performance budget (reuses the build just produced)
+        run: npm run perf:audit
+        env:
+          PERF_AUDIT_SKIP_BUILD: "1"
+
+  db-tests:
+    name: Database and RLS integration tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: scholartrack_test
+          POSTGRES_PASSWORD: scholartrack_test_password
+          POSTGRES_DB: scholartrack_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U scholartrack_test -d scholartrack_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://scholartrack_test:scholartrack_test_password@localhost:5432/scholartrack_test
+      DATABASE_MIGRATION_URL: postgres://scholartrack_test:scholartrack_test_password@localhost:5432/scholartrack_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Reset and migrate the test database
+        run: npm run db:reset:test
+
+      - name: Import legacy fixtures and publish test data
+        run: |
+          npm run db:import:legacy
+          npm run db:publish:test-fixtures
+
+      - name: Verify migration
+        run: npm run db:verify:migration
+
+      - name: Database/RLS integration tests
+        run: npm run db:test
+
+  e2e-smoke:
+    name: Playwright smoke tests (Docker)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and run a smoke subset of the e2e suite
+        run: |
+          docker compose --profile test run --rm \
+            -e AI_ENABLED=true -e AI_PROVIDER=mock \
+            e2e npx playwright test \
+              tests/e2e/public-database-catalogue.spec.ts \
+              tests/e2e/accessibility.spec.ts \
+              tests/e2e/offline.spec.ts \
+              tests/e2e/ai-assistant.spec.ts
+
+      - name: Tear down
+        if: always()
+        run: docker compose --profile test down --remove-orphans

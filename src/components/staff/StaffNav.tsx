@@ -14,6 +14,7 @@ import {
   canViewAiSafetyLog,
   canViewAiUsage,
   canViewFullAuditLog,
+  canViewOpsDiagnostics,
   type StaffRole,
 } from "@/lib/auth/permissions";
 
@@ -43,6 +44,7 @@ const NAV_ITEMS: StaffNavItem[] = [
   { href: "/staff/ai/evaluations", label: "AI evaluations", visible: canRunAiEvaluations },
   { href: "/staff/ai/usage", label: "AI usage", visible: canViewAiUsage },
   { href: "/staff/ai/safety", label: "AI safety log", visible: canViewAiSafetyLog },
+  { href: "/staff/ops", label: "Ops diagnostics", visible: canViewOpsDiagnostics },
 ];
 
 interface StaffNavProps {

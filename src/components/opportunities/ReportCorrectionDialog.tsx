@@ -6,6 +6,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/Dialog";
 import { HelpText, Input, Label, Select, Textarea } from "@/components/ui/Field";
+import { trackEvent } from "@/lib/analytics";
 import { CORRECTION_CATEGORIES, CORRECTION_CATEGORY_LABELS } from "@/lib/schemas/correction-report";
 
 export function ReportCorrectionDialog({ opportunityId }: { opportunityId: string }) {
@@ -14,7 +15,7 @@ export function ReportCorrectionDialog({ opportunityId }: { opportunityId: strin
   const [suggestedOfficialSourceUrl, setSuggestedOfficialSourceUrl] = useState("");
   const [reporterContactEmail, setReporterContactEmail] = useState("");
   const [honeypot, setHoneypot] = useState("");
-  const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error" | "rate-limited">("idle");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -32,14 +33,25 @@ export function ReportCorrectionDialog({ opportunityId }: { opportunityId: strin
           honeypot,
         }),
       });
-      setStatus(response.ok ? "done" : "error");
+      if (response.ok) {
+        setStatus("done");
+        trackEvent("correction_report_submitted", { category });
+      } else if (response.status === 429) {
+        setStatus("rate-limited");
+      } else {
+        setStatus("error");
+      }
     } catch {
       setStatus("error");
     }
   }
 
   return (
-    <Dialog>
+    <Dialog
+      onOpenChange={(open) => {
+        if (open) trackEvent("correction_report_opened");
+      }}
+    >
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Flag className="h-4 w-4" aria-hidden="true" /> Report incorrect information
@@ -51,6 +63,9 @@ export function ReportCorrectionDialog({ opportunityId }: { opportunityId: strin
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             {status === "error" ? <Alert tone="danger">Could not submit your report. Please try again.</Alert> : null}
+            {status === "rate-limited" ? (
+              <Alert tone="danger">You&rsquo;ve submitted a lot of reports from this browser today. Please try again tomorrow.</Alert>
+            ) : null}
 
             <div>
               <Label htmlFor="correction-category">What&rsquo;s wrong?</Label>

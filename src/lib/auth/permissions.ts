@@ -174,3 +174,10 @@ export function canViewAiSafetyLog(roles: readonly StaffRole[]): boolean {
 export function canDisableAi(roles: readonly StaffRole[]): boolean {
   return hasAnyRole(roles, ["administrator"]);
 }
+
+// --- Checkpoint 6: production readiness ------------------------------------
+
+/** Operational diagnostics (/staff/ops) surface configuration/connectivity state — same sensitivity tier as the full audit log. */
+export function canViewOpsDiagnostics(roles: readonly StaffRole[]): boolean {
+  return hasAnyRole(roles, ["administrator"]);
+}

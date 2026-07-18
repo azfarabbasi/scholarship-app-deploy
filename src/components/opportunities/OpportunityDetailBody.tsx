@@ -174,6 +174,9 @@ export function OpportunityDetailBody({
               <ExternalLink className="h-4 w-4" aria-hidden="true" />
               <span className="sr-only">(opens in a new tab)</span>
             </a>
+            <p className="mt-2 text-xs text-foreground-subtle">
+              Always verify current deadlines, eligibility, and funding on the official site before applying.
+            </p>
           </section>
         ) : null}
       </div>

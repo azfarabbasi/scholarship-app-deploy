@@ -7,6 +7,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/common/EmptyState";
+import { AdSlot } from "@/components/ads/AdSlot";
 import { SaveSearchButton } from "@/components/discovery/SaveSearchButton";
 import { SavedSearchesPanel } from "@/components/discovery/SavedSearchesPanel";
 import { useCatalogue } from "@/hooks/useCatalogue";
@@ -232,6 +233,10 @@ export function CatalogueExplorer({
               </div>
             )}
           </div>
+
+          {showFilters && sorted.length > 0 ? (
+            <AdSlot placement="catalogue-inline" className="mt-4" />
+          ) : null}
         </div>
       </div>
     </div>

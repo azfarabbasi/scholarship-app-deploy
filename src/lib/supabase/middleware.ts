@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { getPublicEnv } from "@/lib/env";
+import { getPublicEnv, isAdsConfigured, isAnalyticsConfigured, isProductionEnvironment } from "@/lib/env";
+import { buildContentSecurityPolicy } from "@/lib/security/csp";
 
 const PUBLIC_STAFF_PATHS = ["/staff/login", "/staff/auth/callback", "/staff/unauthorized"];
 const PUBLIC_AUTH_PATHS = ["/auth/login", "/auth/signup", "/auth/callback"];
@@ -54,6 +55,51 @@ const SESSION_AWARE_PUBLIC_PREFIXES = [
  */
 const ALWAYS_NO_STORE_PREFIXES = ["/assistant", "/workspace/assistant"];
 
+/**
+ * Checkpoint 6: paths with no public SEO value or that only ever show a
+ * visitor their own private data — staff admin, student account pages, every
+ * Supabase auth route (staff or student), the AI assistant's saved-history
+ * and settings views, the personal workspace, and every non-HTML API route.
+ * `X-Robots-Tag` is set here rather than per-page `metadata.robots` so a new
+ * page added under one of these prefixes is noindexed automatically instead
+ * of requiring every individual page to remember to opt in. The general
+ * `/assistant` chat page and public tool pages (`/opportunities`,
+ * `/eligibility`, `/notifications`, `/compare`, `/calendar`, `/settings`)
+ * are deliberately NOT included — they have real, indexable content value
+ * even though some render session-aware data for a signed-in visitor (a
+ * crawler has no session cookie, so it only ever sees the generic version).
+ */
+const NOINDEX_PREFIXES = ["/staff", "/account", "/auth", "/api", "/assistant/history", "/assistant/settings", "/workspace"];
+
+/**
+ * Checkpoint 6: pure static content pages with zero session-dependent
+ * rendering — no `getStudentSession()`/`getStaffSession()` call anywhere in
+ * their tree, so the response is byte-identical for every visitor. Since
+ * `app/layout.tsx` now reads the per-request CSP nonce via `headers()`
+ * (required for the nonce-based Content-Security-Policy — see
+ * `src/lib/security/csp.ts`), every route in this app is dynamically
+ * rendered at the Next.js level; without an explicit override here these
+ * pages would otherwise fall back to Next's default dynamic Cache-Control
+ * (`private, no-store`), which is unnecessarily strict for content that
+ * never varies by visitor. A real, public, revalidating cache header
+ * recovers most of the practical CDN/browser caching benefit even though
+ * build-time static HTML generation is no longer in play.
+ */
+const PUBLIC_STATIC_CONTENT_PREFIXES = [
+  "/about",
+  "/methodology",
+  "/terms",
+  "/disclaimer",
+  "/contact",
+  "/faq",
+  "/status",
+  "/security",
+  "/accessibility",
+  "/advertising-policy",
+  "/data-sources",
+  "/verification-policy",
+];
+
 /** Only ever redirect to a same-origin path under `prefix` — never an open redirect. */
 function sanitizeNextPath(path: string | null, prefix: string, fallback: string): string {
   if (!path || !path.startsWith(prefix) || path.startsWith("//") || path.includes("://")) {
@@ -74,9 +120,48 @@ function sanitizeNextPath(path: string | null, prefix: string, fallback: string)
  * access to the other.
  */
 export async function updateSupabaseSession(request: NextRequest): Promise<NextResponse> {
-  let response = NextResponse.next({ request });
+  // Checkpoint 6: a fresh nonce every request, threaded through as a request
+  // header so `app/layout.tsx` can read it (via `next/headers`) and pass it
+  // to `next-themes`' blocking theme script — the one inline script this app
+  // legitimately needs before hydration. See `src/lib/security/csp.ts`.
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  const requestInit = { headers: requestHeaders };
 
+  const pathname = request.nextUrl.pathname;
   const env = getPublicEnv();
+  const csp = buildContentSecurityPolicy({
+    nonce,
+    supabaseUrl: env.NEXT_PUBLIC_SUPABASE_URL,
+    analyticsEnabled: isAnalyticsConfigured(),
+    adsEnabled: isAdsConfigured(),
+    production: isProductionEnvironment(),
+  });
+  const shouldNoindex = NOINDEX_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+
+  /**
+   * Applied to every response this function returns, from every branch —
+   * a plain per-response `.headers.set()` call at the top of the function
+   * is not enough, because the Supabase cookie-refresh path below
+   * (`setAll`) constructs a brand new `NextResponse` that would otherwise
+   * silently lose these headers.
+   */
+  function withSecurityHeaders(res: NextResponse): NextResponse {
+    res.headers.set("Content-Security-Policy", csp);
+    if (isProductionEnvironment()) {
+      // max-age=2 years, includeSubDomains — HSTS is production-only: forcing
+      // HTTPS on a plain local/dev http://localhost origin would break it.
+      res.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains");
+    }
+    if (shouldNoindex) {
+      res.headers.set("X-Robots-Tag", "noindex, nofollow");
+    }
+    return res;
+  }
+
+  let response = withSecurityHeaders(NextResponse.next({ request: requestInit }));
+
   if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
     return response;
   }
@@ -90,7 +175,7 @@ export async function updateSupabaseSession(request: NextRequest): Promise<NextR
         for (const { name, value } of cookiesToSet) {
           request.cookies.set(name, value);
         }
-        response = NextResponse.next({ request });
+        response = withSecurityHeaders(NextResponse.next({ request: requestInit }));
         for (const { name, value, options } of cookiesToSet) {
           response.cookies.set(name, value, options);
         }
@@ -102,38 +187,40 @@ export async function updateSupabaseSession(request: NextRequest): Promise<NextR
     data: { user },
   } = await supabase.auth.getUser();
 
-  const pathname = request.nextUrl.pathname;
   const isPublicStaffPath = PUBLIC_STAFF_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
   const isPublicAuthPath = PUBLIC_AUTH_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 
   if (pathname.startsWith("/api/staff") && !user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    return withSecurityHeaders(NextResponse.json({ error: "unauthorized" }, { status: 401 }));
   }
 
   if (pathname.startsWith("/staff") && !isPublicStaffPath && !user) {
     const loginUrl = new URL("/staff/login", request.url);
     loginUrl.searchParams.set("next", sanitizeNextPath(pathname, "/staff", "/staff"));
-    return NextResponse.redirect(loginUrl);
+    return withSecurityHeaders(NextResponse.redirect(loginUrl));
   }
 
   if (pathname.startsWith("/api/account") && !user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    return withSecurityHeaders(NextResponse.json({ error: "unauthorized" }, { status: 401 }));
   }
 
   if (pathname.startsWith("/account") && !user) {
     const loginUrl = new URL("/auth/login", request.url);
     loginUrl.searchParams.set("next", sanitizeNextPath(pathname, "/account", "/account"));
-    return NextResponse.redirect(loginUrl);
+    return withSecurityHeaders(NextResponse.redirect(loginUrl));
   }
 
   if (pathname.startsWith("/auth") && !isPublicAuthPath && pathname !== "/auth/logout" && !user) {
-    return NextResponse.redirect(new URL("/auth/login", request.url));
+    return withSecurityHeaders(NextResponse.redirect(new URL("/auth/login", request.url)));
   }
 
   const isAlwaysNoStorePath = ALWAYS_NO_STORE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
   const isSessionAwarePublicPath = SESSION_AWARE_PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
+  const isPublicStaticContentPath = PUBLIC_STATIC_CONTENT_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
-  if (isAlwaysNoStorePath) {
+  if (isPublicStaticContentPath) {
+    response.headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=86400");
+  } else if (isAlwaysNoStorePath) {
     response.headers.set("Cache-Control", "no-store, private");
   } else if (user && isSessionAwarePublicPath) {
     response.headers.set("Cache-Control", "no-store, private");

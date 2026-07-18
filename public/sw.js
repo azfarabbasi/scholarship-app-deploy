@@ -44,6 +44,15 @@
  *    goes through a Server Action (POST), never a cached GET route, so no
  *    AI conversation content is ever written to Cache Storage. `/staff/ai/**`
  *    is already covered by the blanket `/staff` exclusion below.
+ *  - Checkpoint 6 adds a dozen pure static content/legal pages (`/about`,
+ *    `/methodology`, `/terms`, `/disclaimer`, `/contact`, `/faq`, `/status`,
+ *    `/security`, `/accessibility`, `/advertising-policy`, `/data-sources`,
+ *    `/verification-policy`) — these ARE precached below, unlike the
+ *    session-aware pages above, because they render zero session-dependent
+ *    content for anyone (`middleware.ts` always marks them
+ *    `public, max-age=300, stale-while-revalidate` regardless of sign-in
+ *    state), so there is no risk of baking one visitor's personalised HTML
+ *    into the shared cache.
  *
  * Guest data lives in IndexedDB/localStorage, never in Cache Storage, so
  * activating a new version and clearing old caches here never touches guest
@@ -51,7 +60,7 @@
  * IndexedDB (`cloudCache`/`syncOutbox` — see `src/lib/sync/`), never in
  * Cache Storage either.
  */
-const CACHE_VERSION = "v5";
+const CACHE_VERSION = "v6";
 const APP_SHELL_CACHE = `scholartrack-app-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `scholartrack-runtime-${CACHE_VERSION}`;
 const STATIC_ASSET_CACHE = `scholartrack-static-${CACHE_VERSION}`;
@@ -66,6 +75,18 @@ const APP_SHELL_URLS = [
   "/settings",
   "/privacy",
   "/manifest.webmanifest",
+  "/about",
+  "/methodology",
+  "/terms",
+  "/disclaimer",
+  "/contact",
+  "/faq",
+  "/status",
+  "/security",
+  "/accessibility",
+  "/advertising-policy",
+  "/data-sources",
+  "/verification-policy",
 ];
 
 /** Never cache a response the server marked `no-store`/`private` — same check used everywhere below. */
@@ -89,11 +110,29 @@ async function precacheAppShellUrl(cache, url) {
   }
 }
 
+/**
+ * Checkpoint 6: fetched sequentially, not via `Promise.all`/`allSettled`
+ * over the whole list at once. `APP_SHELL_URLS` grew from 8 to 20 entries
+ * this checkpoint (twelve new static content pages), and firing that many
+ * fetches simultaneously from inside the install handler competes with the
+ * registering page's own in-flight requests for the browser's per-origin
+ * HTTP connection limit (6, for HTTP/1.1) — observed in practice as the
+ * install step stalling indefinitely with only the first few URLs ever
+ * completing. Precaching runs once per new service-worker version, so the
+ * small extra latency of a sequential fetch is a good trade for install
+ * actually completing reliably.
+ */
+async function precacheAppShellUrls(cache, urls) {
+  for (const url of urls) {
+    await precacheAppShellUrl(cache, url);
+  }
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(APP_SHELL_CACHE);
-      await Promise.allSettled(APP_SHELL_URLS.map((url) => precacheAppShellUrl(cache, url)));
+      await precacheAppShellUrls(cache, APP_SHELL_URLS);
       await self.skipWaiting();
     })(),
   );
