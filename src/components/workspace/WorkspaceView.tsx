@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, Plus } from "lucide-react";
+import { CalendarDays, ClipboardList, Plus, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -81,6 +81,23 @@ export function WorkspaceView() {
   return (
     <div className="flex flex-col gap-6">
       <WorkspaceSummary items={items} now={now} />
+
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href="/calendar"
+          className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
+        >
+          <CalendarDays className="h-4 w-4 text-brand" aria-hidden="true" />
+          Review upcoming deadlines
+        </Link>
+        <Link
+          href="/workspace/assistant"
+          className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
+        >
+          <Sparkles className="h-4 w-4 text-brand" aria-hidden="true" />
+          Ask Scholarly what to do next
+        </Link>
+      </div>
 
       <CatalogueToolbar
         query={query}

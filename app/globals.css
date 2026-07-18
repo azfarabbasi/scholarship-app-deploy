@@ -13,10 +13,21 @@
   --color-foreground-muted: #475467;
   --color-foreground-subtle: #667085;
 
-  --color-brand: #185ada;
-  --color-brand-strong: #123f99;
+  /* Green-first brand palette (Scholarly rebrand). #047857 (emerald-700)
+     measures ~5.49:1 both as text-on-white and as white-text-on-background —
+     passes WCAG AA (4.5:1) at normal text size. A lighter emerald (e.g.
+     emerald-600 #059669, ~3.77:1) was tried and rejected: it fails AA. */
+  --color-brand: #047857;
+  --color-brand-strong: #065f46;
   --color-brand-foreground: #ffffff;
-  --color-brand-tint: #e8f0fe;
+  --color-brand-tint: #e6f6ec;
+
+  /* Mint — secondary accent only (AI/Scholarly touches, decorative highlights,
+     subtle backgrounds). #0d9488 measures ~3.75:1 on white, which fails AA for
+     body text, so this pair is never used for text on tint — only for icons,
+     borders, and backgrounds paired with regular foreground/brand text. */
+  --color-mint: #0d9488;
+  --color-mint-tint: #e6fbf7;
 
   --color-success: #0f7a3d;
   --color-success-tint: #e6f6ec;
@@ -33,7 +44,7 @@
   --color-neutral: #475467;
   --color-neutral-tint: #eef1f6;
 
-  --color-focus-ring: #185ada;
+  --color-focus-ring: #047857;
   --shadow-color: 220 20% 30%;
 }
 
@@ -49,10 +60,16 @@
   --color-foreground-muted: #aab4c5;
   --color-foreground-subtle: #8894a8;
 
-  --color-brand: #6ba1f5;
-  --color-brand-strong: #9cc0f8;
+  /* #34d399 (emerald-400) measures ~9.85:1 against this dark background —
+     well past AA (4.5:1) — so it's suitable both as brand text and as an
+     icon/border color at dark-theme surface contrast levels. */
+  --color-brand: #34d399;
+  --color-brand-strong: #6ee7b7;
   --color-brand-foreground: #0b1120;
-  --color-brand-tint: #16233d;
+  --color-brand-tint: #123322;
+
+  --color-mint: #5eead4;
+  --color-mint-tint: #0f2e2b;
 
   --color-success: #4ade80;
   --color-success-tint: #123322;
@@ -65,7 +82,7 @@
   --color-neutral: #aab4c5;
   --color-neutral-tint: #182338;
 
-  --color-focus-ring: #7cc0f5;
+  --color-focus-ring: #34d399;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -80,10 +97,13 @@
     --color-foreground-muted: #aab4c5;
     --color-foreground-subtle: #8894a8;
 
-    --color-brand: #6ba1f5;
-    --color-brand-strong: #9cc0f8;
+    --color-brand: #34d399;
+    --color-brand-strong: #6ee7b7;
     --color-brand-foreground: #0b1120;
-    --color-brand-tint: #16233d;
+    --color-brand-tint: #123322;
+
+    --color-mint: #5eead4;
+    --color-mint-tint: #0f2e2b;
 
     --color-success: #4ade80;
     --color-success-tint: #123322;
@@ -96,7 +116,7 @@
     --color-neutral: #aab4c5;
     --color-neutral-tint: #182338;
 
-    --color-focus-ring: #7cc0f5;
+    --color-focus-ring: #34d399;
   }
 }
 
@@ -113,6 +133,9 @@
   --color-brand-strong: var(--color-brand-strong);
   --color-brand-foreground: var(--color-brand-foreground);
   --color-brand-tint: var(--color-brand-tint);
+
+  --color-mint: var(--color-mint);
+  --color-mint-tint: var(--color-mint-tint);
 
   --color-success: var(--color-success);
   --color-success-tint: var(--color-success-tint);

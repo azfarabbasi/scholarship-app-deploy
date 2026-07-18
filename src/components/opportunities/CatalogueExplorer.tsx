@@ -3,11 +3,13 @@
 import { SearchX } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/common/EmptyState";
 import { AdSlot } from "@/components/ads/AdSlot";
+import { cn } from "@/lib/cn";
 import { SaveSearchButton } from "@/components/discovery/SaveSearchButton";
 import { SavedSearchesPanel } from "@/components/discovery/SavedSearchesPanel";
 import { useCatalogue } from "@/hooks/useCatalogue";
@@ -171,6 +173,37 @@ export function CatalogueExplorer({
         ) : null}
 
         <div className="min-w-0 flex-1">
+          {showFilters ? (
+            <div className="mb-3 flex flex-wrap items-center gap-2" aria-label="Quick filters">
+              <QuickFilterChip
+                active={filters.shortlistedOnly}
+                onClick={() => setFilters((prev) => ({ ...prev, shortlistedOnly: !prev.shortlistedOnly }))}
+              >
+                Shortlisted
+              </QuickFilterChip>
+              <QuickFilterChip
+                active={filters.actionableOnly}
+                onClick={() => setFilters((prev) => ({ ...prev, actionableOnly: !prev.actionableOnly }))}
+              >
+                Open now
+              </QuickFilterChip>
+              <QuickFilterChip
+                active={filters.verificationRequiredOnly}
+                onClick={() => setFilters((prev) => ({ ...prev, verificationRequiredOnly: !prev.verificationRequiredOnly }))}
+              >
+                Needs verification
+              </QuickFilterChip>
+              {activeFilterCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setFilters(DEFAULT_CATALOGUE_FILTERS)}
+                  className="rounded-full px-2 py-1 text-xs font-medium text-foreground-muted underline-offset-2 hover:text-foreground hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
+                >
+                  Clear all filters
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           <CatalogueToolbar
             query={filters.query}
             onQueryChange={(query) => setFilters((prev) => ({ ...prev, query }))}
@@ -240,5 +273,31 @@ export function CatalogueExplorer({
         </div>
       </div>
     </div>
+  );
+}
+
+function QuickFilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]",
+        active
+          ? "border-brand/30 bg-brand-tint text-brand"
+          : "border-border bg-surface text-foreground-muted hover:bg-surface-muted",
+      )}
+    >
+      {children}
+    </button>
   );
 }

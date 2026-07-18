@@ -1,4 +1,4 @@
-import { CalendarDays, ClipboardList, ShieldAlert } from "lucide-react";
+import { CalendarDays, ClipboardList, ShieldAlert, ShieldCheck, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -67,7 +67,11 @@ export default async function HomePage() {
         <Container className="flex flex-col gap-6 py-10 sm:py-14">
           <div className="max-w-2xl">
             <CurrentDate />
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-brand-tint px-3 py-1 text-xs font-medium text-brand">
+              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+              Verified sources, honest deadlines
+            </div>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
               Track verified scholarships and internships with confidence.
             </h1>
             <p className="mt-4 text-base leading-relaxed text-foreground-muted">
@@ -78,10 +82,16 @@ export default async function HomePage() {
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Button size="lg" asChild>
-                <Link href="/opportunities">Browse opportunities</Link>
+                <Link href="/opportunities">Start exploring</Link>
               </Button>
               <Button variant="outline" size="lg" asChild>
-                <Link href="/workspace">Go to my workspace</Link>
+                <Link href="/workspace">Track applications</Link>
+              </Button>
+              <Button variant="secondary" size="lg" asChild>
+                <Link href="/assistant">
+                  <Sparkles className="h-4 w-4" aria-hidden="true" />
+                  Ask Scholarly
+                </Link>
               </Button>
             </div>
           </div>

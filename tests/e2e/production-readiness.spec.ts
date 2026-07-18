@@ -41,8 +41,11 @@ test.describe("Production readiness", () => {
     await page.getByLabel("Search opportunities").fill("DAAD");
     await page.getByRole("link", { name: /View details/i }).first().click();
 
-    await expect(page.getByRole("link", { name: /visit official website/i })).toBeVisible();
-    await expect(page.getByText(/always verify current deadlines/i)).toBeVisible();
+    // The sticky sidebar summary card and the full details section both carry
+    // their own "Visit official website" CTA by design (see
+    // docs/ui-polish/scholarly-frontend-polish.md) — assert the first one.
+    await expect(page.getByRole("link", { name: /visit official website/i }).first()).toBeVisible();
+    await expect(page.getByText(/always verify current deadlines/i).first()).toBeVisible();
 
     const jsonLdBlocks = await page.locator('script[type="application/ld+json"]').allTextContents();
     const types = jsonLdBlocks.map((block) => JSON.parse(block)["@type"]);
@@ -74,7 +77,7 @@ test.describe("Production readiness", () => {
     page.on("request", (req) => requests.push(req.url()));
 
     await page.goto("/");
-    await page.getByRole("link", { name: "Browse opportunities" }).first().click();
+    await page.getByRole("link", { name: "Start exploring" }).first().click();
     await expect(page).toHaveURL(/\/opportunities/);
 
     expect(requests.some((url) => url.includes("cloudflareinsights.com"))).toBe(false);

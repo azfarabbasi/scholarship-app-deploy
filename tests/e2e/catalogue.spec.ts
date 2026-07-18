@@ -18,7 +18,8 @@ test.describe("Catalogue", () => {
     await page.getByLabel("Search opportunities").fill("");
     await expect(page.getByTestId("opportunity-card")).toHaveCount(55);
 
-    // Combine a study-level filter with a country filter.
+    // Country/study-level filters live behind the collapsed "More filters" disclosure.
+    await page.getByText("More filters").click();
     await page.getByRole("checkbox", { name: "Germany" }).check();
     const afterCountry = await page.getByTestId("opportunity-card").count();
     expect(afterCountry).toBeGreaterThan(0);

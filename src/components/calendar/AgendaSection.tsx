@@ -3,6 +3,7 @@
 import { Download } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 import type { CalendarEvent } from "@/lib/calendar/events";
 import { buildSingleEventIcs } from "@/lib/calendar/ics";
 import { downloadTextFile } from "@/lib/download";
@@ -12,14 +13,20 @@ export function AgendaSection({
   title,
   events,
   emptyText,
+  emphasis,
 }: {
   title: string;
   events: CalendarEvent[];
   emptyText: string;
+  /** Tints the count badge red when this section highlights something overdue/urgent, in addition to the text label — never color alone. */
+  emphasis?: "danger";
 }) {
   return (
     <section>
-      <h2 className="text-base font-semibold text-foreground">{title}</h2>
+      <div className="flex items-center gap-2">
+        <h2 className="text-base font-semibold text-foreground">{title}</h2>
+        {events.length > 0 ? <Badge tone={emphasis === "danger" ? "red" : "neutral"}>{events.length}</Badge> : null}
+      </div>
       {events.length === 0 ? (
         <p className="mt-2 text-sm text-foreground-muted">{emptyText}</p>
       ) : (

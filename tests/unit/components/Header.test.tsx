@@ -14,6 +14,7 @@ describe("Header navigation", () => {
     const nav = screen.getByRole("navigation", { name: "Primary" });
     expect(nav).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Home" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Scholarly" })).toHaveAttribute("href", "/assistant");
     expect(screen.getByRole("link", { name: "Workspace" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Calendar" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Settings" })).toBeInTheDocument();

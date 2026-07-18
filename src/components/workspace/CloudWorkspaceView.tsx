@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { CalendarDays, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Field";
 import { Alert } from "@/components/ui/Alert";
@@ -53,6 +54,23 @@ export function CloudWorkspaceView({ studentProfileId }: CloudWorkspaceViewProps
       </div>
 
       {error ? <Alert tone="warning">{error}</Alert> : null}
+
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href="/calendar"
+          className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
+        >
+          <CalendarDays className="h-4 w-4 text-brand" aria-hidden="true" />
+          Review upcoming deadlines
+        </Link>
+        <Link
+          href="/workspace/assistant"
+          className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
+        >
+          <Sparkles className="h-4 w-4 text-brand" aria-hidden="true" />
+          Ask Scholarly what to do next
+        </Link>
+      </div>
 
       <div>
         <Input

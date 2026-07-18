@@ -32,8 +32,8 @@ export interface CspOptions {
    * being false, since "not production" also covers `test`/`preview`
    * environments that run a real production build and must stay strict.
    * Next.js's own dev server (Turbopack/webpack Fast Refresh, and the dev
-   * error overlay) evaluates code via `eval()`, which a strict `script-src`
-   * blocks outright — Next's own CSP guide documents this exact exception:
+   * error overlay) evaluates code via `eval()`, which a strict CSP blocks
+   * outright — Next's own CSP guide documents this exact exception:
    * https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy.
    * Defaults to `false`/omitted so every existing caller (and the production
    * build) stays exactly as strict as before. `production: true` always wins

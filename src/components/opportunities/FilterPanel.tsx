@@ -135,117 +135,127 @@ export function FilterPanel({ options, filters, onChange }: FilterPanelProps) {
         ))}
       </FilterGroup>
 
-      {options.studyLevels.length > 0 ? (
-        <FilterGroup title="Study level">
-          {options.studyLevels.map((level) => (
-            <Checkbox
-              key={level}
-              id={`filter-level-${level}`}
-              label={level}
-              checked={filters.studyLevels.includes(level)}
-              onChange={() => onChange({ ...filters, studyLevels: toggleValue(filters.studyLevels, level) })}
-            />
-          ))}
-        </FilterGroup>
-      ) : null}
+      <details className="border-t border-border pt-3">
+        <summary className="cursor-pointer text-sm font-semibold text-foreground marker:text-foreground-subtle">
+          More filters
+        </summary>
+        <p className="mb-2 mt-2 text-xs text-foreground-subtle">
+          Study level, country, region, provider, funding, deadline state/precision, and application stage.
+        </p>
+        <div className="flex flex-col">
+          {options.studyLevels.length > 0 ? (
+            <FilterGroup title="Study level">
+              {options.studyLevels.map((level) => (
+                <Checkbox
+                  key={level}
+                  id={`filter-level-${level}`}
+                  label={level}
+                  checked={filters.studyLevels.includes(level)}
+                  onChange={() => onChange({ ...filters, studyLevels: toggleValue(filters.studyLevels, level) })}
+                />
+              ))}
+            </FilterGroup>
+          ) : null}
 
-      {options.countries.length > 0 ? (
-        <FilterGroup title="Country">
-          <div className="max-h-48 overflow-y-auto pr-1">
-            {options.countries.map((country) => (
+          {options.countries.length > 0 ? (
+            <FilterGroup title="Country">
+              <div className="max-h-48 overflow-y-auto pr-1">
+                {options.countries.map((country) => (
+                  <Checkbox
+                    key={country}
+                    id={`filter-country-${country}`}
+                    label={country}
+                    checked={filters.countries.includes(country)}
+                    onChange={() => onChange({ ...filters, countries: toggleValue(filters.countries, country) })}
+                  />
+                ))}
+              </div>
+            </FilterGroup>
+          ) : null}
+
+          {options.regions.length > 0 ? (
+            <FilterGroup title="Region">
+              {options.regions.map((region) => (
+                <Checkbox
+                  key={region}
+                  id={`filter-region-${region}`}
+                  label={region}
+                  checked={filters.regions.includes(region)}
+                  onChange={() => onChange({ ...filters, regions: toggleValue(filters.regions, region) })}
+                />
+              ))}
+            </FilterGroup>
+          ) : null}
+
+          {options.providers.length > 0 ? (
+            <FilterGroup title="Provider">
+              <div className="max-h-48 overflow-y-auto pr-1">
+                {options.providers.map((provider) => (
+                  <Checkbox
+                    key={provider}
+                    id={`filter-provider-${provider}`}
+                    label={provider}
+                    checked={filters.providers.includes(provider)}
+                    onChange={() => onChange({ ...filters, providers: toggleValue(filters.providers, provider) })}
+                  />
+                ))}
+              </div>
+            </FilterGroup>
+          ) : null}
+
+          {options.fundingCategories.length > 0 ? (
+            <FilterGroup title="Funding category">
+              {options.fundingCategories.map((category) => (
+                <Checkbox
+                  key={category}
+                  id={`filter-funding-${category}`}
+                  label={category}
+                  checked={filters.fundingCategories.includes(category)}
+                  onChange={() => onChange({ ...filters, fundingCategories: toggleValue(filters.fundingCategories, category) })}
+                />
+              ))}
+            </FilterGroup>
+          ) : null}
+
+          <FilterGroup title="Deadline state">
+            <div className="max-h-56 overflow-y-auto pr-1">
+              {DEADLINE_LIFECYCLE_STATUSES.map((state) => (
+                <Checkbox
+                  key={state}
+                  id={`filter-state-${state}`}
+                  label={LIFECYCLE_LABELS[state]}
+                  checked={filters.deadlineStates.includes(state)}
+                  onChange={() => onChange({ ...filters, deadlineStates: toggleValue(filters.deadlineStates, state) })}
+                />
+              ))}
+            </div>
+          </FilterGroup>
+
+          <FilterGroup title="Deadline precision">
+            {DEADLINE_PRECISION_OPTIONS.map((precision) => (
               <Checkbox
-                key={country}
-                id={`filter-country-${country}`}
-                label={country}
-                checked={filters.countries.includes(country)}
-                onChange={() => onChange({ ...filters, countries: toggleValue(filters.countries, country) })}
+                key={precision}
+                id={`filter-precision-${precision}`}
+                label={PRECISION_LABELS[precision]}
+                checked={filters.precisions.includes(precision)}
+                onChange={() => onChange({ ...filters, precisions: toggleValue(filters.precisions, precision) })}
               />
             ))}
-          </div>
-        </FilterGroup>
-      ) : null}
+          </FilterGroup>
 
-      {options.regions.length > 0 ? (
-        <FilterGroup title="Region">
-          {options.regions.map((region) => (
-            <Checkbox
-              key={region}
-              id={`filter-region-${region}`}
-              label={region}
-              checked={filters.regions.includes(region)}
-              onChange={() => onChange({ ...filters, regions: toggleValue(filters.regions, region) })}
-            />
-          ))}
-        </FilterGroup>
-      ) : null}
-
-      {options.providers.length > 0 ? (
-        <FilterGroup title="Provider">
-          <div className="max-h-48 overflow-y-auto pr-1">
-            {options.providers.map((provider) => (
+          <FilterGroup title="Application stage">
+            {APPLICATION_STAGE_OPTIONS.map((stage) => (
               <Checkbox
-                key={provider}
-                id={`filter-provider-${provider}`}
-                label={provider}
-                checked={filters.providers.includes(provider)}
-                onChange={() => onChange({ ...filters, providers: toggleValue(filters.providers, provider) })}
+                key={stage}
+                id={`filter-stage-${stage}`}
+                label={APPLICATION_STAGE_LABELS[stage]}
+                checked={filters.stages.includes(stage)}
+                onChange={() => onChange({ ...filters, stages: toggleValue(filters.stages, stage) })}
               />
             ))}
-          </div>
-        </FilterGroup>
-      ) : null}
-
-      {options.fundingCategories.length > 0 ? (
-        <FilterGroup title="Funding category">
-          {options.fundingCategories.map((category) => (
-            <Checkbox
-              key={category}
-              id={`filter-funding-${category}`}
-              label={category}
-              checked={filters.fundingCategories.includes(category)}
-              onChange={() => onChange({ ...filters, fundingCategories: toggleValue(filters.fundingCategories, category) })}
-            />
-          ))}
-        </FilterGroup>
-      ) : null}
-
-      <FilterGroup title="Deadline state">
-        <div className="max-h-56 overflow-y-auto pr-1">
-          {DEADLINE_LIFECYCLE_STATUSES.map((state) => (
-            <Checkbox
-              key={state}
-              id={`filter-state-${state}`}
-              label={LIFECYCLE_LABELS[state]}
-              checked={filters.deadlineStates.includes(state)}
-              onChange={() => onChange({ ...filters, deadlineStates: toggleValue(filters.deadlineStates, state) })}
-            />
-          ))}
+          </FilterGroup>
         </div>
-      </FilterGroup>
-
-      <FilterGroup title="Deadline precision">
-        {DEADLINE_PRECISION_OPTIONS.map((precision) => (
-          <Checkbox
-            key={precision}
-            id={`filter-precision-${precision}`}
-            label={PRECISION_LABELS[precision]}
-            checked={filters.precisions.includes(precision)}
-            onChange={() => onChange({ ...filters, precisions: toggleValue(filters.precisions, precision) })}
-          />
-        ))}
-      </FilterGroup>
-
-      <FilterGroup title="Application stage">
-        {APPLICATION_STAGE_OPTIONS.map((stage) => (
-          <Checkbox
-            key={stage}
-            id={`filter-stage-${stage}`}
-            label={APPLICATION_STAGE_LABELS[stage]}
-            checked={filters.stages.includes(stage)}
-            onChange={() => onChange({ ...filters, stages: toggleValue(filters.stages, stage) })}
-          />
-        ))}
-      </FilterGroup>
+      </details>
     </div>
   );
 }

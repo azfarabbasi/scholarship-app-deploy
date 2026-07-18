@@ -153,6 +153,7 @@ export function CalendarView() {
             title="Overdue personal deadlines"
             events={overdue}
             emptyText="No overdue personal deadlines."
+            emphasis="danger"
           />
           <AgendaSection title="Upcoming" events={upcoming} emptyText="No upcoming dated deadlines to show." />
           <UndatedList entries={filteredUndated} />

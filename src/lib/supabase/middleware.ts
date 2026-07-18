@@ -125,11 +125,17 @@ export async function updateSupabaseSession(request: NextRequest): Promise<NextR
   // to `next-themes`' blocking theme script — the one inline script this app
   // legitimately needs before hydration. See `src/lib/security/csp.ts`.
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const pathname = request.nextUrl.pathname;
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
+  // Read by app/layout.tsx to decide whether the floating Scholarly widget
+  // can possibly appear on this page at all, so it can skip the "is AI
+  // available" DB check entirely on the majority of routes (staff, auth,
+  // legal/static content, account sub-pages) where the widget never renders
+  // — see src/lib/assistant/scholarly-widget-pages.ts.
+  requestHeaders.set("x-pathname", pathname);
   const requestInit = { headers: requestHeaders };
 
-  const pathname = request.nextUrl.pathname;
   const env = getPublicEnv();
   const csp = buildContentSecurityPolicy({
     nonce,

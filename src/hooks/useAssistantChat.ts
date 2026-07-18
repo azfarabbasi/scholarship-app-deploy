@@ -29,6 +29,8 @@ export interface UseAssistantChatOptions {
   scope: AiConversationScope;
   opportunitySlugs?: string[];
   matchResults?: Array<{ opportunitySlug: string; match: MatchResult }>;
+  /** Starts the "temporary chat" toggle already on — used by surfaces (like the floating Scholarly widget) that never offer a way to view saved history, so a turn would otherwise persist silently with no way to find it again. */
+  defaultTemporary?: boolean;
 }
 
 /**
@@ -42,13 +44,13 @@ export interface UseAssistantChatOptions {
  * component's React state for the current page view.
  */
 export function useAssistantChat(options: UseAssistantChatOptions) {
-  const { studentProfileId, scope, opportunitySlugs, matchResults } = options;
+  const { studentProfileId, scope, opportunitySlugs, matchResults, defaultTemporary } = options;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pending, setPending] = useState(false);
   const [statusKind, setStatusKind] = useState<AssistantResultKind | null>(null);
   const [statusText, setStatusText] = useState<string | null>(null);
   const [remainingQuota, setRemainingQuota] = useState<number | null>(null);
-  const [temporary, setTemporary] = useState(false);
+  const [temporary, setTemporary] = useState(defaultTemporary ?? false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [guestConversationId, setGuestConversationId] = useState<string | null>(null);
 

@@ -10,6 +10,9 @@ import { OfflineBanner } from "@/components/layout/OfflineBanner";
 import { ServiceWorkerRegistration } from "@/components/layout/ServiceWorkerRegistration";
 import { SkipLink } from "@/components/layout/SkipLink";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
+import { ScholarlyWidget } from "@/components/assistant/ScholarlyWidget";
+import { isScholarlyWidgetPath } from "@/lib/assistant/scholarly-widget-pages";
+import { isAiAvailableAction } from "@/lib/db/actions/student/ai-assistant";
 import { getAppBaseUrl } from "@/lib/env";
 import "./globals.css";
 
@@ -44,7 +47,16 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   // Set per-request by src/lib/supabase/middleware.ts and consumed here so
   // next-themes' blocking pre-hydration script carries the same nonce as the
   // Content-Security-Policy header — see src/lib/security/csp.ts.
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const requestHeaders = await headers();
+  const nonce = requestHeaders.get("x-nonce") ?? undefined;
+
+  // Only spend the "is AI available" DB round-trip when the current path is
+  // even eligible for the floating Scholarly widget — staff/admin, auth,
+  // legal/static content, and account sub-pages never render it, so most
+  // requests skip this entirely. See src/lib/assistant/scholarly-widget-pages.ts.
+  const pathname = requestHeaders.get("x-pathname") ?? "";
+  const scholarlyWidgetEligible = isScholarlyWidgetPath(pathname);
+  const aiAvailable = scholarlyWidgetEligible && (await isAiAvailableAction());
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -58,6 +70,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               {children}
             </main>
             <Footer />
+            <ScholarlyWidget aiAvailable={aiAvailable} />
             <ServiceWorkerRegistration />
             <AnalyticsInit />
             <HydrationMarker />

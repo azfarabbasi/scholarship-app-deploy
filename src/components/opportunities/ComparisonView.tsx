@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
@@ -138,8 +138,12 @@ export function ComparisonView({ studentProfileId, aiAvailable = false }: Compar
 
       {aiAvailable ? (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
             <h2 className="text-base font-semibold text-foreground">Ask about these opportunities</h2>
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-brand">
+              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+              Scholarly
+            </span>
           </CardHeader>
           <CardBody>
             <AssistantChat
@@ -148,6 +152,7 @@ export function ComparisonView({ studentProfileId, aiAvailable = false }: Compar
               opportunitySlugs={selected.map((item) => item.opportunity.slug)}
               placeholder="Ask how these opportunities differ…"
               emptyStateText="Ask how these opportunities differ — deadlines, funding, eligibility, or documents — grounded in ScholarTrack's stored source data, with citations for each one."
+              suggestedPrompts={["Which has the closest deadline?", "Which needs the most documents?"]}
             />
           </CardBody>
         </Card>

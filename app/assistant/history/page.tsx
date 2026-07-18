@@ -4,8 +4,8 @@ import { AssistantHistoryList } from "@/components/assistant/AssistantHistoryLis
 import { getStudentSession } from "@/lib/auth/student-session";
 
 export const metadata: Metadata = {
-  title: "Assistant history",
-  description: "Review or delete your saved assistant conversations.",
+  title: "Scholarly history",
+  description: "Review or delete your saved Scholarly conversations.",
   alternates: { canonical: "/assistant/history" },
 };
 
@@ -14,7 +14,7 @@ export default async function AssistantHistoryPage() {
 
   return (
     <Container className="py-8 sm:py-10">
-      <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">Assistant history</h1>
+      <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">Scholarly history</h1>
       <p className="mt-2 max-w-2xl text-sm text-foreground-muted">
         {session
           ? "Conversations saved to your account, if you've enabled AI history."

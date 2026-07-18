@@ -3,6 +3,8 @@
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { Alert } from "@/components/ui/Alert";
+import { Card, CardBody } from "@/components/ui/Card";
+import { buttonClasses } from "@/components/ui/Button";
 import { OpportunityAssistantPanel } from "@/components/assistant/OpportunityAssistantPanel";
 import { GuestTrackingPanel } from "@/components/workspace/GuestTrackingPanel";
 import { MatchReasonsPanel } from "@/components/matching/MatchReasonsPanel";
@@ -181,7 +183,31 @@ export function OpportunityDetailBody({
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-6 lg:w-96 lg:shrink-0">
+      <div className="flex flex-col gap-6 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:w-96 lg:shrink-0 lg:self-start lg:overflow-y-auto">
+        <Card>
+          <CardBody className="flex flex-col gap-3">
+            {evaluation ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <DeadlineBadge evaluation={evaluation} />
+                <DeadlineCountdownText evaluation={evaluation} />
+              </div>
+            ) : null}
+            <VerificationBadge kind={opportunity.kind} verificationRequired={evaluation?.verificationRequired ?? true} />
+            {opportunity.officialUrl ? (
+              <a
+                href={opportunity.officialUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonClasses("primary", "md", "w-full justify-center")}
+              >
+                Visit official website
+                <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                <span className="sr-only">(opens in a new tab)</span>
+              </a>
+            ) : null}
+            <p className="text-xs text-foreground-subtle">Always verify current deadlines and eligibility on the official site.</p>
+          </CardBody>
+        </Card>
         {match ? <MatchReasonsPanel result={match} /> : null}
         <GuestTrackingPanel opportunityId={opportunity.id} title={opportunity.title} />
         {opportunity.kind === "built-in" && aiAvailable ? (
