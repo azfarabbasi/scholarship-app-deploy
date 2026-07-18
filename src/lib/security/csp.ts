@@ -26,13 +26,37 @@ export interface CspOptions {
   analyticsEnabled: boolean;
   adsEnabled: boolean;
   production: boolean;
+  /**
+   * Only ever pass `true` when `process.env.NODE_ENV === "development"` (see
+   * `src/lib/supabase/middleware.ts`) — never derived from `production`
+   * being false, since "not production" also covers `test`/`preview`
+   * environments that run a real production build and must stay strict.
+   * Next.js's own dev server (Turbopack/webpack Fast Refresh, and the dev
+   * error overlay) evaluates code via `eval()`, which a strict `script-src`
+   * blocks outright — Next's own CSP guide documents this exact exception:
+   * https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy.
+   * Defaults to `false`/omitted so every existing caller (and the production
+   * build) stays exactly as strict as before. `production: true` always wins
+   * over this flag regardless — see the implementation below — so this can
+   * never relax a policy actually marked production.
+   */
+  development?: boolean;
 }
 
-export function buildContentSecurityPolicy({ nonce, supabaseUrl, analyticsEnabled, adsEnabled, production }: CspOptions): string {
+export function buildContentSecurityPolicy({ nonce, supabaseUrl, analyticsEnabled, adsEnabled, production, development }: CspOptions): string {
   const scriptSrc = ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'"];
   const connectSrc = ["'self'"];
   const imgSrc = ["'self'", "blob:", "data:"];
   const frameSrc = new Set<string>();
+
+  // Dev-only, and only for script-src — style-src/connect-src/etc. are
+  // unaffected. `production` unconditionally wins over `development` here —
+  // "keep production strict" is an invariant of this function, not just a
+  // convention callers have to get right, so a caller bug that somehow sets
+  // both flags at once can never relax the production policy.
+  if (development && !production) {
+    scriptSrc.push("'unsafe-eval'");
+  }
 
   if (supabaseUrl) {
     try {

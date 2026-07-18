@@ -137,6 +137,13 @@ export async function updateSupabaseSession(request: NextRequest): Promise<NextR
     analyticsEnabled: isAnalyticsConfigured(),
     adsEnabled: isAdsConfigured(),
     production: isProductionEnvironment(),
+    // Next.js's dev server (Turbopack/webpack Fast Refresh) needs 'unsafe-eval'
+    // in script-src — see the doc comment on CspOptions.development. Checked
+    // directly against NODE_ENV (what `next dev` vs. `next build`/`next start`
+    // actually sets), independent of this app's own APP_ENV/production flag,
+    // so a `test`/`preview` APP_ENV running a real production build never
+    // accidentally gets the relaxed dev policy.
+    development: process.env.NODE_ENV === "development",
   });
   const shouldNoindex = NOINDEX_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 

@@ -60,4 +60,34 @@ describe("buildContentSecurityPolicy", () => {
     expect(dev).not.toContain("upgrade-insecure-requests");
     expect(prod).toContain("upgrade-insecure-requests");
   });
+
+  it("never includes 'unsafe-eval' unless development is explicitly true", () => {
+    const csp = buildContentSecurityPolicy(baseOptions);
+    expect(csp).not.toContain("unsafe-eval");
+  });
+
+  it("includes 'unsafe-eval' in script-src only when development is true", () => {
+    const csp = buildContentSecurityPolicy({ ...baseOptions, development: true });
+    const scriptSrcDirective = csp.split(";").find((d) => d.trim().startsWith("script-src"));
+    expect(scriptSrcDirective).toContain("'unsafe-eval'");
+  });
+
+  it("never includes 'unsafe-eval' when production is true, even if development is accidentally also set", () => {
+    // Defense in depth: middleware.ts only ever sets `development` from a direct
+    // NODE_ENV check (the two should never both be true in real usage), but
+    // "keep production strict" is enforced here as a hard invariant of the
+    // builder itself, not just caller discipline.
+    const csp = buildContentSecurityPolicy({ ...baseOptions, production: true, development: true });
+    expect(csp).not.toContain("unsafe-eval");
+    expect(csp).toContain("upgrade-insecure-requests");
+  });
+
+  it("does not add 'unsafe-eval' to any directive other than script-src", () => {
+    const csp = buildContentSecurityPolicy({ ...baseOptions, development: true });
+    const nonScriptDirectives = csp
+      .split(";")
+      .map((d) => d.trim())
+      .filter((d) => !d.startsWith("script-src"));
+    expect(nonScriptDirectives.some((d) => d.includes("unsafe-eval"))).toBe(false);
+  });
 });
