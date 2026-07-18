@@ -1,8 +1,11 @@
 "use client";
 
+import { AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { Dialog, DialogClose, DialogContent, DialogTrigger } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Field";
 import { dismissDuplicateCandidate, mergeDuplicates, runDuplicateDetection } from "@/lib/db/actions/duplicates";
 
@@ -47,9 +50,35 @@ export function DuplicateCandidateActions({ candidateId }: { candidateId: string
     <div className="flex flex-col gap-2">
       <Input placeholder="Reason" value={reason} onChange={(e) => setReason(e.target.value)} className="max-w-xs" />
       <div className="flex gap-2">
-        <Button size="sm" disabled={busy || !reason} onClick={() => run(() => mergeDuplicates(candidateId, reason))}>
-          Merge (keep canonical)
-        </Button>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button size="sm" disabled={busy || !reason}>
+              Merge (keep canonical)
+            </Button>
+          </DialogTrigger>
+          <DialogContent
+            title="Merge these opportunities?"
+            description="The non-canonical record is marked merged and its URL redirects to the canonical one. This cannot be undone."
+          >
+            <Alert tone="warning" className="mt-2">
+              <span className="inline-flex items-center gap-1.5">
+                <AlertTriangle className="h-4 w-4" aria-hidden="true" /> This cannot be undone.
+              </span>
+            </Alert>
+            <div className="mt-4 flex justify-end gap-2">
+              <DialogClose asChild>
+                <Button variant="outline" size="sm">
+                  Cancel
+                </Button>
+              </DialogClose>
+              <DialogClose asChild>
+                <Button variant="danger" size="sm" onClick={() => run(() => mergeDuplicates(candidateId, reason))}>
+                  Merge
+                </Button>
+              </DialogClose>
+            </div>
+          </DialogContent>
+        </Dialog>
         <Button
           size="sm"
           variant="outline"

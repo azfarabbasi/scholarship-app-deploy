@@ -32,12 +32,19 @@ Content-Security-Policy, SEO (sitemap, robots.txt, structured data, twelve new c
 observability endpoints, a privacy-friendly analytics abstraction and an ad-readiness abstraction (both
 disabled by default), CI quality gates, and deployment/backup runbooks. Nothing about how the app behaves
 changed — see [Checkpoint 6](#checkpoint-6-production-readiness) below.
+**Checkpoint 7 is the final launch-preparation checkpoint** — launch-specific runbooks (deployment,
+database, operations), a real, honest content-readiness report, launch smoke tests, a launch validator,
+and a launch-blocker checklist. It found and fixed one real gap (a missing confirmation dialog on the
+staff duplicate-merge action) and is honest that the 100-record content target is not met and 0
+opportunities are currently published pending real staff review — see
+[Checkpoint 7](#checkpoint-7-launch-preparation) below.
 Guest mode remains fully functional and is not required anywhere — see
 [Checkpoint 3](#checkpoint-3-optional-student-accounts-and-cloud-sync),
 [Checkpoint 4](#checkpoint-4-discovery-matching-reminders-and-notifications),
 [Checkpoint 5](#checkpoint-5-ai-assistant),
+[Checkpoint 6](#checkpoint-6-production-readiness),
 and
-[Checkpoint 6](#checkpoint-6-production-readiness)
+[Checkpoint 7](#checkpoint-7-launch-preparation)
 below. Push notifications and sensitive-document uploads remain out of scope; advertising is prepared but
 off by default and not actually running anywhere (see
 [Known limitations](#known-limitations-and-deferred-work)).
@@ -231,6 +238,8 @@ docker compose run --rm --no-deps web npm run checkpoint3:validate
 docker compose run --rm --no-deps web npm run checkpoint4:validate
 docker compose run --rm --no-deps web npm run checkpoint5:validate
 docker compose run --rm --no-deps web npm run checkpoint6:validate
+docker compose run --rm --no-deps web npm run checkpoint7:validate
+docker compose run --rm --no-deps web npm run launch:validate
 docker compose run --rm --no-deps web npm run ai:evaluate
 docker compose run --rm --no-deps web npm run ai:safety:test
 docker compose run --rm --no-deps web npm run security:secrets
@@ -255,6 +264,8 @@ npm run checkpoint3:validate
 npm run checkpoint4:validate
 npm run checkpoint5:validate
 npm run checkpoint6:validate
+npm run checkpoint7:validate
+npm run launch:validate
 npm run ai:evaluate
 npm run ai:safety:test
 npm run security:secrets
@@ -265,6 +276,21 @@ npm run lint
 npm run build
 npm run perf:audit
 ```
+
+## Launch commands (Checkpoint 7)
+
+```powershell
+npm run launch:validate       # production environment configuration readiness
+npm run launch:content        # real content-readiness numbers, queried from the database
+npm run launch:security       # aggregated security:secrets + security:headers + launch-specific checks
+npm run launch:seo            # alias for seo:validate, kept under the launch:* naming for the launch runbook
+npm run launch:accessibility  # alias for accessibility:test
+npm run launch:performance    # alias for perf:audit
+npm run launch:smoke          # 12 Playwright launch smoke scenarios (needs a running app)
+```
+
+See [docs/checkpoint-7/production-deployment-runbook.md](docs/checkpoint-7/production-deployment-runbook.md)
+§4 for the exact order to run these in on launch day.
 
 ## Security, SEO, and performance commands (Checkpoint 6)
 
@@ -726,6 +752,54 @@ for the recommended free-first alternatives instead.
 - A full "unnecessary client component" refactor audit was not performed this checkpoint; the new
   `perf:audit` budget guards against regressions going forward instead.
 
+## Checkpoint 7: launch preparation
+
+### What it is, and isn't
+
+The final checkpoint before public launch. It prepares — it does not perform — a real deployment: no
+external hosting credentials or domain were available in this environment, so those steps are fully
+documented and left as explicit manual actions (see
+[docs/checkpoint-7/launch-blocker-checklist.md](docs/checkpoint-7/launch-blocker-checklist.md)).
+
+### Launch runbooks
+
+- [Production deployment runbook](docs/checkpoint-7/production-deployment-runbook.md) — beginner-friendly,
+  step-by-step, including the exact Cloudflare Pages configuration if you choose that path despite the
+  documented architectural blocker.
+- [Database launch runbook](docs/checkpoint-7/database-launch-runbook.md) — backup, migrate, verify, seed,
+  import (dry-run first, always), first-admin bootstrap, RLS smoke test, backup-after-launch.
+- [Launch operations runbook](docs/checkpoint-7/launch-operations-runbook.md) — monitoring, quotas,
+  backups, incident response, support/security contact process.
+
+### Content readiness — honest, not inflated
+
+[docs/checkpoint-7/content-readiness-report.md](docs/checkpoint-7/content-readiness-report.md) reports the
+real, queried numbers: 55 sourced records imported, **0 currently published** (publishing requires genuine
+human staff review, which is a deliberate, separate step — see
+[docs/checkpoint-2/migration-runbook.md](docs/checkpoint-2/migration-runbook.md)), and the 100-record target
+is **not met**. `npm run launch:content` reproduces this report against any database.
+
+### Launch readiness checks
+
+`npm run launch:validate` (environment configuration), `npm run launch:security` (aggregated security
+checks), `npm run launch:seo`/`launch:accessibility`/`launch:performance` (launch-day aliases for the
+Checkpoint 6 checks), and `npm run launch:smoke` (twelve Playwright launch smoke scenarios). Full detail and
+real results: [docs/checkpoint-7/checkpoint-7-completion-report.md](docs/checkpoint-7/checkpoint-7-completion-report.md).
+
+### Launch verdict
+
+See [docs/checkpoint-7/launch-blocker-checklist.md](docs/checkpoint-7/launch-blocker-checklist.md): not
+ready for a full public launch today (0 published records); ready for a limited beta once a real staff
+member completes content review on a real production database. No engineering blocker remains.
+
+### Current limitations
+
+- Real external deployment was not performed — this environment has no hosting credentials or domain.
+- Content target: 55/100 imported, 0 published pending real human review (see above).
+- Two pre-existing, environment-specific Playwright test failures (proven not a Checkpoint 6/7 regression)
+  — see [Checkpoint 6 traceability](docs/checkpoint-6/checkpoint-6-traceability.md)'s "Honest note" section.
+- The GitHub Actions workflow still has not been executed on GitHub's own infrastructure.
+
 ## PWA installation and offline behaviour
 
 - **Desktop Chrome/Edge**: visit the site, then use the browser's install
@@ -896,8 +970,31 @@ supported provider has no custom-event API; no dedicated social-share image exis
 guards against regressions instead). Public launch itself — a real domain, real deployment, real
 monitoring — is Checkpoint 7's responsibility, not this one's.
 
+**Checkpoint 7 prepares launch itself** — see
+[Checkpoint 7 § Current limitations](#current-limitations-5): real external deployment was not performed
+(no hosting credentials or domain available in this environment — fully documented as a manual step
+instead); the 100-record content target is not met and, as queried in this session, 0 opportunities are
+published pending real human staff review (see
+[docs/checkpoint-7/content-readiness-report.md](docs/checkpoint-7/content-readiness-report.md)); and the
+two pre-existing, environment-specific Playwright failures from Checkpoint 6 remain (proven not a
+regression). See
+[docs/checkpoint-7/launch-blocker-checklist.md](docs/checkpoint-7/launch-blocker-checklist.md) for the full
+go/no-go breakdown.
+
 ## Checkpoint documentation
 
+- [Checkpoint 7 production deployment runbook](docs/checkpoint-7/production-deployment-runbook.md)
+- [Checkpoint 7 database launch runbook](docs/checkpoint-7/database-launch-runbook.md)
+- [Checkpoint 7 content readiness report](docs/checkpoint-7/content-readiness-report.md)
+- [Checkpoint 7 launch operations runbook](docs/checkpoint-7/launch-operations-runbook.md)
+- [Checkpoint 7 final security readiness](docs/checkpoint-7/final-security-readiness.md)
+- [Checkpoint 7 final SEO readiness](docs/checkpoint-7/final-seo-readiness.md)
+- [Checkpoint 7 final accessibility readiness](docs/checkpoint-7/final-accessibility-readiness.md)
+- [Checkpoint 7 final performance readiness](docs/checkpoint-7/final-performance-readiness.md)
+- [Checkpoint 7 v1.0 release notes](docs/checkpoint-7/v1-release-notes.md)
+- [Checkpoint 7 launch blocker checklist](docs/checkpoint-7/launch-blocker-checklist.md)
+- [Checkpoint 7 traceability](docs/checkpoint-7/checkpoint-7-traceability.md)
+- [Checkpoint 7 completion report](docs/checkpoint-7/checkpoint-7-completion-report.md)
 - [Checkpoint 6 architecture](docs/checkpoint-6/checkpoint-6-architecture.md)
 - [Checkpoint 6 production deployment runbook](docs/checkpoint-6/production-deployment-runbook.md)
 - [Checkpoint 6 security hardening](docs/checkpoint-6/security-hardening.md)

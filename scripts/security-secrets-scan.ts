@@ -81,6 +81,7 @@ const KNOWN_SAFE_SUBSTRINGS = [
   ":PASSWORD@", // docs/checkpoint-2/supabase-setup.md's illustrative connection-string shape
   "abcdefghijklmnopqrstuvwxyz1234567890", // deliberately fake test fixture values (e.g. tests/unit/ai-safety.test.ts)
   "postgres://ci:ci@localhost", // .github/workflows/ci.yml's throwaway placeholder, satisfying drizzle.config.ts's presence check only — never a real database
+  "postgres://test:test@localhost", // scripts/validate-launch.ts's fake connection string, used only to exercise validateProductionEnvironment()'s "fully configured" branch
 ];
 
 interface SecretPattern {
