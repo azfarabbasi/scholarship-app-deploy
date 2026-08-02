@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { Button } from "@/components/ui/Button";
 import { getStaffSession } from "@/lib/auth/session";
 import { isAdministrator } from "@/lib/auth/permissions";
@@ -22,6 +22,11 @@ import {
   AddSourceEvidenceForm,
   TaxonomyPicker,
 } from "@/components/staff/OpportunityRelationForms";
+import {
+  CreateDeadlineCycleForm,
+  CreateDeadlineOccurrenceForm,
+  CreateVerificationRecordForm,
+} from "@/components/staff/VerificationAndDeadlineForms";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -76,12 +81,21 @@ export default async function StaffOpportunityDetailPage({ params }: PageProps) 
       .from(schema.opportunityStudyLevels)
       .where(eq(schema.opportunityStudyLevels.opportunityId, id)),
     db
-      .select({ id: schema.officialSources.id, label: schema.officialSources.label, url: schema.officialSources.url })
+      .select({
+        id: schema.officialSources.id,
+        label: schema.officialSources.label,
+        url: schema.officialSources.url,
+        status: schema.officialSources.status,
+      })
       .from(schema.opportunityOfficialSources)
       .innerJoin(schema.officialSources, eq(schema.opportunityOfficialSources.officialSourceId, schema.officialSources.id))
       .where(eq(schema.opportunityOfficialSources.opportunityId, id)),
     db
-      .select({ id: schema.sourceEvidence.id, evidenceText: schema.sourceEvidence.evidenceText })
+      .select({
+        id: schema.sourceEvidence.id,
+        evidenceText: schema.sourceEvidence.evidenceText,
+        status: schema.sourceEvidence.status,
+      })
       .from(schema.sourceEvidence)
       .where(eq(schema.sourceEvidence.opportunityId, id)),
     db
@@ -125,7 +139,25 @@ export default async function StaffOpportunityDetailPage({ params }: PageProps) 
     getRequiredDocumentTemplateOptions(),
   ]);
 
+  const [verificationRecords, deadlineCycles] = await Promise.all([
+    db
+      .select()
+      .from(schema.verificationRecords)
+      .where(and(eq(schema.verificationRecords.subjectKind, "opportunity"), eq(schema.verificationRecords.subjectId, id))),
+    db.select().from(schema.deadlineCycles).where(eq(schema.deadlineCycles.opportunityId, id)),
+  ]);
+
+  const cycleIds = deadlineCycles.map((cycle) => cycle.id);
+  const deadlineOccurrences =
+    cycleIds.length > 0
+      ? await db.select().from(schema.deadlineOccurrences).where(inArray(schema.deadlineOccurrences.deadlineCycleId, cycleIds))
+      : [];
+
   const evidenceOptions = evidenceRows.map((row) => ({ id: row.id, label: row.evidenceText.slice(0, 60) }));
+  const cycleOptions = deadlineCycles.map((cycle) => ({
+    id: cycle.id,
+    label: cycle.cycleLabel ?? (cycle.cycleYear ? `Cycle ${cycle.cycleYear}` : `Cycle (${cycle.status})`),
+  }));
 
   return (
     <div className="flex max-w-3xl flex-col gap-6">
@@ -156,7 +188,12 @@ export default async function StaffOpportunityDetailPage({ params }: PageProps) 
 
       <section>
         <h2 className="mb-2 text-sm font-semibold text-foreground">Workflow</h2>
-        <OpportunityWorkflowActions opportunityId={id} status={opportunity!.status} isAdministrator={isAdministrator(session.roles)} />
+        <OpportunityWorkflowActions
+          opportunityId={id}
+          status={opportunity!.status}
+          isAdministrator={isAdministrator(session.roles)}
+          isBootstrapAdmin={session.isBootstrapAdmin}
+        />
       </section>
 
       {assignments.length > 0 ? (
@@ -186,13 +223,16 @@ export default async function StaffOpportunityDetailPage({ params }: PageProps) 
 
       <section>
         <h2 className="mb-2 text-sm font-semibold text-foreground">Official sources ({officialSources.length})</h2>
-        <ul className="mb-2 text-sm text-foreground-muted">
+        <ul className="mb-2 flex flex-col gap-1 text-sm text-foreground-muted">
           {officialSources.map((s) => (
-            <li key={s.id}>
-              {s.label} —{" "}
-              <a href={s.url} target="_blank" rel="noreferrer" className="underline">
-                {s.url}
-              </a>
+            <li key={s.id} className="flex items-center justify-between gap-2">
+              <span>
+                {s.label} (<span className="font-medium text-foreground">{s.status}</span>) —{" "}
+                <a href={s.url} target="_blank" rel="noreferrer" className="underline">
+                  {s.url}
+                </a>
+              </span>
+              {s.status === "candidate" ? <PromoteRelationButton opportunityId={id} relationId={s.id} kind="official-source" /> : null}
             </li>
           ))}
         </ul>
@@ -201,6 +241,16 @@ export default async function StaffOpportunityDetailPage({ params }: PageProps) 
 
       <section>
         <h2 className="mb-2 text-sm font-semibold text-foreground">Source evidence ({evidenceRows.length})</h2>
+        <ul className="mb-2 flex flex-col gap-1 text-sm text-foreground-muted">
+          {evidenceRows.map((ev) => (
+            <li key={ev.id} className="flex items-center justify-between gap-2">
+              <span>
+                {ev.evidenceText.slice(0, 80)} (<span className="font-medium text-foreground">{ev.status}</span>)
+              </span>
+              {ev.status !== "accepted" ? <PromoteRelationButton opportunityId={id} relationId={ev.id} kind="source-evidence" /> : null}
+            </li>
+          ))}
+        </ul>
         <AddSourceEvidenceForm opportunityId={id} sources={officialSources} />
       </section>
 
@@ -250,6 +300,60 @@ export default async function StaffOpportunityDetailPage({ params }: PageProps) 
           ))}
         </ul>
         <AddFundingBenefitForm opportunityId={id} fundingTypes={allFundingTypes} />
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-sm font-semibold text-foreground">Verification records ({verificationRecords.length})</h2>
+        <p className="mb-2 text-xs text-foreground-subtle">
+          Publishing requires a current (checked within 400 days), independently-confirmed &ldquo;verified&rdquo; record.
+        </p>
+        <ul className="mb-2 flex flex-col gap-1 text-sm text-foreground-muted">
+          {verificationRecords.map((record) => (
+            <li key={record.id} className="flex items-center justify-between gap-2">
+              <span>
+                {record.outcome} — {record.summary.slice(0, 80)} (<span className="font-medium text-foreground">{record.status}</span>,
+                checked {record.checkedAt.toLocaleDateString()})
+              </span>
+              {record.status === "pending" ? <PromoteRelationButton opportunityId={id} relationId={record.id} kind="verification-record" /> : null}
+            </li>
+          ))}
+        </ul>
+        <CreateVerificationRecordForm opportunityId={id} sources={officialSources} evidence={evidenceOptions} />
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-sm font-semibold text-foreground">Deadline cycles ({deadlineCycles.length})</h2>
+        <ul className="mb-2 flex flex-col gap-1 text-sm text-foreground-muted">
+          {deadlineCycles.map((cycle) => (
+            <li key={cycle.id} className="flex items-center justify-between gap-2">
+              <span>
+                {cycle.cycleLabel ?? `Cycle ${cycle.cycleYear ?? ""}`} — recurrence: {cycle.recurrenceCadence}{" "}
+                (<span className="font-medium text-foreground">{cycle.status}</span>)
+              </span>
+              {cycle.status === "draft" ? <PromoteRelationButton opportunityId={id} relationId={cycle.id} kind="deadline-cycle" /> : null}
+            </li>
+          ))}
+        </ul>
+        <CreateDeadlineCycleForm opportunityId={id} />
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-sm font-semibold text-foreground">Deadline occurrences ({deadlineOccurrences.length})</h2>
+        <ul className="mb-2 flex flex-col gap-1 text-sm text-foreground-muted">
+          {deadlineOccurrences.map((occurrence) => (
+            <li key={occurrence.id} className="flex items-center justify-between gap-2">
+              <span>
+                {occurrence.role} — {occurrence.precision}
+                {occurrence.closingDate ? ` — closes ${occurrence.closingDate}` : ""}{" "}
+                (<span className="font-medium text-foreground">{occurrence.status}</span>)
+              </span>
+              {occurrence.status === "draft" ? (
+                <PromoteRelationButton opportunityId={id} relationId={occurrence.id} kind="deadline-occurrence" />
+              ) : null}
+            </li>
+          ))}
+        </ul>
+        <CreateDeadlineOccurrenceForm opportunityId={id} cycles={cycleOptions} />
       </section>
     </div>
   );

@@ -9,6 +9,7 @@ import { isDatabaseConfigured } from "@/lib/env";
 import { getStudentSession } from "@/lib/auth/student-session";
 import { isAiAvailableAction } from "@/lib/db/actions/student/ai-assistant";
 import { buildBreadcrumbList, buildMetadata } from "@/lib/seo/metadata";
+import { isHttpUrl } from "@/lib/security/url";
 
 interface PageParams {
   params: Promise<{ slug: string }>;
@@ -95,7 +96,10 @@ function buildOpportunityStructuredData(opportunity: Awaited<ReturnType<typeof g
     name: opportunity.title,
     description: opportunity.benefitSummary,
     ...(opportunity.providerName ? { provider: { "@type": "Organization", name: opportunity.providerName } } : {}),
-    ...(opportunity.officialUrl ? { url: opportunity.officialUrl } : {}),
+    // Staff-entered, not validated at capture time — never assert a
+    // javascript:/data:/other non-http(s) scheme into structured data a
+    // crawler or downstream consumer might treat as a real link.
+    ...(opportunity.officialUrl && isHttpUrl(opportunity.officialUrl) ? { url: opportunity.officialUrl } : {}),
     ...(projectedDate ? { applicationDeadline: projectedDate } : {}),
   };
 }

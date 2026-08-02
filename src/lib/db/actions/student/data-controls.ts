@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { getStudentSession } from "@/lib/auth/student-session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -9,6 +10,7 @@ import { getMyAiHistoryEnabled } from "./ai-assistant";
 import {
   CLOUD_EXPORT_APP_ID,
   CLOUD_EXPORT_SCHEMA_VERSION,
+  MAX_CLOUD_IMPORT_FILE_SIZE_BYTES,
   validateCloudExportPayload,
   type CloudExportPayload,
 } from "@/lib/schemas/cloud-export";
@@ -287,6 +289,9 @@ export interface ImportResult {
   notificationsImported: number;
   eligibilityAnswersImported: boolean;
   reminderPreferencesImported: boolean;
+  profileImported: boolean;
+  planningPreferencesImported: boolean;
+  displayPreferencesImported: boolean;
 }
 
 const EMPTY_IMPORT_RESULT: Omit<ImportResult, "ok" | "error"> = {
@@ -299,6 +304,9 @@ const EMPTY_IMPORT_RESULT: Omit<ImportResult, "ok" | "error"> = {
   notificationsImported: 0,
   eligibilityAnswersImported: false,
   reminderPreferencesImported: false,
+  profileImported: false,
+  planningPreferencesImported: false,
+  displayPreferencesImported: false,
 };
 
 /**
@@ -306,10 +314,36 @@ const EMPTY_IMPORT_RESULT: Omit<ImportResult, "ok" | "error"> = {
  * signed-in account. Only ever accepts the cloud export shape (never staff/
  * admin data — the strict schema in `src/lib/schemas/cloud-export.ts`
  * rejects anything else outright).
+ *
+ * SECURITY: every exported `id` is foreign data — this account may never
+ * have created any of these rows, and the export file itself is an
+ * ordinary, forgeable JSON file the caller could have edited or received
+ * from someone else. The previous version of this function trusted the
+ * exported `id` as the destination primary key
+ * (`INSERT ... ON CONFLICT (id) DO UPDATE`); since a Postgres conflict
+ * target match doesn't check who owns the conflicting row, a crafted import
+ * containing another student's real row id would silently overwrite that
+ * student's existing row's content. Every row here now gets a freshly
+ * generated id, and every `ON CONFLICT` target is a natural key already
+ * scoped to `studentProfileId` (the caller's own verified session id, never
+ * attacker-controlled) — so the only row an import can ever touch is one
+ * this account already owns. An old-id -> new-id map carries cross-
+ * references within the *same* payload (a note whose `targetId` pointed at
+ * one of this payload's own custom opportunities) forward correctly.
  */
 export async function importMyAccountData(json: unknown, mode: "merge" | "replace"): Promise<ImportResult> {
   const session = await getStudentSession();
   if (!session) return { ok: false, error: "Not signed in.", ...EMPTY_IMPORT_RESULT };
+
+  // Server-side byte-size enforcement — the client also checks this against
+  // the raw File before ever parsing it, but that check is trivially
+  // bypassable by calling this Server Action directly, so it must be
+  // re-checked here against the byte length of the actual JSON, not trusted
+  // from the client.
+  const byteLength = Buffer.byteLength(JSON.stringify(json ?? null), "utf8");
+  if (byteLength > MAX_CLOUD_IMPORT_FILE_SIZE_BYTES) {
+    return { ok: false, error: "This import is too large (over 5 MB).", ...EMPTY_IMPORT_RESULT };
+  }
 
   const validated = validateCloudExportPayload(json);
   if (!validated.valid) {
@@ -321,6 +355,12 @@ export async function importMyAccountData(json: unknown, mode: "merge" | "replac
   const { payload } = validated;
   const result = { ...EMPTY_IMPORT_RESULT };
 
+  // Old-export-id -> new-row-id, so a note/checklist-task/notification that
+  // references one of THIS payload's own custom opportunities or saved
+  // searches still points at the right row after re-keying.
+  const customOpportunityIdMap = new Map<string, string>();
+  const savedSearchIdMap = new Map<string, string>();
+
   await db.transaction(async (tx) => {
     if (mode === "replace") {
       await tx.delete(schema.userOpportunityTracking).where(eq(schema.userOpportunityTracking.studentProfileId, studentProfileId));
@@ -330,78 +370,57 @@ export async function importMyAccountData(json: unknown, mode: "merge" | "replac
       await tx.delete(schema.userSavedSearches).where(eq(schema.userSavedSearches.studentProfileId, studentProfileId));
       await tx.delete(schema.userReminders).where(eq(schema.userReminders.studentProfileId, studentProfileId));
       await tx.delete(schema.userNotifications).where(eq(schema.userNotifications.studentProfileId, studentProfileId));
+      // "Replace" means the account ends up looking exactly like the file —
+      // a payload with no eligibility answers/reminder preferences must
+      // clear any existing ones, not silently leave them in place (the
+      // upsert calls below only ever act when the payload actually has a
+      // value for these singleton rows).
+      if (!payload.eligibilityAnswers) {
+        await tx.delete(schema.userEligibilityAnswers).where(eq(schema.userEligibilityAnswers.studentProfileId, studentProfileId));
+      }
+      if (!payload.reminderPreferences) {
+        await tx.delete(schema.userReminderPreferences).where(eq(schema.userReminderPreferences.studentProfileId, studentProfileId));
+      }
+      if (!payload.planningPreferences) {
+        await tx.delete(schema.userPlanningPreferences).where(eq(schema.userPlanningPreferences.studentProfileId, studentProfileId));
+      }
+      if (!payload.displayPreferences) {
+        await tx.delete(schema.userDisplayPreferences).where(eq(schema.userDisplayPreferences.studentProfileId, studentProfileId));
+      }
     }
 
-    // A previously-exported opportunityId can reference an opportunity that
-    // was since archived/removed from the public catalogue — skip it rather
-    // than fail the whole import on a foreign-key violation.
-    for (const row of payload.tracking) {
-      const [exists] = await tx
-        .select({ id: schema.opportunities.id })
-        .from(schema.opportunities)
-        .where(eq(schema.opportunities.id, row.opportunityId))
-        .limit(1);
-      if (!exists) continue;
-
+    // Profile fields live on the student's own, already-existing
+    // student_profiles row (created at sign-up) — this is always an UPDATE
+    // scoped to the caller's own verified id, never an insert of a new row.
+    if (payload.profile) {
+      const profile = payload.profile;
       await tx
-        .insert(schema.userOpportunityTracking)
-        .values({
-          id: row.id,
-          studentProfileId,
-          opportunityId: row.opportunityId,
-          shortlisted: row.shortlisted,
-          stage: row.stage,
-          personalDeadline: row.personalDeadline ? new Date(row.personalDeadline) : null,
-          priority: row.priority,
-          archived: row.archived,
+        .update(schema.studentProfiles)
+        .set({
+          displayName: profile.displayName,
+          countryOrRegion: profile.countryOrRegion,
+          currentStudyLevel: profile.currentStudyLevel,
+          intendedStudyLevel: profile.intendedStudyLevel,
+          graduationYear: profile.graduationYear,
+          targetIntakeYear: profile.targetIntakeYear,
+          targetIntakeTerm: profile.targetIntakeTerm,
+          preferredCountries: profile.preferredCountries,
+          preferredStudyLevels: profile.preferredStudyLevels,
+          onboardingCompletedAt: profile.onboardingCompletedAt ? new Date(profile.onboardingCompletedAt) : null,
+          updatedAt: new Date(),
         })
-        .onConflictDoUpdate({
-          target: schema.userOpportunityTracking.id,
-          set: {
-            shortlisted: row.shortlisted,
-            stage: row.stage,
-            personalDeadline: row.personalDeadline ? new Date(row.personalDeadline) : null,
-            priority: row.priority,
-            archived: row.archived,
-            updatedAt: new Date(),
-          },
-        });
-      result.trackingImported += 1;
+        .where(eq(schema.studentProfiles.id, studentProfileId));
+      result.profileImported = true;
     }
 
-    for (const row of payload.notes) {
-      await tx
-        .insert(schema.userNotes)
-        .values({ id: row.id, studentProfileId, targetType: row.targetType, targetId: row.targetId, noteText: row.noteText })
-        .onConflictDoUpdate({ target: schema.userNotes.id, set: { noteText: row.noteText, updatedAt: new Date() } });
-      result.notesImported += 1;
-    }
-
-    for (const row of payload.checklistTasks) {
-      await tx
-        .insert(schema.userChecklistTasks)
-        .values({
-          id: row.id,
-          studentProfileId,
-          targetType: row.targetType,
-          targetId: row.targetId,
-          taskText: row.taskText,
-          completed: row.completed,
-          sortOrder: row.sortOrder,
-          sourceType: "imported",
-        })
-        .onConflictDoUpdate({
-          target: schema.userChecklistTasks.id,
-          set: { taskText: row.taskText, completed: row.completed, sortOrder: row.sortOrder, updatedAt: new Date() },
-        });
-      result.checklistTasksImported += 1;
-    }
-
+    // Custom opportunities first — notes/checklist tasks/reminders/
+    // notifications below may reference one by its (old, exported) id.
+    // Natural key: (studentProfileId, slug) — already a unique index.
     for (const row of payload.customOpportunities) {
-      await tx
+      const [inserted] = await tx
         .insert(schema.userCustomOpportunities)
         .values({
-          id: row.id,
+          id: randomUUID(),
           studentProfileId,
           slug: row.slug,
           title: row.title,
@@ -420,7 +439,7 @@ export async function importMyAccountData(json: unknown, mode: "merge" | "replac
           verificationNotes: row.verificationNotes,
         })
         .onConflictDoUpdate({
-          target: schema.userCustomOpportunities.id,
+          target: [schema.userCustomOpportunities.studentProfileId, schema.userCustomOpportunities.slug],
           set: {
             title: row.title,
             benefitSummary: row.benefitSummary,
@@ -432,8 +451,92 @@ export async function importMyAccountData(json: unknown, mode: "merge" | "replac
             verificationNotes: row.verificationNotes,
             updatedAt: new Date(),
           },
-        });
+        })
+        .returning({ id: schema.userCustomOpportunities.id });
+      customOpportunityIdMap.set(row.id, inserted.id);
       result.customOpportunitiesImported += 1;
+    }
+
+    // Tracking: natural key (studentProfileId, opportunityId) — already a
+    // unique index. A previously-exported opportunityId can reference an
+    // opportunity that was since archived/removed from the public
+    // catalogue — skip it rather than fail the whole import on an FK
+    // violation.
+    for (const row of payload.tracking) {
+      const [exists] = await tx
+        .select({ id: schema.opportunities.id })
+        .from(schema.opportunities)
+        .where(eq(schema.opportunities.id, row.opportunityId))
+        .limit(1);
+      if (!exists) continue;
+
+      await tx
+        .insert(schema.userOpportunityTracking)
+        .values({
+          id: randomUUID(),
+          studentProfileId,
+          opportunityId: row.opportunityId,
+          shortlisted: row.shortlisted,
+          stage: row.stage,
+          personalDeadline: row.personalDeadline ? new Date(row.personalDeadline) : null,
+          priority: row.priority,
+          archived: row.archived,
+        })
+        .onConflictDoUpdate({
+          target: [schema.userOpportunityTracking.studentProfileId, schema.userOpportunityTracking.opportunityId],
+          set: {
+            shortlisted: row.shortlisted,
+            stage: row.stage,
+            personalDeadline: row.personalDeadline ? new Date(row.personalDeadline) : null,
+            priority: row.priority,
+            archived: row.archived,
+            updatedAt: new Date(),
+          },
+        });
+      result.trackingImported += 1;
+    }
+
+    /** Remaps a polymorphic (targetType, targetId) pair; returns null if the target can't be resolved (skip the row). */
+    async function resolveTarget(targetType: "built-in" | "custom", targetId: string): Promise<string | null> {
+      if (targetType === "custom") {
+        return customOpportunityIdMap.get(targetId) ?? null;
+      }
+      const [exists] = await tx.select({ id: schema.opportunities.id }).from(schema.opportunities).where(eq(schema.opportunities.id, targetId)).limit(1);
+      return exists ? targetId : null;
+    }
+
+    // Notes: natural key (studentProfileId, targetType, targetId).
+    for (const row of payload.notes) {
+      const targetId = await resolveTarget(row.targetType, row.targetId);
+      if (!targetId) continue;
+      await tx
+        .insert(schema.userNotes)
+        .values({ id: randomUUID(), studentProfileId, targetType: row.targetType, targetId, noteText: row.noteText })
+        .onConflictDoUpdate({
+          target: [schema.userNotes.studentProfileId, schema.userNotes.targetType, schema.userNotes.targetId],
+          set: { noteText: row.noteText, updatedAt: new Date() },
+        });
+      result.notesImported += 1;
+    }
+
+    // Checklist tasks: no natural key exists (free text with no stable
+    // identity beyond order), so re-importing the same file twice in merge
+    // mode can create duplicate tasks — documented, not silently hidden;
+    // there is no meaningful "same item" test to dedupe on here.
+    for (const row of payload.checklistTasks) {
+      const targetId = await resolveTarget(row.targetType, row.targetId);
+      if (!targetId) continue;
+      await tx.insert(schema.userChecklistTasks).values({
+        id: randomUUID(),
+        studentProfileId,
+        targetType: row.targetType,
+        targetId,
+        taskText: row.taskText,
+        completed: row.completed,
+        sortOrder: row.sortOrder,
+        sourceType: "imported",
+      });
+      result.checklistTasksImported += 1;
     }
 
     if (payload.eligibilityAnswers) {
@@ -454,11 +557,40 @@ export async function importMyAccountData(json: unknown, mode: "merge" | "replac
       result.reminderPreferencesImported = true;
     }
 
-    for (const row of payload.savedSearches ?? []) {
+    if (payload.planningPreferences) {
+      const planning = payload.planningPreferences;
       await tx
+        .insert(schema.userPlanningPreferences)
+        .values({ studentProfileId, ...planning })
+        .onConflictDoUpdate({ target: schema.userPlanningPreferences.studentProfileId, set: { ...planning, updatedAt: new Date() } });
+      result.planningPreferencesImported = true;
+    }
+
+    if (payload.displayPreferences) {
+      const display = payload.displayPreferences;
+      await tx
+        .insert(schema.userDisplayPreferences)
+        .values({ studentProfileId, theme: display.theme, catalogueView: display.catalogueView })
+        .onConflictDoUpdate({
+          target: schema.userDisplayPreferences.studentProfileId,
+          set: { theme: display.theme, catalogueView: display.catalogueView, updatedAt: new Date() },
+        });
+      result.displayPreferencesImported = true;
+    }
+    // syncMetadata is deliberately never re-imported: it's this device's own
+    // sync bookkeeping (last-synced timestamp, schema version), not user
+    // content — restoring a stale value from an old export would misreport
+    // the account's current sync state rather than accurately reflect it.
+    // Export-only, by design; narrowing the documented contract here rather
+    // than pretending to "restore" something that isn't really account data.
+
+    // Saved searches: no natural key exists in the schema — same "no stable
+    // identity to dedupe on" situation as checklist tasks, documented above.
+    for (const row of payload.savedSearches ?? []) {
+      const [inserted] = await tx
         .insert(schema.userSavedSearches)
         .values({
-          id: row.id,
+          id: randomUUID(),
           studentProfileId,
           name: row.name,
           queryText: row.queryText,
@@ -469,66 +601,56 @@ export async function importMyAccountData(json: unknown, mode: "merge" | "replac
           lastCheckedAt: row.lastCheckedAt ? new Date(row.lastCheckedAt) : null,
           alertsEnabled: row.alertsEnabled,
         })
-        .onConflictDoUpdate({
-          target: schema.userSavedSearches.id,
-          set: {
-            name: row.name,
-            queryText: row.queryText,
-            filters: row.filters,
-            sortMode: row.sortMode,
-            resultCountSnapshot: row.resultCountSnapshot,
-            resultSnapshot: row.resultSnapshot,
-            lastCheckedAt: row.lastCheckedAt ? new Date(row.lastCheckedAt) : null,
-            alertsEnabled: row.alertsEnabled,
-            updatedAt: new Date(),
-          },
-        });
+        .returning({ id: schema.userSavedSearches.id });
+      savedSearchIdMap.set(row.id, inserted.id);
       result.savedSearchesImported += 1;
     }
 
+    // Reminders: natural key (studentProfileId, stableKey) — already a
+    // unique index, and deliberately deterministic per the schema's own
+    // design, so re-importing the same export never duplicates a reminder.
     for (const row of payload.reminders ?? []) {
+      const targetId = row.targetType && row.targetId ? await resolveTarget(row.targetType, row.targetId) : null;
       await tx
         .insert(schema.userReminders)
         .values({
-          id: row.id,
+          id: randomUUID(),
           studentProfileId,
           stableKey: row.stableKey,
           source: row.source,
           targetType: row.targetType,
-          targetId: row.targetId,
+          targetId,
           title: row.title,
           dueAt: new Date(row.dueAt),
           leadDays: row.leadDays,
           status: row.status,
         })
         .onConflictDoUpdate({
-          target: schema.userReminders.id,
+          target: [schema.userReminders.studentProfileId, schema.userReminders.stableKey],
           set: { title: row.title, dueAt: new Date(row.dueAt), leadDays: row.leadDays, status: row.status, updatedAt: new Date() },
         });
       result.remindersImported += 1;
     }
 
+    // Notifications: no natural key exists — same documented limitation as
+    // checklist tasks/saved searches.
     for (const row of payload.notifications ?? []) {
-      await tx
-        .insert(schema.userNotifications)
-        .values({
-          id: row.id,
-          studentProfileId,
-          type: row.type,
-          source: row.source,
-          title: row.title,
-          message: row.message,
-          targetType: row.targetType,
-          targetId: row.targetId,
-          savedSearchId: row.savedSearchId,
-          dueAt: row.dueAt ? new Date(row.dueAt) : null,
-          status: row.status,
-          readAt: row.readAt ? new Date(row.readAt) : null,
-        })
-        .onConflictDoUpdate({
-          target: schema.userNotifications.id,
-          set: { status: row.status, readAt: row.readAt ? new Date(row.readAt) : null },
-        });
+      const targetId = row.targetType && row.targetId ? await resolveTarget(row.targetType, row.targetId) : null;
+      const savedSearchId = row.savedSearchId ? (savedSearchIdMap.get(row.savedSearchId) ?? null) : null;
+      await tx.insert(schema.userNotifications).values({
+        id: randomUUID(),
+        studentProfileId,
+        type: row.type,
+        source: row.source,
+        title: row.title,
+        message: row.message,
+        targetType: row.targetType,
+        targetId,
+        savedSearchId,
+        dueAt: row.dueAt ? new Date(row.dueAt) : null,
+        status: row.status,
+        readAt: row.readAt ? new Date(row.readAt) : null,
+      });
       result.notificationsImported += 1;
     }
   });
@@ -589,9 +711,21 @@ export async function deleteMyAccount(): Promise<{ ok: boolean; error?: string }
   if (!session) return { ok: false, error: "Not signed in." };
 
   const studentProfileId = session.studentProfileId;
+  const db = getDb();
+  const [staffProfile] = await db
+    .select({ id: schema.staffProfiles.id })
+    .from(schema.staffProfiles)
+    .where(eq(schema.staffProfiles.id, studentProfileId))
+    .limit(1);
+  if (staffProfile) {
+    return {
+      ok: false,
+      error: "This login is also a staff account. Remove staff access through the controlled staff-offboarding process before deleting the shared Auth account.",
+    };
+  }
+
   await wipeWorkspaceRows(studentProfileId);
 
-  const db = getDb();
   await db.delete(schema.userSyncState).where(eq(schema.userSyncState.studentProfileId, studentProfileId));
   await db.delete(schema.studentProfiles).where(eq(schema.studentProfiles.id, studentProfileId));
 

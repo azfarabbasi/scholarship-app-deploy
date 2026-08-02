@@ -112,4 +112,59 @@ describe("buildCitations", () => {
 
     expect(buildCitations(retrieval)[0].label).toBe("Staff excerpt without a linked official source");
   });
+
+  describe("with citedEvidenceIds (Phase 3: cite only what was actually used, not everything retrieved)", () => {
+    const retrieval: RetrievalResult = {
+      sources: [
+        {
+          citationType: "official-source",
+          chunkId: "chunk-1",
+          documentId: "doc-1",
+          opportunityId: "opp-1",
+          opportunityTitle: "Test Scholarship",
+          officialSourceId: "src-1",
+          officialSourceLabel: "Official Provider Page",
+          officialUrl: "https://example.org/scholarship",
+          title: "Excerpt title",
+          text: "Full tuition and stipend provided.",
+          checkedAt: null,
+          verificationStatus: "verified-source-linked",
+          rank: 0.5,
+          evidenceId: "E1",
+        },
+      ],
+      structuredFacts: [
+        {
+          kind: "deadline",
+          citationType: "structured-data",
+          opportunityId: "opp-2",
+          opportunityTitle: "Another Scholarship",
+          label: "Another Scholarship — deadline status",
+          attributes: { precision: "exact" },
+          officialUrl: null,
+          checkedAt: null,
+          verificationStatus: "unverified",
+          evidenceId: "E2",
+        },
+      ],
+    };
+
+    it("includes only the source/fact whose evidenceId is in citedEvidenceIds", () => {
+      const citations = buildCitations(retrieval, new Set(["E1"]));
+      expect(citations).toHaveLength(1);
+      expect(citations[0].sourceChunkId).toBe("chunk-1");
+    });
+
+    it("returns no citations when citedEvidenceIds is empty, even though evidence was retrieved", () => {
+      expect(buildCitations(retrieval, new Set())).toEqual([]);
+    });
+
+    it("ignores an id in citedEvidenceIds that doesn't match anything retrieved (never crashes, never invents a citation)", () => {
+      expect(buildCitations(retrieval, new Set(["E999"]))).toEqual([]);
+    });
+
+    it("falls back to citing everything when citedEvidenceIds is omitted (used only by deterministic fast-path answers)", () => {
+      expect(buildCitations(retrieval)).toHaveLength(2);
+    });
+  });
 });

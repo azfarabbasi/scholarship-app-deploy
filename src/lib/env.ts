@@ -102,8 +102,9 @@ const serverOnlyEnvSchema = z.object({
   ENABLE_DATABASE_CATALOGUE: booleanFlag,
   ENABLE_STAFF_ADMIN: booleanFlag,
   /**
-   * Local-testing convenience only: lets an Administrator review/approve
-   * their own drafts solo, collapsing the review pipeline to one account.
+   * Local/testing convenience only: gives the exact configured bootstrap
+   * Administrator an audited exception for all separation-of-duties checks,
+   * allowing one account to exercise complete staff workflows.
    * Defaults to disabled — separation of duties applies to every role
    * unless a deployment explicitly opts in. Never enable outside a local/dev
    * environment. See `src/lib/auth/permissions.ts`.
@@ -294,6 +295,30 @@ export function validateProductionEnvironment(): void {
   if (!appBaseUrl || !appBaseUrl.startsWith("https://")) missing.push("APP_BASE_URL (must be an https:// URL)");
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (!appUrl || !appUrl.startsWith("https://")) missing.push("NEXT_PUBLIC_APP_URL (must be an https:// URL)");
+
+  // `booleanFlag` (used everywhere else in this file) treats an unset value
+  // as a silent `false` — fine for optional features, but wrong for these
+  // two: an operator who simply forgot to set them would boot into a
+  // half-disabled production deployment with no warning at all. Production
+  // must require an EXPLICIT choice ("true" or "false"), not a default.
+  // Deliberately not "must be true" — the documented emergency rollback
+  // (docs/checkpoint-7/production-deployment-runbook.md §5) is to
+  // deliberately set ENABLE_DATABASE_CATALOGUE=false on an already-running
+  // production deployment, which must keep working.
+  const enableDatabaseCatalogue = process.env.ENABLE_DATABASE_CATALOGUE;
+  if (enableDatabaseCatalogue !== "true" && enableDatabaseCatalogue !== "false") {
+    missing.push('ENABLE_DATABASE_CATALOGUE (must be explicitly set to "true" or "false", never left unset)');
+  }
+  const enableStaffAdmin = process.env.ENABLE_STAFF_ADMIN;
+  if (enableStaffAdmin !== "true" && enableStaffAdmin !== "false") {
+    missing.push('ENABLE_STAFF_ADMIN (must be explicitly set to "true" or "false", never left unset)');
+  }
+  // Unlike the two above, this one has no legitimate "true" state in
+  // production at all — it collapses the reviewer/approver separation of
+  // duties to a single account, a local-dev-only convenience.
+  if (process.env.ALLOW_ADMIN_SELF_REVIEW === "true") {
+    missing.push('ALLOW_ADMIN_SELF_REVIEW (must never be "true" in production)');
+  }
 
   if (missing.length > 0) {
     const error = new ProductionConfigurationError(missing);

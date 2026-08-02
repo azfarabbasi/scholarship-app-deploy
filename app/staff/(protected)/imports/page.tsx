@@ -1,8 +1,16 @@
 import { desc } from "drizzle-orm";
+import { redirect } from "next/navigation";
+import { canRunImports } from "@/lib/auth/permissions";
+import { getStaffSession } from "@/lib/auth/session";
 import { getDb, schema } from "@/lib/db/client";
 import { CsvImportForm } from "@/components/staff/CsvImportForm";
 
 export default async function StaffImportsPage() {
+  const session = await getStaffSession();
+  if (!session || !canRunImports(session.roles)) {
+    redirect("/staff");
+  }
+
   const db = getDb();
   const jobs = await db.select().from(schema.importJobs).orderBy(desc(schema.importJobs.startedAt)).limit(50);
 

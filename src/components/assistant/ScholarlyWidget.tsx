@@ -100,17 +100,28 @@ export function ScholarlyWidget({ aiAvailable }: { aiAvailable: boolean }) {
         </div>
       ) : null}
 
-      <button
-        ref={launcherRef}
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-        aria-controls={panelId}
-        aria-label={open ? "Minimize Scholarly" : "Ask Scholarly"}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-brand text-brand-foreground shadow-lg transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
-      >
-        {open ? <X className="h-6 w-6" aria-hidden="true" /> : <Sparkles className="h-6 w-6" aria-hidden="true" />}
-      </button>
+      <span className="relative flex">
+        {/* Expanding ring, drawn behind the launcher and only while it's closed,
+            so the widget advertises itself once without competing with the
+            panel's own content. Decorative and pointer-transparent. */}
+        {!open ? (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 animate-pulse-ring rounded-full bg-brand/40 motion-reduce:hidden"
+          />
+        ) : null}
+        <button
+          ref={launcherRef}
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+          aria-controls={panelId}
+          aria-label={open ? "Minimize Scholarly" : "Ask Scholarly"}
+          className="relative flex h-14 w-14 items-center justify-center rounded-full bg-brand text-brand-foreground shadow-brand transition-transform duration-300 hover:scale-110 active:scale-95 motion-reduce:hover:scale-100 motion-reduce:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
+        >
+          {open ? <X className="h-6 w-6" aria-hidden="true" /> : <Sparkles className="h-6 w-6" aria-hidden="true" />}
+        </button>
+      </span>
     </div>
   );
 }

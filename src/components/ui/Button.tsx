@@ -12,12 +12,20 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
 }
 
+/**
+ * `primary` hovers to `brand-strong` rather than fading opacity: opacity fades
+ * the label along with the fill, which *lowers* the text contrast that the
+ * palette in globals.css was tuned to meet. brand-strong moves away from the
+ * foreground in both themes (darker in light, lighter against the dark-theme
+ * dark label), so hover raises contrast instead.
+ */
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: "bg-brand text-brand-foreground hover:opacity-90 border border-transparent",
+  primary:
+    "bg-brand text-brand-foreground hover:bg-brand-strong border border-transparent shadow-e1 hover:shadow-brand",
   secondary: "bg-surface-muted text-foreground hover:bg-border border border-border",
-  outline: "bg-transparent text-foreground border border-border hover:bg-surface-muted",
+  outline: "bg-transparent text-foreground border border-border hover:border-brand/50 hover:bg-brand-tint",
   ghost: "bg-transparent text-foreground border border-transparent hover:bg-surface-muted",
-  danger: "bg-danger text-white hover:opacity-90 border border-transparent",
+  danger: "bg-danger text-danger-foreground hover:opacity-90 border border-transparent shadow-e1",
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
@@ -29,7 +37,9 @@ const SIZE_CLASSES: Record<ButtonSize, string> = {
 
 export function buttonClasses(variant: ButtonVariant = "primary", size: ButtonSize = "md", className?: string): string {
   return cn(
-    "inline-flex items-center rounded-md font-medium transition-colors",
+    "inline-flex items-center whitespace-nowrap rounded-md font-medium",
+    "transition-[color,background-color,border-color,box-shadow,transform] duration-150",
+    "active:translate-y-px motion-reduce:active:translate-y-0",
     "disabled:pointer-events-none disabled:opacity-50",
     "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]",
     VARIANT_CLASSES[variant],

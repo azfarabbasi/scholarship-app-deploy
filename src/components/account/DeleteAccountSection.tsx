@@ -7,8 +7,9 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogClose, DialogContent, DialogTrigger } from "@/components/ui/Dialog";
 import { deleteMyAccount, deleteMyWorkspaceData } from "@/lib/db/actions/student/data-controls";
+import { clearCloudWorkspaceLocalState } from "@/hooks/useCloudWorkspace";
 
-export function DeleteAccountSection() {
+export function DeleteAccountSection({ studentProfileId }: { studentProfileId: string | null }) {
   const router = useRouter();
   const [workspaceMessage, setWorkspaceMessage] = useState<string | null>(null);
   const [accountError, setAccountError] = useState<string | null>(null);
@@ -16,6 +17,12 @@ export function DeleteAccountSection() {
 
   async function handleDeleteWorkspace() {
     const result = await deleteMyWorkspaceData();
+    if (result.ok && studentProfileId) {
+      // The cached cloud snapshot and any queued outbox entries on this
+      // device now describe data that no longer exists server-side —
+      // clear them so this device never shows or replays stale content.
+      await clearCloudWorkspaceLocalState(studentProfileId);
+    }
     setWorkspaceMessage(
       result.ok
         ? "Your cloud workspace data has been deleted. You can keep using your account with a fresh workspace."
@@ -31,6 +38,12 @@ export function DeleteAccountSection() {
       setDeletingAccount(false);
       setAccountError(result.error ?? "Could not delete your account.");
       return;
+    }
+    if (studentProfileId) {
+      // The account no longer exists — its cached snapshot/outbox on this
+      // device must never leak to (or replay against) whoever signs in
+      // next.
+      await clearCloudWorkspaceLocalState(studentProfileId);
     }
     router.replace("/");
     router.refresh();

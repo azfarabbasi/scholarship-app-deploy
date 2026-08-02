@@ -236,3 +236,110 @@ describe("validateCloudExportPayload: Checkpoint 4 fields", () => {
     expect(validateCloudExportPayload(payload).valid).toBe(false);
   });
 });
+
+describe("validateCloudExportPayload: security hardening (Phase 2)", () => {
+  it("rejects a schema version newer than this app supports", () => {
+    const result = validateCloudExportPayload(samplePayload({ schemaVersion: CLOUD_EXPORT_SCHEMA_VERSION + 1 }));
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.errors.join(" ")).toMatch(/newer version/i);
+    }
+  });
+
+  it("rejects a schema version below the minimum supported version", () => {
+    // 0 fails the Zod-level `.positive()` bound rather than the dedicated
+    // "too old" message below it — the minimum supported version is
+    // currently 1, the same floor Zod itself enforces, so there is no
+    // in-range value that reaches the "too old" branch yet. Either way, the
+    // payload must be rejected.
+    const result = validateCloudExportPayload(samplePayload({ schemaVersion: 0 }));
+    expect(result.valid).toBe(false);
+  });
+
+  it("accepts the current schema version and the minimum supported one", () => {
+    expect(validateCloudExportPayload(samplePayload({ schemaVersion: CLOUD_EXPORT_SCHEMA_VERSION })).valid).toBe(true);
+    expect(validateCloudExportPayload(samplePayload({ schemaVersion: 1 })).valid).toBe(true);
+  });
+
+  it("rejects a custom opportunity officialUrl using a javascript: scheme", () => {
+    const payload = samplePayload({
+      customOpportunities: [
+        {
+          id: validUuid,
+          slug: "my-scholarship",
+          title: "My Scholarship",
+          opportunityType: "scholarship",
+          providerName: null,
+          countries: [],
+          regions: [],
+          studyLevels: [],
+          benefitSummary: "",
+          eligibilitySummary: "",
+          officialUrl: "javascript:alert(1)",
+          deadlineKind: "unknown",
+          deadlineRawText: "",
+          deadlineDate: null,
+          deadlineTimezone: null,
+          verificationNotes: null,
+          archivedAt: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+    });
+    expect(validateCloudExportPayload(payload).valid).toBe(false);
+  });
+
+  it("accepts a custom opportunity officialUrl using https:", () => {
+    const payload = samplePayload({
+      customOpportunities: [
+        {
+          id: validUuid,
+          slug: "my-scholarship",
+          title: "My Scholarship",
+          opportunityType: "scholarship",
+          providerName: null,
+          countries: [],
+          regions: [],
+          studyLevels: [],
+          benefitSummary: "",
+          eligibilitySummary: "",
+          officialUrl: "https://example.test/scholarship",
+          deadlineKind: "unknown",
+          deadlineRawText: "",
+          deadlineDate: null,
+          deadlineTimezone: null,
+          verificationNotes: null,
+          archivedAt: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+    });
+    expect(validateCloudExportPayload(payload).valid).toBe(true);
+  });
+
+  it("rejects a tracking array over the row-count cap", () => {
+    const oversized = Array.from({ length: 5001 }, (_, i) => ({
+      id: `44444444-4444-4444-8444-${String(i).padStart(12, "0")}`,
+      opportunityId: opportunityUuid,
+      shortlisted: false,
+      stage: "not-started",
+      personalDeadline: null,
+      priority: null,
+      archived: false,
+      lastViewedAt: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
+    const result = validateCloudExportPayload(samplePayload({ tracking: oversized }));
+    expect(result.valid).toBe(false);
+  });
+
+  it("rejects an oversized string field", () => {
+    const payload = samplePayload();
+    payload.profile.displayName = "x".repeat(10_000);
+    const result = validateCloudExportPayload(payload);
+    expect(result.valid).toBe(false);
+  });
+});

@@ -198,6 +198,9 @@ Copy-Item .env.example .env.local
   `ENABLE_STAFF_ADMIN` — Checkpoint 2's database/staff-admin configuration. See
   [docs/checkpoint-2/supabase-setup.md](docs/checkpoint-2/supabase-setup.md) for exact,
   beginner-friendly setup steps for every one of these.
+- `ALLOW_ADMIN_SELF_REVIEW` (default `false`) grants a development/testing-only, audited
+  separation-of-duties exception to the exact `BOOTSTRAP_ADMIN_EMAIL` Administrator. Production
+  startup rejects it when enabled.
 - `AI_ENABLED` (default `false`), `AI_PROVIDER` (`mock` or `groq`), `GROQ_API_KEY`,
   `GROQ_MODEL`, `AI_MAX_INPUT_TOKENS`, `AI_MAX_OUTPUT_TOKENS`, `AI_DAILY_GUEST_LIMIT`,
   `AI_DAILY_USER_LIMIT`, `AI_LOG_RETENTION_DAYS` — Checkpoint 5's AI assistant
@@ -430,6 +433,12 @@ Requires `BOOTSTRAP_ADMIN_EMAIL`, `NEXT_PUBLIC_SUPABASE_URL`, and `SUPABASE_SECR
 set (see [Environment values](#environment-values) and
 [docs/checkpoint-2/supabase-setup.md](docs/checkpoint-2/supabase-setup.md)). After that,
 additional staff are invited from `/staff/team` in the app itself — no more scripts needed.
+
+For local one-account workflow testing, set `ALLOW_ADMIN_SELF_REVIEW=true`. Only the verified
+account matching `BOOTSTRAP_ADMIN_EMAIL`, with an active `administrator` role, receives the
+audited bootstrap super-admin exception. It can self-assign/review/approve and promote its own
+source, evidence, verification, funding, eligibility, and document records. Other administrators
+retain normal separation of duties. Production startup rejects this testing flag.
 
 ### Staff sign-in
 

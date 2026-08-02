@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "../../src/lib/db/schema";
@@ -34,6 +34,83 @@ export async function asRole<T>(
 
 export function uniqueSuffix(): string {
   return Math.random().toString(36).slice(2, 10);
+}
+
+/**
+ * Satisfies every condition of the stricter publish gate
+ * (`drizzle/0010_publication_integrity_actors.sql`) in one transaction, then
+ * flips the opportunity to `published` — for fixtures elsewhere in this
+ * suite that just need "a real published opportunity" to test something
+ * unrelated (RLS visibility, search, AI retrieval scope, ...) without each
+ * one re-deriving the verification/review-assignment mechanics themselves.
+ *
+ * Must run as a single transaction: the deferred constraint trigger
+ * `verification_records_require_source` (0002_publication_invariants.sql)
+ * validates at the end of the transaction it ran in, not at commit of a
+ * lone auto-committed statement — splitting the verification-record insert
+ * and the verification_record_sources insert across two separate
+ * `db.insert()` calls (each its own implicit transaction) makes the
+ * deferred check fire too early, before the source is linked.
+ */
+export async function publishOpportunityForTest(params: {
+  opportunityId: string;
+  officialSourceId: string;
+  versionId: string;
+  /** Must differ from approverStaffProfileId — the publish gate rejects a verification record approved by its own reviewer. */
+  reviewerStaffProfileId: string;
+  approverStaffProfileId: string;
+}): Promise<void> {
+  const { opportunityId, officialSourceId, versionId, reviewerStaffProfileId, approverStaffProfileId } = params;
+
+  await db.transaction(async (tx) => {
+    const [verificationRecord] = await tx
+      .insert(schema.verificationRecords)
+      .values({
+        subjectKind: "opportunity",
+        subjectId: opportunityId,
+        opportunityId,
+        reviewerStaffProfileId,
+        approvedByStaffProfileId: approverStaffProfileId,
+        outcome: "verified",
+        status: "verified",
+        checkedAt: new Date(),
+        summary: "Test fixture verification.",
+      })
+      .returning();
+
+    await tx.insert(schema.verificationRecordSources).values({ verificationRecordId: verificationRecord.id, officialSourceId });
+
+    await tx.insert(schema.sourceEvidence).values({
+      opportunityId,
+      officialSourceId,
+      verificationRecordId: verificationRecord.id,
+      kind: "fact",
+      status: "accepted",
+      evidenceText: "Test fixture evidence.",
+      capturedByStaffProfileId: reviewerStaffProfileId,
+      approvedByStaffProfileId: approverStaffProfileId,
+    });
+
+    await tx.insert(schema.reviewAssignments).values({
+      subjectKind: "opportunity",
+      subjectId: opportunityId,
+      opportunityId,
+      subjectAuthorStaffProfileId: reviewerStaffProfileId,
+      reviewerStaffProfileId: approverStaffProfileId,
+      assignedByStaffProfileId: approverStaffProfileId,
+      requiredRole: "reviewer",
+      status: "completed",
+      completedAt: new Date(),
+      decision: "mark-reviewed",
+    });
+
+    await tx.update(schema.opportunityVersions).set({ reviewOutcome: "approve" }).where(eq(schema.opportunityVersions.id, versionId));
+
+    await tx
+      .update(schema.opportunities)
+      .set({ status: "published", publishedAt: new Date(), currentApprovedVersionId: versionId })
+      .where(eq(schema.opportunities.id, opportunityId));
+  });
 }
 
 /**

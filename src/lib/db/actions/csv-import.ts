@@ -193,7 +193,8 @@ export async function runOpportunityCsvImport(fileText: string, dryRun: boolean)
             fundingTypeId: fundingType.id,
             kind: "other",
             summary: parsed.data.benefitSummary,
-            status: "published",
+            status: "draft",
+            createdByStaffProfileId: session.staffProfileId,
           });
         }
 
@@ -205,8 +206,9 @@ export async function runOpportunityCsvImport(fileText: string, dryRun: boolean)
             label: parsed.data.title,
             sourceOrganisationName: parsed.data.sourceOrganisationName,
             publisherOrganisationId: organisation.id,
-            status: parsed.data.sourceLastCheckedAt ? "confirmed-official" : "candidate",
+            status: "candidate",
             lastCheckedAt: parsed.data.sourceLastCheckedAt ? new Date(parsed.data.sourceLastCheckedAt) : null,
+            createdByStaffProfileId: session.staffProfileId,
           })
           .returning();
         await tx.insert(schema.opportunityOfficialSources).values({ opportunityId: opportunity.id, officialSourceId: officialSource.id });
@@ -219,7 +221,7 @@ export async function runOpportunityCsvImport(fileText: string, dryRun: boolean)
             kind: "eligibility",
             evidenceText: parsed.data.eligibilitySummary,
             capturedByStaffProfileId: session.staffProfileId,
-            status: "accepted",
+            status: "captured",
           })
           .returning();
 
@@ -229,7 +231,7 @@ export async function runOpportunityCsvImport(fileText: string, dryRun: boolean)
             opportunityId: opportunity.id,
             label: "General eligibility",
             operator: "all",
-            status: "active",
+            status: "draft",
             sourceEvidenceId: evidence.id,
           })
           .returning();
@@ -241,7 +243,8 @@ export async function runOpportunityCsvImport(fileText: string, dryRun: boolean)
           operator: "exists",
           explanation: parsed.data.eligibilitySummary,
           sourceEvidenceId: evidence.id,
-          status: "active",
+          status: "draft",
+          createdByStaffProfileId: session.staffProfileId,
         });
 
         const [cycle] = await tx

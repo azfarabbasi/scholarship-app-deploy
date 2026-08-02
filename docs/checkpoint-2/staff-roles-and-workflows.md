@@ -87,6 +87,19 @@ Notes:
   recorded via `recordAuditEvent()` with `redactedChangeSummary` explicitly stating "Administrator
   override" and the reason, action `"approve"`.
 
+### Bootstrap administrator testing exception
+
+Local/testing environments may set `ALLOW_ADMIN_SELF_REVIEW=true` to let the single verified
+account matching `BOOTSTRAP_ADMIN_EMAIL` exercise a complete workflow. The account must still
+have an active profile and active `administrator` assignment. Its self-assignment, review,
+approval, source/evidence confirmation, verification confirmation, and child-record promotions
+are explicitly labelled in the audit log. Database self-approval checks accept the exception
+only for that actor UUID inside the current transaction. Other administrators retain the matrix
+above, and production startup rejects the flag.
+
+This exception never bypasses publication prerequisites, state transitions, audit immutability,
+cross-opportunity relationship checks, or student-data ownership.
+
 ## Reviewer assignment
 
 `/staff/assignments` (senior_reviewer/administrator only) lists every `in_review` opportunity

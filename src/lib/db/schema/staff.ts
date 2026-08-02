@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
-import { serviceRoleBypassPolicy, staffSelectPolicy } from "./common";
+import { serviceRoleBypassPolicy, staffSelectOwnOrRolePolicy } from "./common";
 import { staffProfileStatusEnum, staffRoleEnum } from "./enums";
 
 /**
@@ -21,9 +21,13 @@ export const staffProfiles = pgTable(
   },
   (table) => [
     uniqueIndex("staff_profiles_email_key").on(table.email),
-    // Staff can read the directory (needed for assignee names); nobody except
-    // our privileged server (bootstrap/invite flow) writes.
-    staffSelectPolicy("staff_profiles"),
+    // A staff member may always read their own row (needed for the account
+    // nav/session UI); reading the *whole* directory via direct Supabase
+    // REST is narrowed to administrators only, matching `canManageStaff` in
+    // `src/lib/auth/permissions.ts` — the app itself resolves assignee names
+    // through the privileged server connection, not this policy. Nobody
+    // except our privileged server (bootstrap/invite flow) writes.
+    staffSelectOwnOrRolePolicy("staff_profiles", table.id, ["administrator"]),
     serviceRoleBypassPolicy("staff_profiles"),
   ],
 ).enableRLS();
@@ -50,7 +54,10 @@ export const staffRoleAssignments = pgTable(
     uniqueIndex("staff_role_assignments_active_unique")
       .on(table.staffProfileId, table.role)
       .where(sql`${table.revokedAt} IS NULL`),
-    staffSelectPolicy("staff_role_assignments"),
+    // Same reasoning as `staff_profiles` above: a staff member may read
+    // their own role grants; seeing everyone else's role assignments via
+    // direct REST is administrator-only.
+    staffSelectOwnOrRolePolicy("staff_role_assignments", table.staffProfileId, ["administrator"]),
     serviceRoleBypassPolicy("staff_role_assignments"),
   ],
 ).enableRLS();

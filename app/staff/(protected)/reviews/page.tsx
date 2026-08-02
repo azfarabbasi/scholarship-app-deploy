@@ -3,6 +3,21 @@ import { eq } from "drizzle-orm";
 import { getStaffSession } from "@/lib/auth/session";
 import { getDb, schema } from "@/lib/db/client";
 import { AcceptAssignmentButton } from "@/components/staff/AcceptAssignmentButton";
+import { Badge, type BadgeTone } from "@/components/ui/Badge";
+import { WorkflowStatusBadge, workflowStatusLabel } from "@/components/staff/WorkflowStatusBadge";
+
+/** Mirrors `reviewAssignmentStatusEnum` in src/lib/db/schema/enums.ts. */
+const ASSIGNMENT_TONES: Record<string, BadgeTone> = {
+  queued: "grey",
+  assigned: "amber",
+  accepted: "blue",
+  "in-review": "blue",
+  blocked: "red",
+  completed: "green",
+  reassigned: "grey",
+  cancelled: "grey",
+  expired: "red",
+};
 
 export default async function StaffReviewsPage() {
   const session = await getStaffSession();
@@ -22,39 +37,73 @@ export default async function StaffReviewsPage() {
     .innerJoin(schema.opportunities, eq(schema.reviewAssignments.opportunityId, schema.opportunities.id))
     .where(eq(schema.reviewAssignments.reviewerStaffProfileId, session.staffProfileId));
 
+  const openCount = rows.filter((row) => row.status !== "completed").length;
+
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold text-foreground">My review assignments</h1>
-      <div className="overflow-x-auto rounded-lg border border-border">
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">My review assignments</h1>
+        <p className="mt-1 text-sm text-foreground-muted">
+          {rows.length === 0
+            ? "Nothing is assigned to you right now."
+            : `${openCount} open of ${rows.length} total. Accept an assignment to move it into your queue.`}
+        </p>
+      </div>
+
+      <div className="overflow-x-auto rounded-lg border border-border bg-surface shadow-e1">
         <table className="w-full text-left text-sm">
-          <thead className="bg-surface-muted text-foreground-muted">
+          <thead className="border-b border-border bg-surface-muted text-xs uppercase tracking-wide text-foreground-muted">
             <tr>
-              <th className="px-3 py-2">Opportunity</th>
-              <th className="px-3 py-2">Assignment status</th>
-              <th className="px-3 py-2">Opportunity status</th>
-              <th className="px-3 py-2">Due</th>
-              <th className="px-3 py-2" />
+              <th scope="col" className="px-3 py-2.5 font-semibold">
+                Opportunity
+              </th>
+              <th scope="col" className="px-3 py-2.5 font-semibold">
+                Assignment status
+              </th>
+              <th scope="col" className="px-3 py-2.5 font-semibold">
+                Opportunity status
+              </th>
+              <th scope="col" className="px-3 py-2.5 font-semibold">
+                Due
+              </th>
+              <th scope="col" className="px-3 py-2.5">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-foreground-muted">
-                  No review assignments yet.
+                <td colSpan={5} className="px-3 py-12 text-center">
+                  <p className="font-medium text-foreground">No review assignments yet.</p>
+                  <p className="mt-1 text-sm text-foreground-muted">
+                    An editor with assignment rights will send work here when it&rsquo;s ready for review.
+                  </p>
                 </td>
               </tr>
             ) : (
               rows.map((row) => (
-                <tr key={row.id} className="border-t border-border">
-                  <td className="px-3 py-2">
-                    <Link href={`/staff/opportunities/${row.opportunityId}`} className="font-medium text-foreground hover:underline">
+                <tr key={row.id} className="border-t border-border transition-colors hover:bg-surface-muted/50">
+                  <td className="px-3 py-2.5">
+                    <Link
+                      href={`/staff/opportunities/${row.opportunityId}`}
+                      className="rounded font-medium text-foreground hover:text-brand hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
+                    >
                       {row.opportunityTitle}
                     </Link>
                   </td>
-                  <td className="px-3 py-2">{row.status}</td>
-                  <td className="px-3 py-2">{row.opportunityStatus}</td>
-                  <td className="px-3 py-2 text-foreground-muted">{row.dueAt ? row.dueAt.toLocaleDateString() : "—"}</td>
-                  <td className="px-3 py-2">{row.status === "assigned" ? <AcceptAssignmentButton assignmentId={row.id} /> : null}</td>
+                  <td className="px-3 py-2.5">
+                    <Badge tone={ASSIGNMENT_TONES[row.status] ?? "neutral"}>{workflowStatusLabel(row.status)}</Badge>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <WorkflowStatusBadge status={row.opportunityStatus} />
+                  </td>
+                  <td className="px-3 py-2.5 whitespace-nowrap text-foreground-muted">
+                    {row.dueAt ? row.dueAt.toLocaleDateString() : "—"}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    {row.status === "assigned" ? <AcceptAssignmentButton assignmentId={row.id} /> : null}
+                  </td>
                 </tr>
               ))
             )}

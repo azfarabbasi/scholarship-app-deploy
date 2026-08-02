@@ -1,9 +1,17 @@
 import { desc, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
+import { redirect } from "next/navigation";
+import { canManageDuplicates } from "@/lib/auth/permissions";
+import { getStaffSession } from "@/lib/auth/session";
 import { getDb, schema } from "@/lib/db/client";
 import { DuplicateCandidateActions, RunDetectionButton } from "@/components/staff/DuplicateCandidateActions";
 
 export default async function StaffDuplicatesPage() {
+  const session = await getStaffSession();
+  if (!session || !canManageDuplicates(session.roles)) {
+    redirect("/staff");
+  }
+
   const db = getDb();
   const canonicalOpportunities = alias(schema.opportunities, "canonical_opportunities");
   const duplicateOpportunities = alias(schema.opportunities, "duplicate_opportunities");

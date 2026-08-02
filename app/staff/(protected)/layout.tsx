@@ -20,7 +20,11 @@ export default async function ProtectedStaffLayout({ children }: { children: Rea
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      <StaffNav roles={session.roles} displayName={session.displayName} />
+      <StaffNav
+        roles={session.roles}
+        displayName={session.displayName}
+        isBootstrapAdmin={session.isBootstrapAdmin}
+      />
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
     </div>
   );

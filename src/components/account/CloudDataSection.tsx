@@ -112,7 +112,7 @@ export function CloudDataSection() {
         {importResult ? (
           <Alert tone={importResult.ok ? "success" : "danger"} className="mt-3">
             {importResult.ok
-              ? `Imported ${importResult.trackingImported} tracked opportunities, ${importResult.notesImported} notes, ${importResult.checklistTasksImported} checklist tasks, ${importResult.customOpportunitiesImported} custom opportunities, ${importResult.savedSearchesImported} saved searches, ${importResult.remindersImported} reminders, ${importResult.notificationsImported} notifications${importResult.eligibilityAnswersImported ? ", eligibility answers" : ""}${importResult.reminderPreferencesImported ? ", reminder preferences" : ""}.`
+              ? `Imported ${importResult.trackingImported} tracked opportunities, ${importResult.notesImported} notes, ${importResult.checklistTasksImported} checklist tasks, ${importResult.customOpportunitiesImported} custom opportunities, ${importResult.savedSearchesImported} saved searches, ${importResult.remindersImported} reminders, ${importResult.notificationsImported} notifications${importResult.profileImported ? ", profile" : ""}${importResult.eligibilityAnswersImported ? ", eligibility answers" : ""}${importResult.reminderPreferencesImported ? ", reminder preferences" : ""}${importResult.planningPreferencesImported ? ", planning preferences" : ""}${importResult.displayPreferencesImported ? ", display preferences" : ""}.`
               : importResult.error}
           </Alert>
         ) : null}

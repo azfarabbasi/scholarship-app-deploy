@@ -8,9 +8,9 @@
  * than a blanket `'unsafe-inline'` for scripts.
  *
  * `style-src` keeps `'unsafe-inline'` as a deliberate, documented exception:
- * Radix UI's positioning primitives (`@radix-ui/react-dialog`,
- * `@radix-ui/react-tooltip`) set inline `style` properties directly via the
- * CSSOM for floating-element placement, which nonces cannot unlock (the
+ * Radix UI's positioning primitives (`@radix-ui/react-dialog`) set inline
+ * `style` properties directly via the CSSOM for floating-element placement,
+ * which nonces cannot unlock (the
  * nonce/hash CSP exception only applies to `<style>`/`<link>` elements, never
  * to the `style` attribute or `element.style.*` mutations) — the same
  * exception Next.js's own reference CSP example carries. Inline-style

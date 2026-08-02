@@ -45,6 +45,7 @@ interface OpportunityWorkflowActionsProps {
   opportunityId: string;
   status: OpportunityWorkflowStatus;
   isAdministrator: boolean;
+  isBootstrapAdmin: boolean;
 }
 
 async function callTransition(
@@ -78,7 +79,12 @@ async function callTransition(
   }
 }
 
-export function OpportunityWorkflowActions({ opportunityId, status, isAdministrator }: OpportunityWorkflowActionsProps) {
+export function OpportunityWorkflowActions({
+  opportunityId,
+  status,
+  isAdministrator,
+  isBootstrapAdmin,
+}: OpportunityWorkflowActionsProps) {
   const router = useRouter();
   const [pendingTransition, setPendingTransition] = useState<WorkflowTransition | null>(null);
   const [reason, setReason] = useState("");
@@ -90,19 +96,30 @@ export function OpportunityWorkflowActions({ opportunityId, status, isAdministra
   async function run(transition: WorkflowTransition) {
     setBusy(true);
     setError(null);
-    const result = await callTransition(transition, opportunityId, reason);
-    setBusy(false);
-    if (!result.ok) {
-      setError(result.error ?? "Action failed.");
-      return;
+    try {
+      const result = await callTransition(transition, opportunityId, reason);
+      if (!result.ok) {
+        setError(result.error ?? "Action failed.");
+        return;
+      }
+      setPendingTransition(null);
+      setReason("");
+      router.refresh();
+    } catch {
+      setError("The workflow action could not be completed. Check the required review and verification steps, then try again.");
+    } finally {
+      setBusy(false);
     }
-    setPendingTransition(null);
-    setReason("");
-    router.refresh();
   }
 
   return (
     <div className="flex flex-col gap-3">
+      {isBootstrapAdmin ? (
+        <Alert tone="warning" title="Bootstrap override active">
+          This testing account may complete normally separated workflow steps. Every action is still recorded in the
+          audit log.
+        </Alert>
+      ) : null}
       {error ? <Alert tone="danger">{error}</Alert> : null}
 
       <div className="flex flex-wrap gap-2">
@@ -112,7 +129,7 @@ export function OpportunityWorkflowActions({ opportunityId, status, isAdministra
             size="sm"
             variant={transition === "reject" || transition === "archive" ? "danger" : "outline"}
             onClick={() => {
-              if (REASON_REQUIRED[transition] || (transition === "approve" && isAdministrator)) {
+              if (REASON_REQUIRED[transition] || (transition === "approve" && isAdministrator && !isBootstrapAdmin)) {
                 setPendingTransition(transition);
               } else {
                 void run(transition);
@@ -120,7 +137,7 @@ export function OpportunityWorkflowActions({ opportunityId, status, isAdministra
             }}
             disabled={busy}
           >
-            {TRANSITION_LABELS[transition]}
+            {transition === "approve" && isBootstrapAdmin ? "Approve (bootstrap override)" : TRANSITION_LABELS[transition]}
           </Button>
         ))}
       </div>

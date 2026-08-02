@@ -137,7 +137,7 @@ for (const file of REQUIRED_STAFF_AUTH_FILES) {
 
 check(read("src/lib/auth/session.ts").includes("getClaims"), "Staff session verification must use getClaims() (or an equivalent secure JWT check), not raw client-supplied state.");
 check(
-  read("src/lib/supabase/middleware.ts").includes("/staff") && read("src/lib/supabase/middleware.ts").includes("sanitizeNextPath"),
+  read("src/lib/supabase/middleware.ts").includes("/staff") && read("src/lib/supabase/middleware.ts").includes("sanitizeRedirectPath"),
   "Staff route middleware must gate /staff and sanitize the redirect target (no open redirect).",
 );
 check(

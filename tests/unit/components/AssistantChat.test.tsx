@@ -18,6 +18,10 @@ function baseChatState(overrides: Record<string, unknown> = {}) {
     setTemporary: vi.fn(),
     sendMessage: vi.fn(),
     giveFeedback: vi.fn(),
+    // Conversation switching, used by the sidebar on the full assistant page.
+    loadConversation: vi.fn(),
+    startNewConversation: vi.fn(),
+    activeConversationId: null,
     ...overrides,
   };
 }

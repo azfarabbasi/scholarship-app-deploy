@@ -105,8 +105,8 @@ export function CatalogueToolbar({
       </div>
 
       <p className="text-sm text-foreground-muted" role="status">
-        {resultCount} opportunit{resultCount === 1 ? "y" : "ies"} found
-        {activeFilterCount > 0 ? ` · ${activeFilterCount} filter${activeFilterCount === 1 ? "" : "s"} applied` : ""}
+        {resultCount} opportunit{resultCount === 1 ? "y" : "ies"}{" "}
+        found{activeFilterCount > 0 ? ` · ${activeFilterCount} filter${activeFilterCount === 1 ? "" : "s"} applied` : ""}
       </p>
     </div>
   );

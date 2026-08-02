@@ -80,12 +80,3 @@ export async function getStudentSession(): Promise<StudentSession | null> {
     onboardingCompletedAt: profile.onboardingCompletedAt ? profile.onboardingCompletedAt.toISOString() : null,
   };
 }
-
-/** Convenience helper for pages/layouts that just need a yes/no gate. */
-export async function requireStudentSession(): Promise<StudentSession> {
-  const session = await getStudentSession();
-  if (!session) {
-    throw new Error("STUDENT_SESSION_REQUIRED");
-  }
-  return session;
-}

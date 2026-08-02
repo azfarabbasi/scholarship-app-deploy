@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getPublicEnv, isAdsConfigured, isAnalyticsConfigured, isProductionEnvironment } from "@/lib/env";
 import { buildContentSecurityPolicy } from "@/lib/security/csp";
+import { sanitizeRedirectPath } from "@/lib/security/redirect";
 
 const PUBLIC_STAFF_PATHS = ["/staff/login", "/staff/auth/callback", "/staff/unauthorized"];
 const PUBLIC_AUTH_PATHS = ["/auth/login", "/auth/signup", "/auth/callback"];
@@ -99,14 +100,6 @@ const PUBLIC_STATIC_CONTENT_PREFIXES = [
   "/data-sources",
   "/verification-policy",
 ];
-
-/** Only ever redirect to a same-origin path under `prefix` — never an open redirect. */
-function sanitizeNextPath(path: string | null, prefix: string, fallback: string): string {
-  if (!path || !path.startsWith(prefix) || path.startsWith("//") || path.includes("://")) {
-    return fallback;
-  }
-  return path;
-}
 
 /**
  * Refreshes the Supabase SSR session cookie on every request (the documented
@@ -209,7 +202,7 @@ export async function updateSupabaseSession(request: NextRequest): Promise<NextR
 
   if (pathname.startsWith("/staff") && !isPublicStaffPath && !user) {
     const loginUrl = new URL("/staff/login", request.url);
-    loginUrl.searchParams.set("next", sanitizeNextPath(pathname, "/staff", "/staff"));
+    loginUrl.searchParams.set("next", sanitizeRedirectPath(pathname, request.nextUrl.origin, "/staff", { requiredPrefix: "/staff" }));
     return withSecurityHeaders(NextResponse.redirect(loginUrl));
   }
 
@@ -219,7 +212,7 @@ export async function updateSupabaseSession(request: NextRequest): Promise<NextR
 
   if (pathname.startsWith("/account") && !user) {
     const loginUrl = new URL("/auth/login", request.url);
-    loginUrl.searchParams.set("next", sanitizeNextPath(pathname, "/account", "/account"));
+    loginUrl.searchParams.set("next", sanitizeRedirectPath(pathname, request.nextUrl.origin, "/account", { requiredPrefix: "/account" }));
     return withSecurityHeaders(NextResponse.redirect(loginUrl));
   }
 

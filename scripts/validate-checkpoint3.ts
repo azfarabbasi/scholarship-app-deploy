@@ -22,6 +22,19 @@ function exists(relativePath: string): boolean {
   return existsSync(path.join(root, relativePath));
 }
 
+/**
+ * A page "reviewed for Checkpoint N" stays valid once a later checkpoint
+ * reviews it again — e.g. the privacy page says "Last reviewed for
+ * Checkpoint 5" today, having been revisited since Checkpoint 3. Matching
+ * the exact literal "Checkpoint 3" would make this check fail forever after
+ * the very next legitimate review, which is exactly the kind of
+ * validator staleness this phase is fixing (see Phase 4 item 8).
+ */
+function reviewedForCheckpointAtLeast(source: string, minVersion: number): boolean {
+  const versions = [...source.matchAll(/Checkpoint (\d+)/gi)].map((m) => Number(m[1]));
+  return versions.some((version) => version >= minVersion);
+}
+
 function listFilesRecursive(relativeDir: string): string[] {
   const absoluteDir = path.join(root, relativeDir);
   if (!existsSync(absoluteDir)) return [];
@@ -57,10 +70,10 @@ for (const file of REQUIRED_AUTH_FILES) {
 check(read("src/lib/auth/student-session.ts").includes("getClaims"), "Student session verification must use getClaims() (or an equivalent secure JWT check), not raw client-supplied state.");
 
 const middlewareSource = read("src/lib/supabase/middleware.ts");
-check(middlewareSource.includes("/account") && middlewareSource.includes("sanitizeNextPath"), "Middleware must gate /account and sanitize the redirect target (no open redirect).");
+check(middlewareSource.includes("/account") && middlewareSource.includes("sanitizeRedirectPath"), "Middleware must gate /account and sanitize the redirect target (no open redirect).");
 check(
-  /sanitizeNextPath\([^)]*"\/staff"/.test(read("src/components/auth/StudentLoginForm.tsx")) ||
-    read("src/components/auth/StudentLoginForm.tsx").includes('startsWith("/staff")'),
+  read("src/components/auth/StudentLoginForm.tsx").includes("sanitizeRedirectPath") &&
+    read("src/components/auth/StudentLoginForm.tsx").includes('"/staff"'),
   "The student login form's redirect sanitizer must reject a /staff destination.",
 );
 
@@ -179,10 +192,13 @@ check(!/SUPABASE_SECRET_KEY/.test(read("src/components/account/DeleteAccountSect
 // ---------------------------------------------------------------------------
 
 const privacySource = read("app/privacy/page.tsx");
-check(privacySource.includes("Checkpoint 3"), "Privacy page must be marked as reviewed for Checkpoint 3.");
+check(reviewedForCheckpointAtLeast(privacySource, 3), "Privacy page must be marked as reviewed for Checkpoint 3 (or a later checkpoint's review, which supersedes it).");
 check(/account data is stored/i.test(privacySource), "Privacy page must explain where account data is stored.");
 check(/staff cannot casually browse/i.test(privacySource), "Privacy page must state that staff cannot casually browse student private data.");
-check(/AI is not used/i.test(privacySource), "Privacy page must state that AI is not used in Checkpoint 3.");
+check(
+  /AI is not used/i.test(privacySource) || (/AI assistant/i.test(privacySource) && /never a final eligibility/i.test(privacySource)),
+  "Privacy page must state that AI is not used — or, if an AI assistant was added in a later checkpoint (Checkpoint 5), disclose it with its safety guarantees (never a final eligibility/admission/funding decision).",
+);
 
 // ---------------------------------------------------------------------------
 // 8. Staff routes remain separate from student accounts

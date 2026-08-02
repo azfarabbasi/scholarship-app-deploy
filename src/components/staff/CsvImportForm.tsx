@@ -49,8 +49,9 @@ export function CsvImportForm() {
           ) : (
             <>
               <p className="font-medium text-foreground">
-                {result.totalRows} rows — {result.accepted} accepted, {result.rejected} rejected, {result.duplicateWarnings} duplicate
-                warnings.
+                {result.totalRows} rows — {result.accepted} accepted, {result.rejected} rejected,{" "}
+                {result.duplicateWarnings}{" "}
+                duplicate warnings.
               </p>
               <ul className="mt-2 max-h-64 overflow-y-auto">
                 {result.rows.map((row) => (

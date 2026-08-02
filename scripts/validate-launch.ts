@@ -1,14 +1,21 @@
 /**
  * Checkpoint 7: `npm run launch:validate`.
  *
- * Focused specifically on launch *environment configuration* readiness (per
+ * Focused specifically on launch *environment documentation* readiness (per
  * the checkpoint's §3 "Launch configuration" requirements) — distinct from
  * `checkpoint7:validate`, which checks that Checkpoint 7's own deliverables
  * (docs, scripts, commands) exist. This script verifies every documented
- * production variable is genuinely covered by `.env.example`, and exercises
- * `validateProductionEnvironment()` directly against simulated environments
- * to confirm it actually catches a missing-config production deployment
- * rather than just existing in source.
+ * production variable is genuinely covered by `.env.example`, that no secret
+ * is `NEXT_PUBLIC_`-prefixed, and that optional features default to disabled
+ * — all pure, read-only checks against a committed file, safe to run
+ * anywhere with no side effects.
+ *
+ * `validateProductionEnvironment()`'s actual runtime *behavior* (does it
+ * really throw/not-throw under simulated production configurations) is a
+ * fundamentally different kind of check — it mutates `process.env` to
+ * simulate scenarios and exercises live code — and lives in the separate
+ * `npm run launch:validate:env-behavior` (`scripts/validate-production-env-behavior.ts`).
+ * See Phase 4 item 6 of the launch-audit remediation for why these were split.
  */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -82,68 +89,7 @@ check(envExample.includes("AI_ENABLED=false"), "AI must default to disabled in .
 check(envExample.includes("NEXT_PUBLIC_ANALYTICS_ENABLED=false"), "Analytics must default to disabled in .env.example.");
 check(envExample.includes("NEXT_PUBLIC_ADS_ENABLED=false"), "Ads must default to disabled in .env.example.");
 
-// ---------------------------------------------------------------------------
-// 4. validateProductionEnvironment() actually catches a misconfigured
-//    production deployment — exercised directly, not just checked for
-//    existence in source.
-// ---------------------------------------------------------------------------
-async function checkProductionValidationBehavior(): Promise<void> {
-  const originalEnv = { ...process.env };
-  try {
-    for (const key of ["APP_ENV", "SUPABASE_SECRET_KEY", "DATABASE_URL", "NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "APP_BASE_URL", "NEXT_PUBLIC_APP_URL"]) {
-      delete process.env[key];
-    }
-    process.env.APP_ENV = "production";
-
-    const { validateProductionEnvironment, resetPublicEnvCacheForTests } = await import("../src/lib/env");
-    resetPublicEnvCacheForTests();
-
-    let threw = false;
-    try {
-      validateProductionEnvironment();
-    } catch {
-      threw = true;
-    }
-    check(threw, "validateProductionEnvironment() must throw when APP_ENV=production but required variables are missing.");
-
-    process.env.SUPABASE_SECRET_KEY = "test-secret";
-    process.env.DATABASE_URL = "postgres://test:test@localhost:5432/test";
-    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "test-key";
-    process.env.APP_BASE_URL = "https://example.com";
-    process.env.NEXT_PUBLIC_APP_URL = "https://example.com";
-    resetPublicEnvCacheForTests();
-
-    let threwWhenComplete = false;
-    try {
-      validateProductionEnvironment();
-    } catch {
-      threwWhenComplete = true;
-    }
-    check(!threwWhenComplete, "validateProductionEnvironment() must NOT throw once every required production variable is set.");
-
-    process.env.APP_ENV = "development";
-    resetPublicEnvCacheForTests();
-    let threwInDev = false;
-    try {
-      validateProductionEnvironment();
-    } catch {
-      threwInDev = true;
-    }
-    check(!threwInDev, "validateProductionEnvironment() must be a no-op outside APP_ENV=production, even with nothing configured.");
-  } finally {
-    for (const key of Object.keys(process.env)) {
-      if (!(key in originalEnv)) delete process.env[key];
-    }
-    Object.assign(process.env, originalEnv);
-    const { resetPublicEnvCacheForTests } = await import("../src/lib/env");
-    resetPublicEnvCacheForTests();
-  }
-}
-
-async function main(): Promise<void> {
-  await checkProductionValidationBehavior();
-
+function main(): void {
   console.log(`launch:validate: ${checksPassed} check(s) passed.`);
 
   if (errors.length > 0) {
@@ -154,10 +100,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  console.log("launch:validate: launch environment configuration is ready.");
+  console.log("launch:validate: launch environment documentation is ready. Run `npm run launch:validate:env-behavior` to also verify validateProductionEnvironment()'s runtime behavior.");
 }
 
-main().catch((error: unknown) => {
-  console.error("launch:validate failed:", error);
-  process.exit(1);
-});
+main();

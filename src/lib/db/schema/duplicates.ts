@@ -29,7 +29,10 @@ export const duplicateCandidates = pgTable(
       "duplicate_candidates_confidence_range",
       sql`${table.confidenceScore} >= 0 AND ${table.confidenceScore} <= 1`,
     ),
-    staffSelectPolicy("duplicate_candidates"),
+    // Matches `canManageDuplicates` in `src/lib/auth/permissions.ts` — a
+    // baseline reviewer has no legitimate reason to browse duplicate
+    // candidates via direct Supabase REST.
+    staffSelectPolicy("duplicate_candidates", ["senior_reviewer", "administrator"]),
     serviceRoleBypassPolicy("duplicate_candidates"),
   ],
 ).enableRLS();

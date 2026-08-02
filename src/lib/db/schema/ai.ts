@@ -129,6 +129,13 @@ export const aiConversations = pgTable(
     scope: aiConversationScopeEnum("scope").notNull(),
     targetOpportunityId: uuid("target_opportunity_id").references(() => opportunities.id, { onDelete: "set null" }),
     title: text("title").notNull().default(""),
+    /**
+     * When the student pinned this conversation, or null if unpinned. A
+     * timestamp rather than a boolean so pinned conversations keep a stable,
+     * meaningful order among themselves (most recently pinned first) instead of
+     * re-shuffling on every `updatedAt` touch.
+     */
+    pinnedAt: timestamp("pinned_at", { withTimezone: true }),
     ...auditTimestamps,
   },
   (table) => [ownerAllPolicy("ai_conversations", table.studentProfileId), serviceRoleBypassPolicy("ai_conversations")],
@@ -287,7 +294,9 @@ export const aiSafetyEvents = pgTable(
     redactedSummary: text("redacted_summary").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  () => [staffSelectPolicy("ai_safety_events"), serviceRoleBypassPolicy("ai_safety_events")],
+  // Matches `canViewAiSafetyLog` in `src/lib/auth/permissions.ts` —
+  // administrator-only; these events can reference a specific student.
+  () => [staffSelectPolicy("ai_safety_events", ["administrator"]), serviceRoleBypassPolicy("ai_safety_events")],
 ).enableRLS();
 
 // --- Evaluation harness (staff/internal only) --------------------------------------
@@ -375,5 +384,8 @@ export const aiProviderHealth = pgTable(
     lastError: text("last_error"),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  () => [staffSelectPolicy("ai_provider_health"), serviceRoleBypassPolicy("ai_provider_health")],
+  // Matches `canDisableAi` in `src/lib/auth/permissions.ts` —
+  // administrator-only; the app's own AI-availability check reads this
+  // through the privileged server connection, not direct REST.
+  () => [staffSelectPolicy("ai_provider_health", ["administrator"]), serviceRoleBypassPolicy("ai_provider_health")],
 ).enableRLS();

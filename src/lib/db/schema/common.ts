@@ -1,5 +1,23 @@
 import { sql, type SQL } from "drizzle-orm";
 import { pgPolicy, timestamp, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
+
+/**
+ * Builds a `text[]` array literal for use inside a policy's `using`/`withCheck`
+ * SQL. Policy definitions are DDL, not parameterized queries, so `sql`'s usual
+ * `${value}` bind-parameter interpolation (which renders as `$1`, `$2`, ...)
+ * would emit invalid, non-executable placeholders into the migration file.
+ * `roles` here is always a small, fixed set of our own `staff_role` enum
+ * values passed by call sites in this codebase (never external input), so a
+ * strict allowlist check is enough to inline them as safe SQL literals.
+ */
+function staffRolesArrayLiteral(roles: readonly string[]): SQL {
+  for (const role of roles) {
+    if (!/^[a-z_]+$/.test(role)) {
+      throw new Error(`Invalid staff role for RLS policy literal: ${role}`);
+    }
+  }
+  return sql.raw(`ARRAY[${roles.map((role) => `'${role}'`).join(", ")}]::text[]`);
+}
 import { anonRole, authenticatedRole, serviceRoleRole } from "./roles";
 
 /** Standard collision-resistant primary key: server-generated UUID v4. */
@@ -40,13 +58,50 @@ export function serviceRoleBypassPolicy(tableName: string) {
   });
 }
 
-/** SELECT policy for reference/catalogue data any staff member (any role) may read. */
-export function staffSelectPolicy(tableName: string) {
+/**
+ * SELECT policy for reference/catalogue data staff may read. `roles`
+ * defaults to `undefined`/omitted, meaning "any active staff role
+ * assignment" — the original, broad behavior every non-sensitive
+ * staff-shared table still uses. Pass an explicit role list (matching
+ * `app.is_staff`'s own `roles text[]` parameter) to narrow a specific,
+ * more sensitive table to only the roles that actually need it — e.g.
+ * `staffSelectPolicy("audit_log", ["administrator"])`. This mirrors the
+ * app layer's own `can*` permission checks in `src/lib/auth/permissions.ts`
+ * so RLS (defense-in-depth against direct Supabase REST access, never this
+ * app's own authorization mechanism — see
+ * `docs/checkpoint-2/checkpoint-2-architecture.md` §4) doesn't stay more
+ * permissive than the UI it's meant to back up.
+ */
+export function staffSelectPolicy(tableName: string, roles?: readonly string[]) {
+  const rolesLiteral = roles ? staffRolesArrayLiteral(roles) : sql`NULL`;
   return pgPolicy(`${tableName}_select_staff`, {
     as: "permissive",
     for: "select",
     to: authenticatedRole,
-    using: sql`app.is_staff(auth.uid(), NULL)`,
+    using: sql`app.is_staff(auth.uid(), ${rolesLiteral})`,
+  });
+}
+
+/**
+ * SELECT policy for a table where a staff member may always see their own
+ * row (`ownerColumn = auth.uid()`), and additionally any row if they hold
+ * one of `adminRoles` — for tables like `staff_profiles`/
+ * `staff_role_assignments` where "the whole directory" is more than a
+ * baseline reviewer needs, but "nothing about anyone else at all" would
+ * break a staff member seeing their own name/role.
+ */
+export function staffSelectOwnOrRolePolicy(tableName: string, ownerColumn: AnyPgColumn, adminRoles: readonly string[]) {
+  const rolesLiteral = staffRolesArrayLiteral(adminRoles);
+  // Reuses the `_select_staff` policy name (same as `staffSelectPolicy`) so
+  // drizzle-kit's diff sees an in-place `ALTER POLICY` on this table rather
+  // than a drop+create it would otherwise ask us to disambiguate as a
+  // rename (drizzle-kit's interactive prompt for that needs a TTY we don't
+  // have in CI/non-interactive shells).
+  return pgPolicy(`${tableName}_select_staff`, {
+    as: "permissive",
+    for: "select",
+    to: authenticatedRole,
+    using: sql`${ownerColumn} = auth.uid() OR app.is_staff(auth.uid(), ${rolesLiteral})`,
   });
 }
 

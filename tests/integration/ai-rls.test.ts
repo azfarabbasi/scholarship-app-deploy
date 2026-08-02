@@ -1,13 +1,21 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import * as schema from "../../src/lib/db/schema";
-import { asRole, client, db, expectRejectionMatching, uniqueSuffix } from "./helpers";
+import { asRole, client, db, expectRejectionMatching, publishOpportunityForTest, uniqueSuffix } from "./helpers";
 
 describe("AI assistant row-level security", () => {
   const suffix = uniqueSuffix();
   const studentA = "77777777-7777-4777-a777-777777777777";
   const studentB = "88888888-8888-4888-a888-888888888888";
   const staffOnlyId = "99999999-9999-4999-a999-999999999999";
+  // A second staff identity, distinct from staffOnlyId — the stricter
+  // publish gate (0010_publication_integrity_actors.sql) requires an
+  // independently confirmed verification record and review assignment.
+  const approverId = "66666666-6666-4666-a666-666666666666";
+  // Administrator identity used to prove `ai_safety_events`/`ai_provider_health`
+  // narrowing (0011_narrow_staff_rls_policies.sql): a reviewer must NOT be able
+  // to read these via direct Supabase REST, but an administrator must.
+  const administratorId = "55555555-5555-4555-a555-555555555555";
 
   let opportunityId: string;
   let approvedDocumentId: string;
@@ -36,6 +44,14 @@ describe("AI assistant row-level security", () => {
       .insert(schema.staffProfiles)
       .values({ id: staffOnlyId, email: `ai-staff-only-${suffix}@example.test`, displayName: "Staff Only", status: "active" });
     await db.insert(schema.staffRoleAssignments).values({ staffProfileId: staffOnlyId, role: "reviewer" });
+    await db
+      .insert(schema.staffProfiles)
+      .values({ id: approverId, email: `ai-approver-${suffix}@example.test`, displayName: "Approver", status: "active" });
+    await db.insert(schema.staffRoleAssignments).values({ staffProfileId: approverId, role: "senior_reviewer" });
+    await db
+      .insert(schema.staffProfiles)
+      .values({ id: administratorId, email: `ai-admin-${suffix}@example.test`, displayName: "Administrator", status: "active" });
+    await db.insert(schema.staffRoleAssignments).values({ staffProfileId: administratorId, role: "administrator" });
 
     const [opportunity] = await db
       .insert(schema.opportunities)
@@ -68,10 +84,13 @@ describe("AI assistant row-level security", () => {
       .insert(schema.opportunityVersions)
       .values({ opportunityId, versionNumber: 1, snapshot: {}, authorStaffProfileId: staffOnlyId })
       .returning();
-    await db
-      .update(schema.opportunities)
-      .set({ status: "published", publishedAt: new Date(), currentApprovedVersionId: version.id })
-      .where(eq(schema.opportunities.id, opportunityId));
+    await publishOpportunityForTest({
+      opportunityId,
+      officialSourceId: officialSource.id,
+      versionId: version.id,
+      reviewerStaffProfileId: staffOnlyId,
+      approverStaffProfileId: approverId,
+    });
 
     await db
       .insert(schema.studentProfiles)
@@ -122,6 +141,10 @@ describe("AI assistant row-level security", () => {
     await db.delete(schema.opportunities).where(eq(schema.opportunities.id, opportunityId));
     await db.delete(schema.staffRoleAssignments).where(eq(schema.staffRoleAssignments.staffProfileId, staffOnlyId));
     await db.delete(schema.staffProfiles).where(eq(schema.staffProfiles.id, staffOnlyId));
+    await db.delete(schema.staffRoleAssignments).where(eq(schema.staffRoleAssignments.staffProfileId, approverId));
+    await db.delete(schema.staffProfiles).where(eq(schema.staffProfiles.id, approverId));
+    await db.delete(schema.staffRoleAssignments).where(eq(schema.staffRoleAssignments.staffProfileId, administratorId));
+    await db.delete(schema.staffProfiles).where(eq(schema.staffProfiles.id, administratorId));
     await db.delete(schema.studentProfiles).where(eq(schema.studentProfiles.id, studentA));
     await db.delete(schema.studentProfiles).where(eq(schema.studentProfiles.id, studentB));
     await client.end();
@@ -304,11 +327,32 @@ describe("AI assistant row-level security", () => {
       expect(rows).toHaveLength(0);
     });
 
-    it("staff can read ai_safety_events (RLS layer allows any staff role; the app layer further restricts to Administrator)", async () => {
+    it("a reviewer (non-administrator staff) cannot read ai_safety_events via direct REST (0011_narrow_staff_rls_policies.sql)", async () => {
       const [event] = await db.insert(schema.aiSafetyEvents).values({ kind: "prompt-injection", redactedSummary: "test" }).returning();
       const rows = await asRole("authenticated", staffOnlyId, (tx) => tx.select().from(schema.aiSafetyEvents).where(eq(schema.aiSafetyEvents.id, event.id)));
+      expect(rows).toHaveLength(0);
+      await db.delete(schema.aiSafetyEvents).where(eq(schema.aiSafetyEvents.id, event.id));
+    });
+
+    it("an administrator can read ai_safety_events", async () => {
+      const [event] = await db.insert(schema.aiSafetyEvents).values({ kind: "prompt-injection", redactedSummary: "test" }).returning();
+      const rows = await asRole("authenticated", administratorId, (tx) => tx.select().from(schema.aiSafetyEvents).where(eq(schema.aiSafetyEvents.id, event.id)));
       expect(rows).toHaveLength(1);
       await db.delete(schema.aiSafetyEvents).where(eq(schema.aiSafetyEvents.id, event.id));
+    });
+
+    it("a reviewer (non-administrator staff) cannot read ai_provider_health via direct REST", async () => {
+      const [row] = await db.insert(schema.aiProviderHealth).values({}).returning();
+      const rows = await asRole("authenticated", staffOnlyId, (tx) => tx.select().from(schema.aiProviderHealth).where(eq(schema.aiProviderHealth.id, row.id)));
+      expect(rows).toHaveLength(0);
+      await db.delete(schema.aiProviderHealth).where(eq(schema.aiProviderHealth.id, row.id));
+    });
+
+    it("an administrator can read ai_provider_health", async () => {
+      const [row] = await db.insert(schema.aiProviderHealth).values({}).returning();
+      const rows = await asRole("authenticated", administratorId, (tx) => tx.select().from(schema.aiProviderHealth).where(eq(schema.aiProviderHealth.id, row.id)));
+      expect(rows).toHaveLength(1);
+      await db.delete(schema.aiProviderHealth).where(eq(schema.aiProviderHealth.id, row.id));
     });
   });
 });

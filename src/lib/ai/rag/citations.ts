@@ -13,14 +13,23 @@ export interface CitationDraft {
 }
 
 /**
- * Every source/structured-fact actually placed in the prompt becomes a
- * citation candidate — see `docs/checkpoint-5/checkpoint-5-architecture.md`
- * for why Checkpoint 5 cites "everything retrieved" rather than attempting
- * fine-grained sentence-to-source attribution: it is simpler, deterministic,
- * and never UNDER-cites a claim the provider made from this context.
+ * Builds citations for only the evidence the answer actually cited by id
+ * (see `src/lib/ai/safety/verify-citations.ts`) — never "everything
+ * retrieved" regardless of use. Every source/fact passed to
+ * `buildPromptMessages` was assigned an `evidenceId`
+ * (`src/lib/ai/rag/evidence.ts`); `citedEvidenceIds` is the set the
+ * post-generation citation check confirmed the model actually referenced
+ * with a real, non-hallucinated id. Passing `undefined` (used only by
+ * deterministic fast-path answers that bypass the provider entirely, and
+ * therefore have no model-emitted citation tags to check) falls back to
+ * citing everything retrieved for that fast path, since in that case the
+ * "evidence" IS the entire, deterministically-derived context.
  */
-export function buildCitations(retrieval: RetrievalResult): CitationDraft[] {
-  const fromSources: CitationDraft[] = retrieval.sources.map((source) => ({
+export function buildCitations(retrieval: RetrievalResult, citedEvidenceIds?: ReadonlySet<string>): CitationDraft[] {
+  const sources = citedEvidenceIds ? retrieval.sources.filter((source) => source.evidenceId && citedEvidenceIds.has(source.evidenceId)) : retrieval.sources;
+  const facts = citedEvidenceIds ? retrieval.structuredFacts.filter((fact) => fact.evidenceId && citedEvidenceIds.has(fact.evidenceId)) : retrieval.structuredFacts;
+
+  const fromSources: CitationDraft[] = sources.map((source) => ({
     citationType: source.citationType,
     opportunityId: source.opportunityId,
     officialSourceId: source.officialSourceId,
@@ -31,7 +40,7 @@ export function buildCitations(retrieval: RetrievalResult): CitationDraft[] {
     checkedAt: source.checkedAt,
   }));
 
-  const fromFacts: CitationDraft[] = retrieval.structuredFacts.map((fact) => ({
+  const fromFacts: CitationDraft[] = facts.map((fact) => ({
     citationType: fact.citationType,
     opportunityId: fact.opportunityId,
     officialSourceId: null,

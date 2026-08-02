@@ -26,6 +26,8 @@ const aiEnvSchema = z.object({
   GROQ_MODEL: z.string().min(1).default("llama-3.1-8b-instant"),
   AI_MAX_INPUT_TOKENS: z.coerce.number().int().positive().max(32_000).default(2000),
   AI_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().max(4000).default(700),
+  /** Ceiling on the FULL assembled prompt (system rules + every retrieved source/fact + the question), distinct from AI_MAX_INPUT_TOKENS (the user's own question only) — retrieved context size isn't bounded by the user's input length. */
+  AI_MAX_PROMPT_TOKENS: z.coerce.number().int().positive().max(32_000).default(6000),
   AI_DAILY_GUEST_LIMIT: z.coerce.number().int().nonnegative().default(10),
   AI_DAILY_USER_LIMIT: z.coerce.number().int().nonnegative().default(30),
   AI_LOG_RETENTION_DAYS: z.coerce.number().int().positive().max(365).default(30),
@@ -38,6 +40,7 @@ export interface AiConfig {
   groqModel: string;
   maxInputTokens: number;
   maxOutputTokens: number;
+  maxPromptTokens: number;
   dailyGuestLimit: number;
   dailyUserLimit: number;
   logRetentionDays: number;
@@ -65,6 +68,7 @@ export function getAiConfig(): AiConfig {
     GROQ_MODEL: process.env.GROQ_MODEL,
     AI_MAX_INPUT_TOKENS: process.env.AI_MAX_INPUT_TOKENS,
     AI_MAX_OUTPUT_TOKENS: process.env.AI_MAX_OUTPUT_TOKENS,
+    AI_MAX_PROMPT_TOKENS: process.env.AI_MAX_PROMPT_TOKENS,
     AI_DAILY_GUEST_LIMIT: process.env.AI_DAILY_GUEST_LIMIT,
     AI_DAILY_USER_LIMIT: process.env.AI_DAILY_USER_LIMIT,
     AI_LOG_RETENTION_DAYS: process.env.AI_LOG_RETENTION_DAYS,
@@ -81,6 +85,7 @@ export function getAiConfig(): AiConfig {
     groqModel: data.GROQ_MODEL,
     maxInputTokens: data.AI_MAX_INPUT_TOKENS,
     maxOutputTokens: data.AI_MAX_OUTPUT_TOKENS,
+    maxPromptTokens: data.AI_MAX_PROMPT_TOKENS,
     dailyGuestLimit: data.AI_DAILY_GUEST_LIMIT,
     dailyUserLimit: data.AI_DAILY_USER_LIMIT,
     logRetentionDays: data.AI_LOG_RETENTION_DAYS,

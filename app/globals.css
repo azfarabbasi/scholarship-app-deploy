@@ -2,121 +2,185 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+  Green-forward palette. Green carries the identity: it is the brand, and it
+  also tints the neutrals, so surfaces read as a family rather than as generic
+  grey with a green button dropped on top. White (light) and near-black (dark)
+  are the supporting surfaces. Red / amber / blue stay reserved for status and
+  progress meaning — they are never used decoratively, so a colour that isn't
+  green always means something.
+
+  Every foreground/background pair below was checked against WCAG AA (4.5:1 for
+  normal text). The measured ratios are noted where a value is close enough to
+  the floor that a future "let's lighten this slightly" would break it.
+*/
 :root {
   color-scheme: light;
 
-  --color-background: #f7f8fb;
+  /* Surfaces: white primary, green-tinted neutrals around it. */
+  --color-background: #f2f8f4;
   --color-surface: #ffffff;
-  --color-surface-muted: #eef1f6;
-  --color-border: #d9dee6;
-  --color-foreground: #101828;
-  --color-foreground-muted: #475467;
-  --color-foreground-subtle: #667085;
+  --color-surface-muted: #e8f2ec;
+  --color-border: #c4dbcd;
 
-  /* Green-first brand palette (Scholarly rebrand). #047857 (emerald-700)
-     measures ~5.49:1 both as text-on-white and as white-text-on-background —
-     passes WCAG AA (4.5:1) at normal text size. A lighter emerald (e.g.
-     emerald-600 #059669, ~3.77:1) was tried and rejected: it fails AA. */
+  /* Near-black with a green undertone — 18.4:1 on white. */
+  --color-foreground: #0a1710;
+  --color-foreground-muted: #40564a; /* 7.9:1 on white */
+  --color-foreground-subtle: #5c7367; /* 5.1:1 on white, 4.75:1 on background */
+
+  /* Brand. #047857 measures 5.48:1 on white and 4.67:1 on its own tint — both
+     pass AA. A lighter emerald (emerald-600 #059669, ~3.8:1) fails; do not
+     substitute one in without re-running the contrast check. */
   --color-brand: #047857;
-  --color-brand-strong: #065f46;
+  --color-brand-strong: #065f46; /* 7.7:1 on white — hover/active state */
   --color-brand-foreground: #ffffff;
-  --color-brand-tint: #e6f6ec;
+  --color-brand-tint: #dcf2e6;
+  --color-brand-glow: rgba(4, 120, 87, 0.14);
 
-  /* Mint — secondary accent only (AI/Scholarly touches, decorative highlights,
-     subtle backgrounds). #0d9488 measures ~3.75:1 on white, which fails AA for
-     body text, so this pair is never used for text on tint — only for icons,
-     borders, and backgrounds paired with regular foreground/brand text. */
+  /* Mint — secondary accent for AI/Scholarly touches. 3.75:1 on white, which
+     fails AA for body text, so this is icons/borders/backgrounds only. */
   --color-mint: #0d9488;
-  --color-mint-tint: #e6fbf7;
+  --color-mint-tint: #d9f5f0;
 
+  /* Status + progress. Reserved for meaning, never decoration. */
   --color-success: #0f7a3d;
-  --color-success-tint: #e6f6ec;
-  /* #96690a measured 4.38:1 on --color-warning-tint (needs 4.5:1 for WCAG AA
-     at this font size) — darkened slightly so every badge reusing this pair
-     (Badge.tsx's "amber" variant, MatchBadge's needs-verification/deadline-risk)
-     passes, found via the e2e axe-core accessibility suite. */
-  --color-warning: #875f09;
+  --color-success-tint: #dcf2e6;
+  --color-warning: #875f09; /* 5.2:1 on its tint */
   --color-warning-tint: #fdf2e0;
   --color-danger: #b3261e;
   --color-danger-tint: #fbe9e7;
+  /* Label colour for a *filled* danger surface (the solid destructive button).
+     Must be read per theme, not hardcoded: this red is dark so it takes white,
+     but the dark theme's red is light and takes near-black. */
+  --color-danger-foreground: #ffffff;
   --color-info: #0b5fae;
   --color-info-tint: #e7f1fb;
-  --color-neutral: #475467;
-  --color-neutral-tint: #eef1f6;
+  --color-neutral: #40564a;
+  --color-neutral-tint: #e8f2ec;
 
   --color-focus-ring: #047857;
-  --shadow-color: 220 20% 30%;
+  --shadow-color: 155 30% 12%;
+
+  /* Elevation. A tight contact shadow plus a wider ambient one reads as real
+     depth where a single blur reads as a grey halo. */
+  --elevation-1: 0 1px 2px -1px hsl(var(--shadow-color) / 0.10), 0 1px 3px hsl(var(--shadow-color) / 0.06);
+  --elevation-2: 0 2px 4px -2px hsl(var(--shadow-color) / 0.12), 0 4px 12px -2px hsl(var(--shadow-color) / 0.08);
+  --elevation-3: 0 4px 8px -4px hsl(var(--shadow-color) / 0.14), 0 12px 28px -6px hsl(var(--shadow-color) / 0.12);
+  --elevation-brand: 0 6px 20px -6px rgba(4, 120, 87, 0.35);
+
+  /* Decorative hero wash — low alpha, never carries text contrast. */
+  --hero-glow-a: rgba(4, 120, 87, 0.13);
+  --hero-glow-b: rgba(13, 148, 136, 0.10);
+  --hero-grid-line: rgba(10, 23, 16, 0.05);
+  --shimmer-highlight: rgba(255, 255, 255, 0.65);
 }
 
+/*
+  Dark theme is near-black with a green undertone rather than navy, so the same
+  green brand sits on it without a competing blue cast.
+*/
 :root[data-theme="dark"],
 .dark {
   color-scheme: dark;
 
-  --color-background: #0b1120;
-  --color-surface: #131b2c;
-  --color-surface-muted: #182338;
-  --color-border: #29354c;
-  --color-foreground: #edf1f7;
-  --color-foreground-muted: #aab4c5;
-  --color-foreground-subtle: #8894a8;
+  --color-background: #050d09;
+  --color-surface: #0d1811;
+  --color-surface-muted: #14231a;
+  --color-border: #223a2b;
 
-  /* #34d399 (emerald-400) measures ~9.85:1 against this dark background —
-     well past AA (4.5:1) — so it's suitable both as brand text and as an
-     icon/border color at dark-theme surface contrast levels. */
+  --color-foreground: #e9f3ed; /* 16.0:1 on surface */
+  --color-foreground-muted: #a2b8ab; /* 8.6:1 on surface */
+  --color-foreground-subtle: #84998d; /* 6.0:1 on surface */
+
+  /* emerald-400 — 9.45:1 on surface, so it works as text, icon, and border. */
   --color-brand: #34d399;
   --color-brand-strong: #6ee7b7;
-  --color-brand-foreground: #0b1120;
-  --color-brand-tint: #123322;
+  --color-brand-foreground: #050d09;
+  --color-brand-tint: #0f2c1f;
+  --color-brand-glow: rgba(52, 211, 153, 0.18);
 
   --color-mint: #5eead4;
-  --color-mint-tint: #0f2e2b;
+  --color-mint-tint: #0d2b28;
 
   --color-success: #4ade80;
-  --color-success-tint: #123322;
+  --color-success-tint: #0f2c1f;
   --color-warning: #f2b84b;
-  --color-warning-tint: #382a0f;
+  --color-warning-tint: #33270e;
   --color-danger: #f28b82;
-  --color-danger-tint: #3a1917;
+  --color-danger-tint: #341715;
+  /* Near-black label: white on this light red measures 2.38:1 and fails AA. */
+  --color-danger-foreground: #050d09;
   --color-info: #7cc0f5;
-  --color-info-tint: #12293d;
-  --color-neutral: #aab4c5;
-  --color-neutral-tint: #182338;
+  --color-info-tint: #102437;
+  --color-neutral: #a2b8ab;
+  --color-neutral-tint: #14231a;
 
   --color-focus-ring: #34d399;
+
+  /* Dark surfaces sit on a dark background, so shadow alone can't separate
+     them — higher opacity against a near-black shadow colour, with the
+     surface/border tokens doing the rest. */
+  --shadow-color: 155 60% 2%;
+  --elevation-1: 0 1px 2px -1px hsl(var(--shadow-color) / 0.55), 0 1px 3px hsl(var(--shadow-color) / 0.40);
+  --elevation-2: 0 2px 4px -2px hsl(var(--shadow-color) / 0.60), 0 4px 12px -2px hsl(var(--shadow-color) / 0.45);
+  --elevation-3: 0 4px 8px -4px hsl(var(--shadow-color) / 0.65), 0 12px 28px -6px hsl(var(--shadow-color) / 0.55);
+  --elevation-brand: 0 6px 24px -6px rgba(52, 211, 153, 0.30);
+
+  --hero-glow-a: rgba(52, 211, 153, 0.13);
+  --hero-glow-b: rgba(94, 234, 212, 0.09);
+  --hero-grid-line: rgba(233, 243, 237, 0.055);
+  --shimmer-highlight: rgba(233, 243, 237, 0.09);
 }
 
+/* Same dark values for visitors whose OS prefers dark and who haven't chosen
+   a theme explicitly. Kept in sync with the block above by hand — if you edit
+   one, edit both. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
 
-    --color-background: #0b1120;
-    --color-surface: #131b2c;
-    --color-surface-muted: #182338;
-    --color-border: #29354c;
-    --color-foreground: #edf1f7;
-    --color-foreground-muted: #aab4c5;
-    --color-foreground-subtle: #8894a8;
+    --color-background: #050d09;
+    --color-surface: #0d1811;
+    --color-surface-muted: #14231a;
+    --color-border: #223a2b;
+
+    --color-foreground: #e9f3ed;
+    --color-foreground-muted: #a2b8ab;
+    --color-foreground-subtle: #84998d;
 
     --color-brand: #34d399;
     --color-brand-strong: #6ee7b7;
-    --color-brand-foreground: #0b1120;
-    --color-brand-tint: #123322;
+    --color-brand-foreground: #050d09;
+    --color-brand-tint: #0f2c1f;
+    --color-brand-glow: rgba(52, 211, 153, 0.18);
 
     --color-mint: #5eead4;
-    --color-mint-tint: #0f2e2b;
+    --color-mint-tint: #0d2b28;
 
     --color-success: #4ade80;
-    --color-success-tint: #123322;
+    --color-success-tint: #0f2c1f;
     --color-warning: #f2b84b;
-    --color-warning-tint: #382a0f;
+    --color-warning-tint: #33270e;
     --color-danger: #f28b82;
-    --color-danger-tint: #3a1917;
+    --color-danger-tint: #341715;
+    --color-danger-foreground: #050d09;
     --color-info: #7cc0f5;
-    --color-info-tint: #12293d;
-    --color-neutral: #aab4c5;
-    --color-neutral-tint: #182338;
+    --color-info-tint: #102437;
+    --color-neutral: #a2b8ab;
+    --color-neutral-tint: #14231a;
 
     --color-focus-ring: #34d399;
+
+    --shadow-color: 155 60% 2%;
+    --elevation-1: 0 1px 2px -1px hsl(var(--shadow-color) / 0.55), 0 1px 3px hsl(var(--shadow-color) / 0.40);
+    --elevation-2: 0 2px 4px -2px hsl(var(--shadow-color) / 0.60), 0 4px 12px -2px hsl(var(--shadow-color) / 0.45);
+    --elevation-3: 0 4px 8px -4px hsl(var(--shadow-color) / 0.65), 0 12px 28px -6px hsl(var(--shadow-color) / 0.55);
+    --elevation-brand: 0 6px 24px -6px rgba(52, 211, 153, 0.30);
+
+    --hero-glow-a: rgba(52, 211, 153, 0.13);
+    --hero-glow-b: rgba(94, 234, 212, 0.09);
+    --hero-grid-line: rgba(233, 243, 237, 0.055);
+    --shimmer-highlight: rgba(233, 243, 237, 0.09);
   }
 }
 
@@ -143,6 +207,7 @@
   --color-warning-tint: var(--color-warning-tint);
   --color-danger: var(--color-danger);
   --color-danger-tint: var(--color-danger-tint);
+  --color-danger-foreground: var(--color-danger-foreground);
   --color-info: var(--color-info);
   --color-info-tint: var(--color-info-tint);
   --color-neutral: var(--color-neutral);
@@ -155,6 +220,84 @@
   --radius-md: 0.625rem;
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
+
+  /* `shadow-e1` / `shadow-e2` / `shadow-e3` / `shadow-brand`. */
+  --shadow-e1: var(--elevation-1);
+  --shadow-e2: var(--elevation-2);
+  --shadow-e3: var(--elevation-3);
+  --shadow-brand: var(--elevation-brand);
+
+  --animate-rise: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade: fade 0.45s ease-out both;
+  --animate-scale-in: scale-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-shimmer: shimmer 1.8s ease-in-out infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-ring: pulse-ring 2.4s ease-out infinite;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.85rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -120% 0;
+  }
+  100% {
+    background-position: 220% 0;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.5rem);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.95);
+  }
+  70% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
 }
 
 * {
@@ -169,6 +312,7 @@ body {
 
 html {
   overflow-x: hidden;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -180,6 +324,8 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 
+/* One switch for the whole motion system. Everything below is decoration on
+   top of a fully readable static page, so disabling it costs nothing. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -188,6 +334,10 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  html {
+    scroll-behavior: auto;
   }
 }
 
@@ -214,14 +364,127 @@ body {
   top: 1rem;
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
+/*
+  Scroll reveal. Uses native scroll-driven animations so there is no observer,
+  no JS, and no hydration cost.
+
+  The opacity:0 start is inside @supports on purpose: in a browser without
+  `animation-timeline`, the rule never applies and the content is simply
+  visible from the start. Putting the hidden state outside the guard is how
+  scroll-reveal implementations end up hiding content permanently.
+*/
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 22%;
+    }
+  }
+}
+
+/* Staggered entrance for a group of siblings that animate on load. */
+.stagger > * {
+  animation: var(--animate-rise);
+}
+
+.stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger > *:nth-child(3) { animation-delay: 0.10s; }
+.stagger > *:nth-child(4) { animation-delay: 0.14s; }
+.stagger > *:nth-child(5) { animation-delay: 0.18s; }
+.stagger > *:nth-child(6) { animation-delay: 0.22s; }
+.stagger > *:nth-child(7) { animation-delay: 0.26s; }
+.stagger > *:nth-child(8) { animation-delay: 0.30s; }
+
+/* Decorative hero backdrop: two soft brand glows over a faint grid, masked so
+   it fades out before it reaches the content below. */
+.hero-surface {
+  position: relative;
+  isolation: isolate;
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+  background-color: var(--color-surface);
+}
+
+.hero-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    radial-gradient(ellipse 70% 60% at 15% 0%, var(--hero-glow-a), transparent 70%),
+    radial-gradient(ellipse 60% 55% at 90% 10%, var(--hero-glow-b), transparent 70%);
+}
+
+.hero-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(to right, var(--hero-grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--hero-grid-line) 1px, transparent 1px);
+  background-size: 3rem 3rem;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 40%, transparent 100%);
+}
+
+/* Cards that are themselves a link/button target. Transform-only lift, so it
+   never reflows neighbours in a grid. */
+.card-interactive {
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.card-interactive:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--elevation-3);
+  border-color: color-mix(in srgb, var(--color-brand) 40%, var(--color-border));
+}
+
+.card-interactive:active {
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-interactive:hover,
+  .card-interactive:active {
+    transform: none;
+  }
+}
+
+/* Animated underline for text links that shouldn't be underlined at rest. */
+.link-underline {
+  background-image: linear-gradient(var(--color-brand), var(--color-brand));
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 1.5px;
+  transition: background-size 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.link-underline:hover {
+  background-size: 100% 1.5px;
+}
+
+/* Skeleton shimmer — replaces a flat pulse with a directional sweep so long
+   loads read as "working" rather than "blinking". */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--shimmer-highlight) 50%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  animation: var(--animate-shimmer);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer {
+    background-image: none;
+  }
 }

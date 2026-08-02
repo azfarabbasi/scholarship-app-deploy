@@ -1,4 +1,3 @@
-import { AlertOctagon } from "lucide-react";
 import type { ReactNode } from "react";
 import { Alert } from "@/components/ui/Alert";
 
@@ -8,8 +7,4 @@ export function ErrorState({ title, children }: { title: string; children?: Reac
       {children ?? "Something went wrong. Try reloading the page."}
     </Alert>
   );
-}
-
-export function ErrorIcon() {
-  return <AlertOctagon aria-hidden="true" />;
 }

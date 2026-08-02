@@ -71,6 +71,41 @@
       "when": 1784301285814,
       "tag": "0009_ai_owner_policy_fix",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1784351947599,
+      "tag": "0010_publication_integrity_actors",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784356556000,
+      "tag": "0011_narrow_staff_rls_policies",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784547915650,
+      "tag": "0012_bootstrap_admin_full_access",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1784548632259,
+      "tag": "0013_publication_integrity_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1785514875645,
+      "tag": "0014_marvelous_juggernaut",
+      "breakpoints": true
     }
   ]
 }

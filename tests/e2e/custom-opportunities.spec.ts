@@ -17,7 +17,16 @@ test.describe("Custom opportunities", () => {
     await page.getByRole("button", { name: "Create opportunity" }).click();
     await expect(page).toHaveURL(/\/opportunities\/community-leadership-grant/);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Community Leadership Grant");
-    await expect(page.getByText("Self-reported — not officially verified")).toBeVisible();
+    // OpportunityDetailBody renders VerificationBadge twice (a compact mobile
+    // layout and a desktop sidebar layout, toggled via responsive CSS, both
+    // present in the DOM at once) — scope to the first match rather than an
+    // unqualified getByText, which is ambiguous (Playwright strict mode).
+    // The badge shows the short label; the full sentence moved to its `title`
+    // (see VERIFICATION_PRESETS in badges.tsx). Assert both so this still fails
+    // if the long-form explanation is dropped rather than just relocated.
+    const selfAdded = page.getByText("Self-added").first();
+    await expect(selfAdded).toBeVisible();
+    await expect(page.locator('[title="Self-reported custom opportunity — not officially verified."]').first()).toBeAttached();
   });
 
   test("invalid custom opportunity input shows field-level errors and blocks submission", async ({ page }) => {

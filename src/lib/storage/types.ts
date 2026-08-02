@@ -319,6 +319,12 @@ export interface GuestAiConversationRecord {
   targetOpportunityId: string | null;
   title: string;
   createdAt: string;
+  /**
+   * ISO timestamp of when this chat was pinned, or null when unpinned.
+   * Optional because records written before pinning existed won't have the
+   * field — read it as `record.pinnedAt ?? null`.
+   */
+  pinnedAt?: string | null;
   updatedAt: string;
 }
 

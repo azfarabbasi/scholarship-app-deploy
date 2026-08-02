@@ -1,6 +1,19 @@
 import { headers } from "next/headers";
 
 /**
+ * The HTML parser looks for the literal byte sequence "</script" regardless
+ * of this tag's `type` attribute — a JSON string value containing that
+ * sequence (e.g. an opportunity title or source label someone entered) would
+ * otherwise close this element early and let whatever follows be parsed as
+ * raw HTML/script. Replacing every literal "<" with its `<` escape
+ * neutralises that without changing the JSON's meaning: `JSON.parse` decodes
+ * `<` back to "<" either way.
+ */
+export function escapeJsonLd(json: string): string {
+  return json.replace(/</g, "\\u003c");
+}
+
+/**
  * Renders a `<script type="application/ld+json">` block carrying the
  * current request's CSP nonce (see `src/lib/security/csp.ts`) — under this
  * app's nonce-based `script-src`, an inline script without a matching nonce
@@ -27,7 +40,7 @@ export async function JsonLd({ data }: { data: object }) {
       type="application/ld+json"
       nonce={nonce}
       suppressHydrationWarning
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: escapeJsonLd(JSON.stringify(data)) }}
     />
   );
 }

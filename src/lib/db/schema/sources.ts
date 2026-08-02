@@ -30,6 +30,10 @@ export const officialSources = pgTable(
     status: officialSourceStatusEnum("status").notNull().default("candidate"),
     lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }),
     lastSuccessfulAccessAt: timestamp("last_successful_access_at", { withTimezone: true }),
+    /** Who captured this source as a candidate. Null for legacy-imported rows with no tracked actor. */
+    createdByStaffProfileId: uuid("created_by_staff_profile_id").references(() => staffProfiles.id),
+    /** Who confirmed it to 'confirmed-official'/'active' — must differ from the creator (see the CHECK below). */
+    approvedByStaffProfileId: uuid("approved_by_staff_profile_id").references(() => staffProfiles.id),
     ...auditTimestamps,
   },
   (table) => [
@@ -44,6 +48,16 @@ export const officialSources = pgTable(
     check(
       "official_sources_confirmed_requires_publisher",
       sql`${table.status} = 'candidate' OR ${table.publisherOrganisationId} IS NOT NULL OR ${table.publisherProviderId} IS NOT NULL`,
+    ),
+    // Separation of duties: whoever captured a candidate source may never be
+    // the same person who confirms it — mirrors verification_records_no_self_approval.
+    check(
+      "official_sources_no_self_approval",
+      sql`${table.approvedByStaffProfileId} IS NULL OR ${table.createdByStaffProfileId} IS NULL OR ${table.approvedByStaffProfileId} <> ${table.createdByStaffProfileId} OR COALESCE(current_setting('app.bootstrap_admin_actor_id', true), '') = ${table.approvedByStaffProfileId}::text`,
+    ),
+    check(
+      "official_sources_confirmed_requires_approver",
+      sql`${table.status} = 'candidate' OR ${table.createdByStaffProfileId} IS NULL OR ${table.approvedByStaffProfileId} IS NOT NULL`,
     ),
     publicSelectPolicy("official_sources", sql`${table.status} NOT IN ('candidate', 'archived')`),
     staffSelectPolicy("official_sources"),
@@ -99,7 +113,11 @@ export const verificationRecords = pgTable(
   (table) => [
     check(
       "verification_records_no_self_approval",
-      sql`${table.approvedByStaffProfileId} IS NULL OR ${table.approvedByStaffProfileId} <> ${table.reviewerStaffProfileId}`,
+      sql`${table.approvedByStaffProfileId} IS NULL OR ${table.approvedByStaffProfileId} <> ${table.reviewerStaffProfileId} OR COALESCE(current_setting('app.bootstrap_admin_actor_id', true), '') = ${table.approvedByStaffProfileId}::text`,
+    ),
+    check(
+      "verification_records_verified_requires_approver",
+      sql`${table.status} <> 'verified' OR ${table.approvedByStaffProfileId} IS NOT NULL`,
     ),
     staffSelectPolicy("verification_records"),
     serviceRoleBypassPolicy("verification_records"),
@@ -144,7 +162,20 @@ export const sourceEvidence = pgTable(
     capturedByStaffProfileId: uuid("captured_by_staff_profile_id")
       .notNull()
       .references(() => staffProfiles.id),
+    /** Who accepted this evidence ('captured' -> 'accepted') — must differ from whoever captured it. */
+    approvedByStaffProfileId: uuid("approved_by_staff_profile_id").references(() => staffProfiles.id),
     supersededAt: timestamp("superseded_at", { withTimezone: true }),
   },
-  () => [staffSelectPolicy("source_evidence"), serviceRoleBypassPolicy("source_evidence")],
+  (table) => [
+    check(
+      "source_evidence_no_self_approval",
+      sql`${table.approvedByStaffProfileId} IS NULL OR ${table.approvedByStaffProfileId} <> ${table.capturedByStaffProfileId} OR COALESCE(current_setting('app.bootstrap_admin_actor_id', true), '') = ${table.approvedByStaffProfileId}::text`,
+    ),
+    check(
+      "source_evidence_accepted_requires_approver",
+      sql`${table.status} <> 'accepted' OR ${table.approvedByStaffProfileId} IS NOT NULL`,
+    ),
+    staffSelectPolicy("source_evidence"),
+    serviceRoleBypassPolicy("source_evidence"),
+  ],
 ).enableRLS();

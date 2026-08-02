@@ -43,6 +43,16 @@ describe("permission matrix", () => {
     expect(canApprove(["administrator"], "staff-1", "staff-2")).toBe(false);
   });
 
+  it("allows only an explicitly verified Administrator to bypass separation of duties", () => {
+    const bypass = { bypassSeparationOfDuties: true };
+    expect(canReview(["administrator"], "staff-1", "staff-1", bypass)).toBe(true);
+    expect(canApprove(["administrator"], "staff-1", "staff-1", bypass)).toBe(true);
+    expect(canReview(["administrator"], "staff-1", "staff-1")).toBe(false);
+    expect(canApprove(["administrator"], "staff-1", "staff-1")).toBe(false);
+    expect(canReview(["reviewer"], "staff-1", "staff-1", bypass)).toBe(false);
+    expect(canApprove(["senior_reviewer"], "staff-1", "staff-1", bypass)).toBe(false);
+  });
+
   it("an administrator override requires both the role and a non-empty reason", () => {
     expect(isAdministratorOverride(["administrator"], "documented reason")).toBe(true);
     expect(isAdministratorOverride(["administrator"], "")).toBe(false);

@@ -1,11 +1,17 @@
 import type { HTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
-export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+export interface CardProps extends HTMLAttributes<HTMLDivElement> {
+  /** Adds a hover lift. Only for cards that are themselves a link/button target. */
+  interactive?: boolean;
+}
+
+export function Card({ className, interactive, ...props }: CardProps) {
   return (
     <div
       className={cn(
-        "rounded-lg border border-border bg-surface shadow-sm",
+        "rounded-lg border border-border bg-surface shadow-e1",
+        interactive && "card-interactive",
         className,
       )}
       {...props}

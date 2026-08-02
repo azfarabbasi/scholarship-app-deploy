@@ -118,14 +118,6 @@ export async function updateAiSourceDocument(id: string, patch: UpdateAiSourceDo
   return { ok: true };
 }
 
-async function syncChunkStatus(documentId: string, status: AiSourceStatus, opportunityId: string | null, officialSourceId: string | null) {
-  const db = getDb();
-  await db
-    .update(schema.aiSourceChunks)
-    .set({ status, opportunityId, officialSourceId, updatedAt: new Date() })
-    .where(eq(schema.aiSourceChunks.documentId, documentId));
-}
-
 export async function setAiSourceDocumentStatus(id: string, status: AiSourceStatus, staleReason?: string): Promise<ActionResult> {
   const requiresApproval = status === "approved" || status === "rejected" || status === "stale";
   const session = requiresApproval ? await requireApproveSession() : await requireManageSession();
@@ -135,17 +127,29 @@ export async function setAiSourceDocumentStatus(id: string, status: AiSourceStat
   const [existing] = await db.select().from(schema.aiSourceDocuments).where(eq(schema.aiSourceDocuments.id, id)).limit(1);
   if (!existing) return { ok: false, error: "Source document not found." };
 
-  await db
-    .update(schema.aiSourceDocuments)
-    .set({
-      status,
-      staleReason: status === "stale" ? (staleReason?.trim() ?? null) : null,
-      approvedByStaffProfileId: status === "approved" ? session.staffProfileId : existing.approvedByStaffProfileId,
-      updatedAt: new Date(),
-    })
-    .where(eq(schema.aiSourceDocuments.id, id));
+  // The document's own status and its chunks' status must never fall out of
+  // sync — retrieval (`src/lib/ai/rag/retrieval.ts`) filters chunks by their
+  // OWN `status` column, not the parent document's, so a crash or error
+  // between two separate, non-transactional writes here could leave
+  // rejected/stale chunks retrievable (document flipped, chunks didn't) or
+  // approved content unreachable (document flipped, chunks stuck on draft)
+  // until someone notices and re-triggers a rebuild.
+  await db.transaction(async (tx) => {
+    await tx
+      .update(schema.aiSourceDocuments)
+      .set({
+        status,
+        staleReason: status === "stale" ? (staleReason?.trim() ?? null) : null,
+        approvedByStaffProfileId: status === "approved" ? session.staffProfileId : existing.approvedByStaffProfileId,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.aiSourceDocuments.id, id));
 
-  await syncChunkStatus(id, status, existing.opportunityId, existing.officialSourceId);
+    await tx
+      .update(schema.aiSourceChunks)
+      .set({ status, opportunityId: existing.opportunityId, officialSourceId: existing.officialSourceId, updatedAt: new Date() })
+      .where(eq(schema.aiSourceChunks.documentId, id));
+  });
 
   await recordAuditEvent(db, {
     actorStaffProfileId: session.staffProfileId,

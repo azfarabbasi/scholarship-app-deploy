@@ -28,5 +28,7 @@ export const auditLog = pgTable(
     retentionExpiresAt: timestamp("retention_expires_at", { withTimezone: true }),
     status: auditLogStatusEnum("status").notNull().default("active"),
   },
-  () => [staffSelectPolicy("audit_log"), serviceRoleBypassPolicy("audit_log")],
+  // Matches `canViewFullAuditLog` in `src/lib/auth/permissions.ts` —
+  // administrator-only, even though the summaries are pre-redacted.
+  () => [staffSelectPolicy("audit_log", ["administrator"]), serviceRoleBypassPolicy("audit_log")],
 ).enableRLS();

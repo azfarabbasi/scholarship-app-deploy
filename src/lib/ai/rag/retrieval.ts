@@ -4,8 +4,45 @@ import { getDb } from "@/lib/db/client";
 import { getPublishedOpportunities } from "@/lib/catalogue/db-repository";
 import type { CatalogueOpportunity } from "@/lib/catalogue/types";
 import type { MatchResult } from "@/lib/matching/types";
+import { estimateTokenCount } from "@/lib/ai/token-estimate";
 import { buildMatchStructuredFact, buildOpportunityStructuredFacts } from "./structured-facts";
-import type { RetrievedChunkSource, RetrievalResult } from "./types";
+import { EMPTY_RETRIEVAL_RESULT, type RetrievedChunkSource, type RetrievalResult, type StructuredFact } from "./types";
+
+/** Rough per-item overhead (tag name, attributes, id) added on top of a source/fact's own text when estimating its prompt-token cost. */
+const PER_ITEM_TOKEN_OVERHEAD = 20;
+
+/**
+ * Bounds the *total* context assembled into the prompt, independent of the
+ * user's own question length (`AiConfig.maxInputTokens` only bounds that).
+ * Chunk count is already capped by `maxChunks`/`DEFAULT_MAX_CHUNKS` and each
+ * chunk's own length by `chunking.ts`'s `maxChars`, but structured facts have
+ * no such ceiling — a caller naming many opportunities (e.g. a comparison or
+ * workspace-planning question) generates one set of facts per opportunity,
+ * which is otherwise unbounded. Sources are already ordered by relevance
+ * (`rank desc` in `searchApprovedChunks`) and facts are processed in the
+ * caller-supplied order, so keeping items front-to-back until the budget is
+ * spent keeps the highest-priority material.
+ */
+export function trimRetrievalToTokenBudget(retrieval: RetrievalResult, maxTokens: number): RetrievalResult {
+  let used = 0;
+  const sources: RetrievedChunkSource[] = [];
+  for (const source of retrieval.sources) {
+    const cost = estimateTokenCount(source.text) + PER_ITEM_TOKEN_OVERHEAD;
+    if (used + cost > maxTokens) break;
+    sources.push(source);
+    used += cost;
+  }
+
+  const structuredFacts: StructuredFact[] = [];
+  for (const fact of retrieval.structuredFacts) {
+    const cost = estimateTokenCount(Object.values(fact.attributes).join(" ")) + PER_ITEM_TOKEN_OVERHEAD;
+    if (used + cost > maxTokens) break;
+    structuredFacts.push(fact);
+    used += cost;
+  }
+
+  return { sources, structuredFacts };
+}
 
 /**
  * The RAG retrieval boundary described in
@@ -33,7 +70,15 @@ interface ChunkRow {
   official_url: string | null;
   title: string;
   text: string;
-  checked_at: Date | null;
+  /**
+   * A `coalesce(...)` of two timestamp columns, not a plain column
+   * reference — `postgres-js`'s raw `db.execute()` (unlike the typed query
+   * builder) doesn't reliably parse a computed expression's result back into
+   * a JS `Date`, so this can arrive as either a `Date` or an ISO string
+   * depending on environment. `toChunkSource` below normalizes it with
+   * `new Date(...)`, which accepts both.
+   */
+  checked_at: Date | string | null;
   rank: number;
 }
 
@@ -49,7 +94,7 @@ function toChunkSource(row: ChunkRow): RetrievedChunkSource {
     officialUrl: row.official_url,
     title: row.title,
     text: row.text,
-    checkedAt: row.checked_at ? row.checked_at.toISOString() : null,
+    checkedAt: row.checked_at ? new Date(row.checked_at).toISOString() : null,
     verificationStatus: row.official_source_id ? "verified-source-linked" : "unverified",
     rank: Number(row.rank),
   };
@@ -146,12 +191,26 @@ function resolveOpportunities(all: CatalogueOpportunity[], slugs: string[]): Cat
  * caller named. `matchResults` (when supplied) adds one additional
  * `match-explanation` fact per named opportunity — the assistant may explain
  * that result, never recompute or override it.
+ *
+ * `opportunitySlugs` has two distinct empty-ish states that must never be
+ * confused: omitted/`[]` means "no scope requested — search across all
+ * approved public chunks" (the general-assistant case), while one or more
+ * slugs that resolve to zero real published opportunities means "an invalid
+ * scope was requested" (e.g. a stale, mistyped, or tampered-with slug) — that
+ * must return an empty result, never silently fall back to the unscoped
+ * global search, which would otherwise leak unrelated opportunities' content
+ * into an answer the caller framed as being about one specific (bogus) one.
  */
 export async function retrieveForQuestion(options: RetrieveOptions): Promise<RetrievalResult> {
   const { question, opportunitySlugs = [], matchResults, maxChunks = DEFAULT_MAX_CHUNKS } = options;
 
   const allOpportunities = await getPublishedOpportunities();
   const targetOpportunities = resolveOpportunities(allOpportunities, opportunitySlugs);
+
+  if (opportunitySlugs.length > 0 && targetOpportunities.length === 0) {
+    return EMPTY_RETRIEVAL_RESULT;
+  }
+
   const opportunityIds = targetOpportunities.map((o) => o.id);
 
   const [sources] = await Promise.all([searchApprovedChunks(question, opportunityIds, maxChunks)]);

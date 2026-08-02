@@ -25,6 +25,19 @@ export default defineConfig({
       name: "mobile",
       use: { ...devices["Pixel 7"] },
     },
+    /*
+     * Dark theme runs the accessibility suite only. Both projects above use
+     * Playwright's default `colorScheme: "light"`, so for a long time nothing
+     * ever exercised the dark palette — which hid a real contrast failure (the
+     * solid danger button rendered white-on-light-red at 2.38:1, well under
+     * AA). The palette has two independent sets of colour tokens; testing one
+     * of them is testing half the product.
+     */
+    {
+      name: "dark-a11y",
+      testMatch: /accessibility\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], colorScheme: "dark" },
+    },
   ],
   webServer: process.env.PLAYWRIGHT_SKIP_WEBSERVER
     ? undefined

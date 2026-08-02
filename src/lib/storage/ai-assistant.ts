@@ -11,10 +11,49 @@ import type { AiConversationScope, GuestAiConversationRecord, GuestAiMessageReco
  * migration flow this follows).
  */
 
+/**
+ * Pinned first (most recently pinned first), then the rest by recency —
+ * the same ordering the signed-in `getMyAiConversations` produces in SQL, so
+ * the sidebar looks identical whether history lives locally or in the cloud.
+ */
 export async function getAllGuestAiConversations(): Promise<GuestAiConversationRecord[]> {
   const db = await getDb();
   const all = await db.getAll("aiConversations");
-  return all.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return all.sort((a, b) => {
+    const pinA = a.pinnedAt ?? null;
+    const pinB = b.pinnedAt ?? null;
+    if (pinA && pinB) return pinB.localeCompare(pinA);
+    if (pinA) return -1;
+    if (pinB) return 1;
+    return b.updatedAt.localeCompare(a.updatedAt);
+  });
+}
+
+export async function renameGuestAiConversation(id: string, title: string): Promise<void> {
+  const trimmed = title.trim();
+  if (trimmed.length === 0) return;
+  const db = await getDb();
+  const conversation = await db.get("aiConversations", id);
+  if (!conversation) return;
+  await db.put("aiConversations", {
+    ...conversation,
+    title: trimmed.slice(0, 120),
+    updatedAt: new Date().toISOString(),
+  });
+  emitStorageChange("aiConversations");
+}
+
+export async function setGuestAiConversationPinned(id: string, pinned: boolean): Promise<void> {
+  const db = await getDb();
+  const conversation = await db.get("aiConversations", id);
+  if (!conversation) return;
+  // `updatedAt` untouched — pinning isn't a content edit, and bumping it would
+  // reorder the unpinned list as soon as the chat is unpinned again.
+  await db.put("aiConversations", {
+    ...conversation,
+    pinnedAt: pinned ? new Date().toISOString() : null,
+  });
+  emitStorageChange("aiConversations");
 }
 
 export async function getGuestAiConversation(id: string): Promise<GuestAiConversationRecord | undefined> {

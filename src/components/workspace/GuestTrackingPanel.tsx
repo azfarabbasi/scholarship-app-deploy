@@ -159,7 +159,8 @@ export function GuestTrackingPanel({ opportunityId, title }: { opportunityId: st
             Checklist{" "}
             {checklist.length > 0 ? (
               <span className="font-normal text-foreground-subtle">
-                ({progress.done}/{progress.total} complete)
+                ({progress.done}/{progress.total}{" "}
+                complete)
               </span>
             ) : null}
           </Label>

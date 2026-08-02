@@ -22,6 +22,12 @@ function exists(relativePath: string): boolean {
   return existsSync(path.join(root, relativePath));
 }
 
+/** See the identical helper in validate-checkpoint3.ts for why "at least N", not an exact match. */
+function reviewedForCheckpointAtLeast(source: string, minVersion: number): boolean {
+  const versions = [...source.matchAll(/Checkpoint (\d+)/gi)].map((m) => Number(m[1]));
+  return versions.some((version) => version >= minVersion);
+}
+
 function listFilesRecursive(relativeDir: string): string[] {
   const absoluteDir = path.join(root, relativeDir);
   if (!existsSync(absoluteDir)) return [];
@@ -197,7 +203,11 @@ check(read("src/components/staff/StaffNav.tsx").includes("/staff/discovery"), "T
 
 const backupSource = read("src/lib/storage/backup.ts");
 check(/eligibilityAnswers/.test(backupSource) && /savedSearches/.test(backupSource) && /reminderPreferences/.test(backupSource) && /reminders/.test(backupSource) && /notifications/.test(backupSource), "Guest backup payload must include all 5 Checkpoint 4 data types.");
-check(/SCHEMA_VERSION\s*=\s*4/.test(read("src/lib/storage/types.ts")), "Guest storage SCHEMA_VERSION must be bumped to 4 for the new IndexedDB stores.");
+const guestSchemaVersionMatch = read("src/lib/storage/types.ts").match(/SCHEMA_VERSION\s*=\s*(\d+)/);
+check(
+  Boolean(guestSchemaVersionMatch) && Number(guestSchemaVersionMatch![1]) >= 4,
+  "Guest storage SCHEMA_VERSION must be at least 4 (bumped for Checkpoint 4's new IndexedDB stores; a later checkpoint may bump it further).",
+);
 
 const cloudExportSource = read("src/lib/schemas/cloud-export.ts");
 check(/CLOUD_EXPORT_SCHEMA_VERSION\s*=\s*2/.test(cloudExportSource), "Cloud export schema version must be bumped to 2.");
@@ -216,9 +226,12 @@ check(/eligibilityAnswers/.test(syncActionSource2) && /savedSearches/.test(syncA
 // ---------------------------------------------------------------------------
 
 const privacySource2 = read("app/privacy/page.tsx");
-check(privacySource2.includes("Checkpoint 4"), "Privacy page must be marked as reviewed for Checkpoint 4.");
+check(reviewedForCheckpointAtLeast(privacySource2, 4), "Privacy page must be marked as reviewed for Checkpoint 4 (or a later checkpoint's review, which supersedes it).");
 check(/eligibility answers are optional/i.test(privacySource2), "Privacy page must state eligibility answers are optional.");
-check(/no AI|not used anywhere/i.test(privacySource2), "Privacy page must state matching is rule-based, not AI.");
+check(
+  /no AI|not used anywhere/i.test(privacySource2) || (/AI assistant/i.test(privacySource2) && /never a final eligibility/i.test(privacySource2)),
+  "Privacy page must state matching is rule-based, not AI — or, if an AI assistant was added in a later checkpoint (Checkpoint 5), disclose it with its safety guarantees.",
+);
 check(/planning aid/i.test(privacySource2), "Privacy page must describe match labels as a planning aid, never a final decision.");
 check(/browser notification/i.test(privacySource2), "Privacy page must explain browser-notification device visibility.");
 check(/no paid SMS|no.*paid.*notification/i.test(privacySource2), "Privacy page must state there is no paid SMS/WhatsApp/email notification service.");

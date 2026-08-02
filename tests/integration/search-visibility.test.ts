@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import * as schema from "../../src/lib/db/schema";
 import { parseSearchQuery } from "../../src/lib/search/query";
 import { searchOpportunities } from "../../src/lib/search/service";
-import { client, db, uniqueSuffix } from "./helpers";
+import { client, db, publishOpportunityForTest, uniqueSuffix } from "./helpers";
 
 /**
  * Server-side search (`/api/search`, see `src/lib/search/service.ts`) must
@@ -16,6 +16,10 @@ import { client, db, uniqueSuffix } from "./helpers";
 describe("server-side search: published-only visibility", () => {
   const suffix = uniqueSuffix();
   const reviewerId = "11111111-2222-4333-8444-555555555555";
+  // Distinct from reviewerId — the stricter publish gate
+  // (0010_publication_integrity_actors.sql) requires an independently
+  // confirmed verification record and review assignment.
+  const approverId = "11111111-2222-4333-8444-666666666666";
   let opportunityTypeId: string;
   let providerId: string;
   let organisationId: string;
@@ -54,10 +58,13 @@ describe("server-side search: published-only visibility", () => {
       .values({ opportunityId: opportunity.id, versionNumber: 1, snapshot: {}, authorStaffProfileId: reviewerId })
       .returning();
 
-    await db
-      .update(schema.opportunities)
-      .set({ status: "published", publishedAt: new Date(), currentApprovedVersionId: version.id })
-      .where(eq(schema.opportunities.id, opportunity.id));
+    await publishOpportunityForTest({
+      opportunityId: opportunity.id,
+      officialSourceId: officialSource.id,
+      versionId: version.id,
+      reviewerStaffProfileId: reviewerId,
+      approverStaffProfileId: approverId,
+    });
 
     return opportunity.id;
   }
@@ -82,6 +89,10 @@ describe("server-side search: published-only visibility", () => {
       .insert(schema.staffProfiles)
       .values({ id: reviewerId, email: `search-visibility-reviewer-${suffix}@example.test`, displayName: "Reviewer", status: "active" })
       .onConflictDoNothing({ target: schema.staffProfiles.id });
+    await db
+      .insert(schema.staffProfiles)
+      .values({ id: approverId, email: `search-visibility-approver-${suffix}@example.test`, displayName: "Approver", status: "active" })
+      .onConflictDoNothing({ target: schema.staffProfiles.id });
 
     // Published: must appear in search results.
     await publishOpportunity("Published");
@@ -105,15 +116,20 @@ describe("server-side search: published-only visibility", () => {
   });
 
   afterAll(async () => {
-    for (const id of opportunityIds) {
-      await db.delete(schema.opportunityOfficialSources).where(eq(schema.opportunityOfficialSources.opportunityId, id));
-    }
     await db.delete(schema.opportunities).where(eq(schema.opportunities.slug, `search-visibility-draft-${suffix}`));
-    // Deleting the type-scoped fixtures cascades opportunity_versions/official_sources via FK.
+    // Deleting the opportunity directly cascades opportunity_versions/
+    // opportunity_official_sources/verification_records/etc. via FK — unlike
+    // a manual, separate delete of opportunity_official_sources first, this
+    // never trips the "cannot unlink the sole qualifying source of a
+    // published opportunity" guard: by the time the FK cascade removes the
+    // join row, the parent opportunities row is already gone from this
+    // transaction's view, so the trigger's "is it still published" check is
+    // false and the cascade proceeds.
     for (const id of opportunityIds) {
       await db.delete(schema.opportunities).where(eq(schema.opportunities.id, id));
     }
     await db.delete(schema.staffProfiles).where(eq(schema.staffProfiles.id, reviewerId));
+    await db.delete(schema.staffProfiles).where(eq(schema.staffProfiles.id, approverId));
     await client.end();
   });
 

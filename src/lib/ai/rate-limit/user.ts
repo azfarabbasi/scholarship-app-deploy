@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db/client";
 
 /**
@@ -20,31 +20,41 @@ export interface UserRateLimitResult {
   remaining: number;
 }
 
+/**
+ * A single atomic `INSERT ... ON CONFLICT ... DO UPDATE ... WHERE` statement,
+ * not a read-then-write: two concurrent requests each doing a separate
+ * SELECT-then-INSERT/UPDATE could both read the same "one under the limit"
+ * count and both proceed, letting a student exceed `dailyLimit` by racing
+ * requests. Postgres evaluates the `WHERE` guard and increments the row
+ * under its own per-row lock in one round trip, so only one of two
+ * concurrent requests at the boundary can ever win; the `WHERE` clause only
+ * gates the UPDATE branch of a genuine conflict, never the INSERT branch, so
+ * the very first request of the day always succeeds regardless of it.
+ */
 export async function checkAndConsumeUserQuota(studentProfileId: string, dailyLimit: number): Promise<UserRateLimitResult> {
   const db = getDb();
   const usageDate = todayUtc();
 
+  const [row] = await db
+    .insert(schema.aiUsageLimits)
+    .values({ studentProfileId, usageDate, requestCount: 1, subjectType: "user" })
+    .onConflictDoUpdate({
+      target: [schema.aiUsageLimits.studentProfileId, schema.aiUsageLimits.usageDate],
+      set: { requestCount: sql`${schema.aiUsageLimits.requestCount} + 1`, updatedAt: new Date() },
+      setWhere: sql`${schema.aiUsageLimits.requestCount} < ${dailyLimit}`,
+    })
+    .returning({ requestCount: schema.aiUsageLimits.requestCount });
+
+  if (row) {
+    return { allowed: true, remaining: Math.max(0, dailyLimit - row.requestCount) };
+  }
+
+  // Conflict occurred but the WHERE guard blocked the update — already at or over the limit.
   const [existing] = await db
-    .select()
+    .select({ requestCount: schema.aiUsageLimits.requestCount })
     .from(schema.aiUsageLimits)
     .where(and(eq(schema.aiUsageLimits.studentProfileId, studentProfileId), eq(schema.aiUsageLimits.usageDate, usageDate)));
-
-  const currentCount = existing?.requestCount ?? 0;
-  if (currentCount >= dailyLimit) {
-    return { allowed: false, remaining: 0 };
-  }
-
-  const nextCount = currentCount + 1;
-  if (existing) {
-    await db
-      .update(schema.aiUsageLimits)
-      .set({ requestCount: nextCount, updatedAt: new Date() })
-      .where(eq(schema.aiUsageLimits.id, existing.id));
-  } else {
-    await db.insert(schema.aiUsageLimits).values({ studentProfileId, usageDate, requestCount: nextCount, subjectType: "user" });
-  }
-
-  return { allowed: true, remaining: Math.max(0, dailyLimit - nextCount) };
+  return { allowed: false, remaining: Math.max(0, dailyLimit - (existing?.requestCount ?? dailyLimit)) };
 }
 
 /** Read-only usage lookup for the student's own "View AI usage" display — never increments. */

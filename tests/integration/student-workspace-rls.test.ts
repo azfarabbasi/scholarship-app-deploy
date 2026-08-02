@@ -1,13 +1,17 @@
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import * as schema from "../../src/lib/db/schema";
-import { asRole, client, db, expectRejectionMatching, uniqueSuffix } from "./helpers";
+import { asRole, client, db, expectRejectionMatching, publishOpportunityForTest, uniqueSuffix } from "./helpers";
 
 describe("student workspace row-level security", () => {
   const suffix = uniqueSuffix();
   const studentA = "44444444-4444-4444-4444-444444444444";
   const studentB = "55555555-5555-5555-5555-555555555555";
   const staffOnlyId = "66666666-6666-6666-6666-666666666666";
+  // Distinct from staffOnlyId — the stricter publish gate
+  // (0010_publication_integrity_actors.sql) requires an independently
+  // confirmed verification record and review assignment.
+  const approverId = "66666666-6666-6666-6666-777777777777";
   let opportunityId: string;
   let trackingAId: string;
 
@@ -30,6 +34,10 @@ describe("student workspace row-level security", () => {
       .insert(schema.staffProfiles)
       .values({ id: staffOnlyId, email: `staff-only-${suffix}@example.test`, displayName: "Staff Only", status: "active" });
     await db.insert(schema.staffRoleAssignments).values({ staffProfileId: staffOnlyId, role: "reviewer" });
+    await db
+      .insert(schema.staffProfiles)
+      .values({ id: approverId, email: `student-rls-approver-${suffix}@example.test`, displayName: "Approver", status: "active" });
+    await db.insert(schema.staffRoleAssignments).values({ staffProfileId: approverId, role: "senior_reviewer" });
 
     const [opportunity] = await db
       .insert(schema.opportunities)
@@ -63,10 +71,13 @@ describe("student workspace row-level security", () => {
       .values({ opportunityId, versionNumber: 1, snapshot: {}, authorStaffProfileId: staffOnlyId })
       .returning();
 
-    await db
-      .update(schema.opportunities)
-      .set({ status: "published", publishedAt: new Date(), currentApprovedVersionId: version.id })
-      .where(eq(schema.opportunities.id, opportunityId));
+    await publishOpportunityForTest({
+      opportunityId,
+      officialSourceId: officialSource.id,
+      versionId: version.id,
+      reviewerStaffProfileId: staffOnlyId,
+      approverStaffProfileId: approverId,
+    });
 
     await db
       .insert(schema.studentProfiles)
@@ -87,6 +98,8 @@ describe("student workspace row-level security", () => {
     await db.delete(schema.opportunities).where(eq(schema.opportunities.id, opportunityId));
     await db.delete(schema.staffRoleAssignments).where(eq(schema.staffRoleAssignments.staffProfileId, staffOnlyId));
     await db.delete(schema.staffProfiles).where(eq(schema.staffProfiles.id, staffOnlyId));
+    await db.delete(schema.staffRoleAssignments).where(eq(schema.staffRoleAssignments.staffProfileId, approverId));
+    await db.delete(schema.staffProfiles).where(eq(schema.staffProfiles.id, approverId));
     await db.delete(schema.studentProfiles).where(eq(schema.studentProfiles.id, studentA));
     await db.delete(schema.studentProfiles).where(eq(schema.studentProfiles.id, studentB));
     await client.end();

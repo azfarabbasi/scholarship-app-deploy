@@ -141,7 +141,8 @@ export function CatalogueExplorer({
       {comparison.ids.length > 0 ? (
         <div className="sticky top-16 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-surface p-3 shadow-sm">
           <p className="text-sm text-foreground">
-            {comparison.ids.length} of {comparison.maxItems} selected for comparison
+            {comparison.ids.length} of {comparison.maxItems}{" "}
+            selected for comparison
           </p>
           <div className="flex gap-2">
             <Button size="sm" variant="ghost" onClick={comparison.clear}>

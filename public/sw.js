@@ -60,11 +60,70 @@
  * IndexedDB (`cloudCache`/`syncOutbox` — see `src/lib/sync/`), never in
  * Cache Storage either.
  */
-const CACHE_VERSION = "v6";
+const CACHE_VERSION = "v7";
 const APP_SHELL_CACHE = `scholartrack-app-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `scholartrack-runtime-${CACHE_VERSION}`;
 const STATIC_ASSET_CACHE = `scholartrack-static-${CACHE_VERSION}`;
 const CURRENT_CACHES = new Set([APP_SHELL_CACHE, RUNTIME_CACHE, STATIC_ASSET_CACHE]);
+
+/**
+ * Phase 4 item 4 (bounded cache eviction): every cache below grows with
+ * caller-visited URLs (opportunity pages navigated to, `/api/search`/
+ * `/api/opportunities` query variations, hashed static assets) with no
+ * natural ceiling of its own — a long-lived browser profile that never
+ * clears site data could otherwise grow these indefinitely. The Cache API
+ * has no built-in LRU/max-entries option, so this evicts the OLDEST entries
+ * (by insertion order — `cache.keys()` returns entries in the order they
+ * were added, which every engine that implements the Cache Storage API
+ * preserves) once a cache exceeds its cap, after every write.
+ */
+const MAX_RUNTIME_CACHE_ENTRIES = 150;
+const MAX_STATIC_ASSET_CACHE_ENTRIES = 200;
+const MAX_APP_SHELL_CACHE_ENTRIES = 60;
+
+/**
+ * `APP_SHELL_CACHE` holds two different kinds of entry: the fixed,
+ * install-time precached list (`APP_SHELL_URLS`, defined below) and
+ * dynamically-added navigations (any other page visited online, cached by
+ * `networkFirstNavigation`). Eviction must never remove one of the fixed
+ * precached entries — since eviction always removes the OLDEST entries
+ * first and the precached ones are, by construction, the very first ones
+ * ever written, an eviction pass with no protection would silently break
+ * the core "app shell always works offline" guarantee the first time a
+ * visitor browsed enough other pages to exceed the cap.
+ */
+function protectedAppShellPaths() {
+  return new Set(APP_SHELL_URLS);
+}
+
+async function evictOldestEntries(cache, maxEntries, protectedPaths) {
+  const keys = await cache.keys();
+  const overflow = keys.length - maxEntries;
+  if (overflow <= 0) return;
+  const evictable = protectedPaths ? keys.filter((request) => !protectedPaths.has(new URL(request.url).pathname)) : keys;
+  for (const key of evictable.slice(0, overflow)) {
+    await cache.delete(key);
+  }
+}
+
+/**
+ * `cache.put()` throws on a full storage quota (or in some browsers'
+ * private-browsing modes, which cap or disable Cache Storage entirely).
+ * Every call site below already has a perfectly good response in hand by
+ * the time it writes to the cache — a write failure must never turn into a
+ * failure to return that response. Callers await this and ignore its
+ * result; the cache write is opportunistic, the response is not.
+ */
+async function safeCachePut(cache, request, response, maxEntries, protectedPaths) {
+  try {
+    await cache.put(request, response);
+    if (typeof maxEntries === "number") {
+      await evictOldestEntries(cache, maxEntries, protectedPaths);
+    }
+  } catch {
+    // Best-effort: a cache write failure is never fatal to the request itself.
+  }
+}
 
 const APP_SHELL_URLS = [
   "/",
@@ -106,7 +165,7 @@ function isCacheable(response) {
 async function precacheAppShellUrl(cache, url) {
   const response = await fetch(url);
   if (response.ok && isCacheable(response)) {
-    await cache.put(url, response);
+    await safeCachePut(cache, url, response);
   }
 }
 
@@ -174,7 +233,7 @@ async function networkFirstNavigation(request) {
       // Awaited deliberately: an un-awaited cache.put() is a dangling microtask the browser
       // is free to abandon once this handler returns, with no guarantee it lands before a
       // subsequent "go offline" — exactly what an offline-after-visiting-online-first test needs.
-      await cache.put(request, response.clone());
+      await safeCachePut(cache, request, response.clone(), MAX_APP_SHELL_CACHE_ENTRIES, protectedAppShellPaths());
     }
     return response;
   } catch {
@@ -199,7 +258,7 @@ async function cacheFirst(request) {
   }
   const response = await fetch(request);
   if (response.ok) {
-    await cache.put(request, response.clone());
+    await safeCachePut(cache, request, response.clone(), MAX_STATIC_ASSET_CACHE_ENTRIES);
   }
   return response;
 }
@@ -210,7 +269,7 @@ async function staleWhileRevalidate(request) {
   const networkPromise = fetch(request)
     .then(async (response) => {
       if (response.ok && isCacheable(response)) {
-        await cache.put(request, response.clone());
+        await safeCachePut(cache, request, response.clone(), MAX_RUNTIME_CACHE_ENTRIES);
       }
       return response;
     })

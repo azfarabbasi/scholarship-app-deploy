@@ -64,8 +64,10 @@ describe("OpportunityCard", () => {
   it("renders title, location, study levels, deadline badge, and verification badge", () => {
     render(<OpportunityCard item={makeItem()} />);
     expect(screen.getByRole("heading", { name: /DAAD Scholarships for Foreign Students/i })).toBeInTheDocument();
-    expect(screen.getByText("Germany")).toBeInTheDocument();
-    expect(screen.getByText("Master")).toBeInTheDocument();
+    expect(screen.getByText(/Germany/)).toBeInTheDocument();
+    // Study levels render as one middot-joined chip ("Master · PhD") rather than
+    // one chip per level, so match the level within its chip.
+    expect(screen.getByText(/Master/)).toBeInTheDocument();
     expect(screen.getByText("Verify deadline")).toBeInTheDocument();
   });
 
@@ -98,7 +100,7 @@ describe("OpportunityCard", () => {
 
   it("marks the official website link safely (opens in a new tab, no opener leak)", () => {
     render(<OpportunityCard item={makeItem()} />);
-    const link = screen.getByRole("link", { name: /official website/i });
+    const link = screen.getByRole("link", { name: /official site/i });
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", expect.stringContaining("noopener"));
     expect(link).toHaveAttribute("rel", expect.stringContaining("noreferrer"));

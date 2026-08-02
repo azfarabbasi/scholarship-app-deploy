@@ -2,7 +2,7 @@ import { Sparkles } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/layout/Container";
-import { AssistantChat } from "@/components/assistant/AssistantChat";
+import { AssistantWorkspace } from "@/components/assistant/AssistantWorkspace";
 import { Alert } from "@/components/ui/Alert";
 import { getStudentSession } from "@/lib/auth/student-session";
 import { isAiAvailableAction } from "@/lib/db/actions/student/ai-assistant";
@@ -23,40 +23,50 @@ export default async function AssistantPage() {
   const [session, available] = await Promise.all([getStudentSession(), isAiAvailableAction()]);
 
   return (
-    <Container className="py-8 sm:py-10">
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-tint text-brand">
-          <Sparkles className="h-5 w-5" aria-hidden="true" />
-        </span>
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">Scholarly</h1>
-          <p className="mt-1 max-w-2xl text-sm text-foreground-muted">
-            Your friendly, source-grounded scholarship assistant. Ask about published opportunities and Scholarly answers
-            using ScholarTrack&apos;s stored source data, always with citations — it never makes a final eligibility,
-            admission, or funding decision.{" "}
-            <Link href="/assistant/settings" className="text-brand underline">
-              History &amp; privacy settings
-            </Link>
-            .
-          </p>
+    <Container className="py-6 sm:py-8">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand text-brand-foreground shadow-brand">
+            <Sparkles className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Scholarly</h1>
+            <p className="text-sm text-foreground-muted">Source-grounded answers, always cited.</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Link
+            href="/assistant/history"
+            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
+          >
+            History
+          </Link>
+          <Link
+            href="/assistant/settings"
+            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
+          >
+            Settings
+          </Link>
         </div>
       </div>
 
-      <Alert tone="info" className="mt-4 max-w-2xl">
-        Scholarly can get things wrong or miss updates. Always verify deadlines, eligibility, and funding on the official
-        source before you rely on an answer.
-      </Alert>
+      {available ? (
+        <AssistantWorkspace
+          studentProfileId={session?.studentProfileId ?? null}
+          suggestedPrompts={EXAMPLE_PROMPTS}
+        />
+      ) : (
+        <Alert tone="warning" title="Scholarly is not enabled yet">
+          The assistant is currently unavailable. You can still browse and search the full catalogue without it — please
+          check back later.
+        </Alert>
+      )}
 
-      <div className="mt-6 max-w-3xl">
-        {available ? (
-          <AssistantChat studentProfileId={session?.studentProfileId ?? null} scope="general" suggestedPrompts={EXAMPLE_PROMPTS} />
-        ) : (
-          <Alert tone="warning" title="Scholarly is not enabled yet">
-            The assistant is currently unavailable. You can still browse and search the full catalogue without it — please
-            check back later.
-          </Alert>
-        )}
-      </div>
+      <p className="mt-4 text-xs text-foreground-subtle">
+        Scholarly can get things wrong or miss updates — always verify on the official source before you rely on an
+        answer.
+      </p>
     </Container>
   );
 }

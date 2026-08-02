@@ -173,7 +173,17 @@ export async function getPublishedOpportunities(): Promise<CatalogueOpportunity[
         })
         .from(schema.opportunityOfficialSources)
         .innerJoin(schema.officialSources, eq(schema.opportunityOfficialSources.officialSourceId, schema.officialSources.id))
-        .where(inArray(schema.opportunityOfficialSources.opportunityId, ids)),
+        .where(
+          and(
+            inArray(schema.opportunityOfficialSources.opportunityId, ids),
+            // A candidate (not-yet-confirmed) or no-longer-good source must
+            // never surface as "the official source" on the public page —
+            // matches the same own-status filtering already applied to
+            // funding/eligibility/documents below, and the publish-gate
+            // trigger's requirement in 0010_publication_integrity_actors.sql.
+            inArray(schema.officialSources.status, ["confirmed-official", "active"]),
+          ),
+        ),
       db.select().from(schema.deadlineCycles).where(inArray(schema.deadlineCycles.opportunityId, ids)),
       db
         .select({ opportunityId: schema.opportunityDocumentRequirements.opportunityId })

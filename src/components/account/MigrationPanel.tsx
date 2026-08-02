@@ -24,6 +24,33 @@ type LoadState =
       collisions: number;
     };
 
+/**
+ * Built as a plain string rather than interleaved JSX. The previous inline form
+ * wrapped mid-sentence, and the JSX transform trims the leading whitespace of a
+ * wrapped text node — so every count ran into the noun after it
+ * ("3custom opportunities copied"). Assembling the sentence here also fixes the
+ * singular/plural stems, one of which produced "opportunityies" for any count
+ * other than 1.
+ */
+function migrationSummary(result: MigrationResult): string {
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+  const parts = [
+    `${plural(result.trackingCreated, "opportunity", "opportunities")} copied`,
+    `${result.trackingSkipped} skipped as duplicates`,
+    `${plural(result.customOpportunitiesCreated, "custom opportunity", "custom opportunities")} copied`,
+    `${result.notesWritten} note(s) written`,
+    `${result.checklistTasksWritten} checklist task(s) written`,
+    `${plural(result.savedSearchesCreated, "saved search", "saved searches")} copied`,
+    `${plural(result.remindersCreated, "reminder", "reminders")} copied`,
+  ];
+
+  if (result.eligibilityAnswersMigrated) parts.push("eligibility answers copied");
+  if (result.reminderPreferencesMigrated) parts.push("reminder preferences copied");
+
+  return `${parts.join(", ")}.`;
+}
+
 export function MigrationPanel() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [mode, setMode] = useState<MigrationMode>("merge");
@@ -90,17 +117,11 @@ export function MigrationPanel() {
       <CardBody className="flex flex-col gap-4">
         {result ? (
           <Alert tone="success" title="Migration complete">
-            {result.trackingCreated} opportunity{result.trackingCreated === 1 ? "" : "ies"} copied, {result.trackingSkipped}{" "}
-            skipped as duplicates, {result.customOpportunitiesCreated} custom opportunit
-            {result.customOpportunitiesCreated === 1 ? "y" : "ies"} copied, {result.notesWritten} note(s) written,{" "}
-            {result.checklistTasksWritten} checklist task(s) written, {result.savedSearchesCreated} saved search
-            {result.savedSearchesCreated === 1 ? "" : "es"} copied, {result.remindersCreated} reminder
-            {result.remindersCreated === 1 ? "" : "s"} copied
-            {result.eligibilityAnswersMigrated ? ", eligibility answers copied" : ""}
-            {result.reminderPreferencesMigrated ? ", reminder preferences copied" : ""}.
+            {migrationSummary(result)}
             {result.conflicts.length > 0 ? (
               <span className="mt-1 block font-medium">
-                {result.conflicts.length} item(s) need review — the cloud version was newer and was kept.
+                {result.conflicts.length}{" "}
+                item(s) need review — the cloud version was newer and was kept.
               </span>
             ) : null}
           </Alert>
@@ -142,8 +163,8 @@ export function MigrationPanel() {
             </div>
 
             <p className="text-sm text-foreground-muted">
-              Your account already has {state.cloudCounts.tracking} tracked opportunit
-              {state.cloudCounts.tracking === 1 ? "y" : "ies"}
+              Your account already has {state.cloudCounts.tracking}{" "}
+              tracked opportunit{state.cloudCounts.tracking === 1 ? "y" : "ies"}
               {state.collisions > 0 ? ` (${state.collisions} overlap with your local data)` : ""}.
             </p>
 

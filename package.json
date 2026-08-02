@@ -23,8 +23,10 @@
     "checkpoint6:validate": "tsx scripts/validate-checkpoint6.ts",
     "checkpoint7:validate": "tsx scripts/validate-checkpoint7.ts",
     "launch:validate": "tsx scripts/validate-launch.ts",
+    "launch:validate:env-behavior": "tsx scripts/validate-production-env-behavior.ts",
     "launch:smoke": "playwright test tests/e2e/launch-smoke.spec.ts",
     "launch:content": "tsx scripts/launch-content-report.ts",
+    "launch:content:gate": "tsx scripts/launch-content-gate.ts",
     "launch:security": "tsx scripts/launch-security-check.ts",
     "launch:seo": "npm run seo:validate",
     "launch:accessibility": "npm run accessibility:test",
@@ -32,6 +34,7 @@
     "ai:evaluate": "tsx scripts/ai-evaluate.ts",
     "ai:safety:test": "tsx scripts/ai-safety-test.ts",
     "ai:sources:reindex": "tsx scripts/ai-sources-reindex.ts",
+    "check:jsx-whitespace": "tsx scripts/check-jsx-whitespace.ts",
     "security:secrets": "tsx scripts/security-secrets-scan.ts",
     "security:headers": "tsx scripts/security-headers-check.ts",
     "seo:validate": "tsx scripts/seo-validate.ts",
@@ -49,17 +52,16 @@
     "db:publish:test-fixtures": "tsx scripts/db-publish-test-fixtures.ts",
     "db:import:legacy:rollback": "tsx scripts/import-legacy-scholarships.ts --rollback",
     "db:verify:migration": "tsx scripts/verify-migration.ts",
-    "db:bootstrap:admin": "tsx scripts/bootstrap-admin.ts"
+    "db:bootstrap:admin": "tsx scripts/bootstrap-admin.ts",
+    "e2e:provision-test-accounts": "tsx scripts/e2e-provision-test-accounts.ts"
   },
   "engines": {
     "node": ">=22.0.0"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.19",
-    "@radix-ui/react-tooltip": "^1.2.12",
     "@supabase/ssr": "0.12.3",
     "@supabase/supabase-js": "2.110.6",
-    "client-only": "0.0.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "0.45.2",
     "idb": "^8.0.3",
@@ -83,7 +85,6 @@
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "@vitest/coverage-v8": "^4.1.10",
-    "axe-core": "^4.12.1",
     "dotenv": "17.4.2",
     "drizzle-kit": "0.31.10",
     "eslint": "9.39.5",

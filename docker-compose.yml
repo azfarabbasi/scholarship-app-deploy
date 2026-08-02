@@ -75,10 +75,64 @@ services:
       retries: 20
       start_period: 5s
 
+  # Hardened, real production topology — this is what "self-hosted Docker
+  # Compose on any VPS you already control" (the Checkpoint 6/7 deployment
+  # runbooks' third recommended target) actually means: the `production`
+  # Dockerfile stage (built dependencies pruned to prod-only, no dev
+  # tooling, no raw TypeScript source), no source bind-mount (runs the image
+  # exactly as built, the same one you'd push to a registry), and a
+  # read-only root filesystem with the one directory Next.js's production
+  # server needs to write to (`.next/cache`, ISR/image-optimization cache)
+  # mounted as tmpfs instead. Not started by `docker compose up` — opt in
+  # explicitly:
+  #   docker compose --profile prod up --build web-prod
+  # Provide real production secrets via `.env` (never committed) or your
+  # host's own secret manager; see docs/checkpoint-7/production-deployment-runbook.md §3.
+  web-prod:
+    profiles: ["prod"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /app/.next/cache
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NEXT_TELEMETRY_DISABLED: "1"
+      APP_ENV: production
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://127.0.0.1:3000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
   # Test-profile-only service: a production build+start of the same app,
   # used exclusively as the target for the Playwright e2e container below.
   # PWA/offline/service-worker behaviour only activates in production mode,
-  # so e2e tests run against `next start`, never `next dev`.
+  # so e2e tests run against `next start`, never `next dev`. Deliberately
+  # still targets `development` (not the new `production` stage above) —
+  # its own startup command runs `db:reset:test`/`db:import:legacy`/
+  # `db:publish:test-fixtures`, which are `tsx` scripts needing devDependencies
+  # the production stage's pruned node_modules doesn't have; `web-prod`
+  # above is the service that actually exercises the hardened production
+  # image end-to-end.
   web-e2e:
     profiles: ["test"]
     build:

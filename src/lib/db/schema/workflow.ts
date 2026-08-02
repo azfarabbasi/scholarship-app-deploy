@@ -1,5 +1,7 @@
-import { integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
-import { serviceRoleBypassPolicy, staffSelectPolicy } from "./common";
+import { sql } from "drizzle-orm";
+import { check, integer, pgPolicy, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { authenticatedRole } from "./roles";
+import { serviceRoleBypassPolicy } from "./common";
 import { reviewAssignmentStatusEnum, reviewSubjectKindEnum, staffRoleEnum } from "./enums";
 import { opportunities } from "./opportunities";
 import { staffProfiles } from "./staff";
@@ -36,10 +38,31 @@ export const reviewAssignments = pgTable(
     decision: text("decision"),
     reviewerNotes: text("reviewer_notes"),
   },
-  () => [
-    // A staff member sees assignments where they are the reviewer, assigner, or
-    // hold any staff role (dashboards need to show queue-wide summaries).
-    staffSelectPolicy("review_assignments"),
+  (table) => [
+    check(
+      "review_assignments_no_self_review",
+      sql`${table.subjectAuthorStaffProfileId} IS NULL OR ${table.reviewerStaffProfileId} <> ${table.subjectAuthorStaffProfileId} OR COALESCE(current_setting('app.bootstrap_admin_actor_id', true), '') = ${table.reviewerStaffProfileId}::text`,
+    ),
+    // Narrowed from "any active staff role" to only those actually party to
+    // the assignment (reviewer, assigner, or the subject's author — e.g. to
+    // see a "changes requested" note on their own draft) plus administrators.
+    // A baseline reviewer with no involvement in a given assignment has no
+    // legitimate reason to read it via direct Supabase REST; the app's own
+    // queue/dashboard views are read through the privileged server
+    // connection and are unaffected by this.
+    // Keeps the original `_select_staff` policy name (same table, same
+    // slot) so drizzle-kit diffs this as a plain `ALTER POLICY` rather than
+    // a drop+create it would otherwise want to interactively disambiguate
+    // as a rename.
+    pgPolicy("review_assignments_select_staff", {
+      as: "permissive",
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${table.reviewerStaffProfileId} = auth.uid()
+        OR ${table.assignedByStaffProfileId} = auth.uid()
+        OR ${table.subjectAuthorStaffProfileId} = auth.uid()
+        OR app.is_staff(auth.uid(), ARRAY['administrator']::text[])`,
+    }),
     serviceRoleBypassPolicy("review_assignments"),
   ],
 ).enableRLS();

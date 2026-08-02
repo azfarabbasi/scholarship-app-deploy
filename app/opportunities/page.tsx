@@ -50,8 +50,9 @@ export default async function OpportunitiesPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">Opportunity catalogue</h1>
         <p className="mt-2 max-w-2xl text-sm text-foreground-muted">
-          {count !== null ? `${count} published opportunities` : "Published opportunities"} plus any custom ones
-          you&rsquo;ve added. Always confirm deadlines and eligibility on the official website before applying.
+          {count !== null ? `${count} published opportunities` : "Published opportunities"}{" "}
+          plus any custom ones you&rsquo;ve added. Always confirm deadlines and eligibility on the official website
+          before applying.
         </p>
       </div>
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>

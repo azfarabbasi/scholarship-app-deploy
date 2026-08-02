@@ -7,14 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { Input, Label } from "@/components/ui/Field";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-
-/** Only ever redirect to a same-origin, non-`/staff` path — never an open redirect. */
-function sanitizeNextPath(path: string | null): string {
-  if (!path || path.startsWith("/staff") || path.startsWith("//") || path.includes("://")) {
-    return "/account";
-  }
-  return path;
-}
+import { sanitizeRedirectPath } from "@/lib/security/redirect";
 
 export function StudentLoginForm() {
   const router = useRouter();
@@ -43,7 +36,7 @@ export function StudentLoginForm() {
         return;
       }
 
-      router.replace(sanitizeNextPath(searchParams.get("next")));
+      router.replace(sanitizeRedirectPath(searchParams.get("next"), window.location.origin, "/account", { disallowedPrefix: "/staff" }));
       router.refresh();
     } catch {
       setError("Account sign-in is not configured for this deployment yet. See docs/checkpoint-3/student-auth-and-sync.md.");

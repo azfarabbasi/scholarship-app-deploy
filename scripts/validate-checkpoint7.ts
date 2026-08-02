@@ -107,6 +107,8 @@ check(exists("public/sw.js"), "Missing public/sw.js.");
 const REQUIRED_COMMANDS = [
   "checkpoint7:validate",
   "launch:validate",
+  "launch:validate:env-behavior",
+  "launch:content:gate",
   "launch:smoke",
   "launch:content",
   "launch:security",

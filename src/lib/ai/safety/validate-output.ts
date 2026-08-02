@@ -24,7 +24,8 @@ const PROHIBITED_CLAIM_PATTERNS = [
 /** Groq/OpenAI-style key prefixes and generic bearer-token shapes — defense in depth; a provider should never echo one of these. */
 const SECRET_SHAPED_PATTERNS = [/\bgsk_[A-Za-z0-9]{10,}/g, /\bsk-[A-Za-z0-9]{10,}/g, /\bBearer\s+[A-Za-z0-9._-]{20,}/gi];
 
-function splitIntoSentences(text: string): string[] {
+/** Shared with `./verify-citations.ts` — one splitting rule for both sentence-level safety checks. */
+export function splitIntoSentences(text: string): string[] {
   return text.split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 0);
 }
 

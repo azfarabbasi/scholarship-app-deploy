@@ -138,5 +138,51 @@ export function useAssistantChat(options: UseAssistantChatOptions) {
     return result;
   }, []);
 
-  return { messages, pending, statusKind, statusText, remainingQuota, temporary, setTemporary, sendMessage, giveFeedback };
+  /**
+   * Replaces the visible thread with an already-persisted conversation, so the
+   * sidebar can switch between saved chats and continued turns append to the
+   * right one. Both id slots are set because which one the next `sendMessage`
+   * uses depends on whether the caller is signed in (server conversation) or a
+   * guest (IndexedDB conversation).
+   */
+  const loadConversation = useCallback(
+    (id: string, loadedMessages: ChatMessage[]) => {
+      setMessages(loadedMessages);
+      setStatusKind(null);
+      setStatusText(null);
+      if (studentProfileId) {
+        setConversationId(id);
+        setGuestConversationId(null);
+      } else {
+        setGuestConversationId(id);
+        setConversationId(null);
+      }
+    },
+    [studentProfileId],
+  );
+
+  /** Clears the thread so the next turn opens a brand-new conversation. */
+  const startNewConversation = useCallback(() => {
+    setMessages([]);
+    setStatusKind(null);
+    setStatusText(null);
+    setConversationId(null);
+    setGuestConversationId(null);
+  }, []);
+
+  return {
+    messages,
+    pending,
+    statusKind,
+    statusText,
+    remainingQuota,
+    temporary,
+    setTemporary,
+    sendMessage,
+    giveFeedback,
+    loadConversation,
+    startNewConversation,
+    /** The conversation the next turn will append to, or null for a fresh thread. */
+    activeConversationId: studentProfileId ? conversationId : guestConversationId,
+  };
 }

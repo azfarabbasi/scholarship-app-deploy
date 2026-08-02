@@ -56,8 +56,9 @@ export default async function StaffDiscoveryQualityPage() {
         <h1 className="text-xl font-semibold text-foreground">Discovery quality</h1>
         <p className="mt-1 text-sm text-foreground-muted">
           Support tooling for the student-facing search, matching, and reminders features (Checkpoint 4). Every queue
-          below is scoped to the {report.totalPublished} currently-published opportunit
-          {report.totalPublished === 1 ? "y" : "ies"} — exactly what students can discover today.
+          below is scoped to the {report.totalPublished}{" "}
+          currently-published opportunit{report.totalPublished === 1 ? "y" : "ies"}{" "}
+          — exactly what students can discover today.
         </p>
       </div>
 

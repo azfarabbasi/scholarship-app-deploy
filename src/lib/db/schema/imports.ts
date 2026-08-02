@@ -27,7 +27,9 @@ export const importJobs = pgTable(
     completedAt: timestamp("completed_at", { withTimezone: true }),
     resultSummary: jsonb("result_summary"),
   },
-  () => [staffSelectPolicy("import_jobs"), serviceRoleBypassPolicy("import_jobs")],
+  // Matches `canRunImports` in `src/lib/auth/permissions.ts` — only
+  // administrators may run or review imports at all.
+  () => [staffSelectPolicy("import_jobs", ["administrator"]), serviceRoleBypassPolicy("import_jobs")],
 ).enableRLS();
 
 export const importJobRows = pgTable(
@@ -43,5 +45,9 @@ export const importJobRows = pgTable(
     opportunityId: uuid("opportunity_id").references(() => opportunities.id, { onDelete: "set null" }),
     errors: jsonb("errors"),
   },
-  () => [staffSelectPolicy("import_job_rows"), serviceRoleBypassPolicy("import_job_rows")],
+  // No `staffSelectPolicy` here at all — row-level import detail has no
+  // legitimate direct-REST reader; only our privileged server (the import
+  // DAL) and `service_role` should ever see it. With RLS enabled and no
+  // matching policy, Postgres denies `authenticated` by default.
+  () => [serviceRoleBypassPolicy("import_job_rows")],
 ).enableRLS();

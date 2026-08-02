@@ -1,12 +1,13 @@
 "use server";
 
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { getStudentSession } from "@/lib/auth/student-session";
 import { askAssistant, type AssistantAnswer, type AssistantResultKind } from "@/lib/ai/assistant";
 import { getAiConfig } from "@/lib/ai/config";
 import { GUEST_AI_QUOTA_COOKIE_NAME } from "@/lib/ai/rate-limit/guest";
 import type { CitationDraft } from "@/lib/ai/rag/citations";
+import { askAssistantActionInputSchema } from "@/lib/schemas/ai-assistant";
 import { getDb, schema } from "@/lib/db/client";
 import type { MatchResult } from "@/lib/matching/types";
 
@@ -19,9 +20,15 @@ import type { MatchResult } from "@/lib/matching/types";
  */
 export async function isAiAvailableAction(): Promise<boolean> {
   if (!getAiConfig().isAvailable) return false;
-  const db = getDb();
-  const [row] = await db.select({ manuallyDisabled: schema.aiProviderHealth.manuallyDisabled }).from(schema.aiProviderHealth).limit(1);
-  return !row?.manuallyDisabled;
+  try {
+    const db = getDb();
+    const [row] = await db.select({ manuallyDisabled: schema.aiProviderHealth.manuallyDisabled }).from(schema.aiProviderHealth).limit(1);
+    return !row?.manuallyDisabled;
+  } catch {
+    // Fails closed: if the health check itself can't be answered, the
+    // honest state is "not confirmed available," never "assume enabled."
+    return false;
+  }
 }
 
 /**
@@ -188,7 +195,24 @@ async function persistTurn(params: {
   return { conversationId, assistantMessageId: assistantMessage.id };
 }
 
-export async function askAssistantAction(input: AskAssistantActionInput): Promise<AskAssistantActionResult> {
+const BLOCKED_INPUT_RESULT: AskAssistantActionResult = {
+  kind: "blocked",
+  text: "That message couldn't be processed. Please ask a shorter, specific question.",
+  citations: [],
+};
+
+export async function askAssistantAction(rawInput: AskAssistantActionInput): Promise<AskAssistantActionResult> {
+  // Every array field here (opportunitySlugs, matchResults) directly drives
+  // how much structured-fact context gets assembled into the prompt — an
+  // unbounded array from a malicious or malfunctioning caller is an
+  // unbounded prompt, independent of the token-budget trim in
+  // `src/lib/ai/rag/retrieval.ts` (defense in depth, not a substitute for it).
+  const parsed = askAssistantActionInputSchema.safeParse(rawInput);
+  if (!parsed.success) {
+    return BLOCKED_INPUT_RESULT;
+  }
+  const input = parsed.data;
+
   const session = await getStudentSession();
   const scope: AiConversationScope = input.scope ?? "general";
   const matchResults = input.matchResults
@@ -260,6 +284,11 @@ export type AiConversationRow = typeof schema.aiConversations.$inferSelect;
 export type AiMessageRow = typeof schema.aiMessages.$inferSelect;
 export type AiAnswerCitationRow = typeof schema.aiAnswerCitations.$inferSelect;
 
+/**
+ * Pinned conversations first (most recently pinned first), then everything else
+ * by recency. `pinnedAt DESC NULLS LAST` does both in one ordering: an unpinned
+ * row has a null `pinnedAt` and so always sorts after every pinned one.
+ */
 export async function getMyAiConversations(): Promise<AiConversationRow[]> {
   const session = await getStudentSession();
   if (!session) return [];
@@ -268,7 +297,56 @@ export async function getMyAiConversations(): Promise<AiConversationRow[]> {
     .select()
     .from(schema.aiConversations)
     .where(eq(schema.aiConversations.studentProfileId, session.studentProfileId))
-    .orderBy(desc(schema.aiConversations.updatedAt));
+    .orderBy(sql`${schema.aiConversations.pinnedAt} DESC NULLS LAST`, desc(schema.aiConversations.updatedAt));
+}
+
+/** Max length accepted for a conversation title, matching the input's maxLength. */
+const MAX_CONVERSATION_TITLE = 120;
+
+export async function renameMyAiConversation(
+  id: string,
+  title: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const session = await getStudentSession();
+  if (!session) return { ok: false, error: "Not signed in." };
+
+  const trimmed = title.trim();
+  if (trimmed.length === 0) return { ok: false, error: "Title cannot be empty." };
+  if (trimmed.length > MAX_CONVERSATION_TITLE) {
+    return { ok: false, error: `Title must be ${MAX_CONVERSATION_TITLE} characters or fewer.` };
+  }
+
+  const db = getDb();
+  // The ownership predicate is part of the UPDATE, not a prior SELECT, so a
+  // caller can never rename another student's conversation by guessing an id.
+  const result = await db
+    .update(schema.aiConversations)
+    .set({ title: trimmed, updatedAt: new Date() })
+    .where(and(eq(schema.aiConversations.id, id), eq(schema.aiConversations.studentProfileId, session.studentProfileId)))
+    .returning({ id: schema.aiConversations.id });
+
+  if (result.length === 0) return { ok: false, error: "Conversation not found." };
+  return { ok: true };
+}
+
+export async function setMyAiConversationPinned(
+  id: string,
+  pinned: boolean,
+): Promise<{ ok: boolean; error?: string }> {
+  const session = await getStudentSession();
+  if (!session) return { ok: false, error: "Not signed in." };
+
+  const db = getDb();
+  // `updatedAt` is deliberately left alone: pinning is not a content edit, and
+  // touching it would reorder the unpinned list the moment a chat is unpinned.
+  const result = await db
+    .update(schema.aiConversations)
+    .set({ pinnedAt: pinned ? new Date() : null })
+    .where(and(eq(schema.aiConversations.id, id), eq(schema.aiConversations.studentProfileId, session.studentProfileId)))
+    .returning({ id: schema.aiConversations.id });
+
+  if (result.length === 0) return { ok: false, error: "Conversation not found." };
+  return { ok: true };
 }
 
 export async function getMyAiConversationMessages(

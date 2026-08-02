@@ -74,8 +74,8 @@ export function OpportunityDetailBody({
 
         {evaluation?.verificationRequired ? (
           <Alert tone="warning" title="Verify this deadline" className="mt-6">
-            {evaluation.statusText} Always confirm the current cycle and exact date on the official website before
-            relying on it.
+            {evaluation.statusText}{" "}
+            Always confirm the current cycle and exact date on the official website before relying on it.
           </Alert>
         ) : null}
 
@@ -93,7 +93,7 @@ export function OpportunityDetailBody({
             Original wording: &ldquo;{opportunity.deadlineRawText}&rdquo;
           </p>
           <div className="mt-2">
-            <VerificationBadge kind={opportunity.kind} verificationRequired={evaluation?.verificationRequired ?? true} />
+            <VerificationBadge kind={opportunity.kind} status={opportunity.verification.status} />
           </div>
         </section>
 
@@ -192,7 +192,7 @@ export function OpportunityDetailBody({
                 <DeadlineCountdownText evaluation={evaluation} />
               </div>
             ) : null}
-            <VerificationBadge kind={opportunity.kind} verificationRequired={evaluation?.verificationRequired ?? true} />
+            <VerificationBadge kind={opportunity.kind} status={opportunity.verification.status} />
             {opportunity.officialUrl ? (
               <a
                 href={opportunity.officialUrl}

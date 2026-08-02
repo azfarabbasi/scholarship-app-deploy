@@ -31,15 +31,16 @@ export function canEditDraft(roles: readonly StaffRole[], isOwnerOrAssigned: boo
 /**
  * Local-testing convenience only, controlled by the `ALLOW_ADMIN_SELF_REVIEW`
  * env flag (see `src/lib/env.ts`): when the caller passes
- * `adminSelfReviewAllowed: true` (only ever wired up when that flag is set),
- * an Administrator may review/approve any draft, including their own,
- * collapsing the review pipeline to a single account for solo testing. The
- * flag defaults to unset/false everywhere, so separation of duties is
+ * `bypassSeparationOfDuties: true` (only ever wired from the verified
+ * bootstrap-admin session), that one Administrator may review/approve any
+ * draft, including their own, while every other Administrator retains the
+ * normal separation-of-duties restrictions. The flag defaults to false, so
  * unchanged unless a deployment explicitly opts in — never enable it outside
  * a local/dev environment.
  */
 interface SelfReviewOptions {
-  adminSelfReviewAllowed?: boolean;
+  /** Must come from the server-derived `StaffSession.isBootstrapAdmin` value. */
+  bypassSeparationOfDuties?: boolean;
 }
 
 /**
@@ -53,7 +54,7 @@ export function canReview(
   authorStaffProfileId: string | null,
   options?: SelfReviewOptions,
 ): boolean {
-  if (options?.adminSelfReviewAllowed && hasAnyRole(roles, ["administrator"])) {
+  if (options?.bypassSeparationOfDuties && hasAnyRole(roles, ["administrator"])) {
     return true;
   }
   if (!hasAnyRole(roles, ["reviewer", "senior_reviewer"])) {
@@ -72,7 +73,7 @@ export function canApprove(
   authorStaffProfileId: string | null,
   options?: SelfReviewOptions,
 ): boolean {
-  if (options?.adminSelfReviewAllowed && hasAnyRole(roles, ["administrator"])) {
+  if (options?.bypassSeparationOfDuties && hasAnyRole(roles, ["administrator"])) {
     return true;
   }
   if (hasAnyRole(roles, ["senior_reviewer"]) && authorStaffProfileId !== staffProfileId) {

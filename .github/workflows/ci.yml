@@ -44,6 +44,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: JSX whitespace check
+        run: npm run check:jsx-whitespace
+
       - name: Secret scan
         run: npm run security:secrets
 
@@ -53,8 +56,8 @@ jobs:
       - name: SEO checks
         run: npm run seo:validate
 
-      - name: Unit tests
-        run: npm run test
+      - name: Unit tests with coverage thresholds
+        run: npm run test:coverage
 
       - name: Data and deadline validation
         run: |
@@ -70,6 +73,12 @@ jobs:
           npm run checkpoint4:validate
           npm run checkpoint5:validate
           npm run checkpoint6:validate
+          npm run checkpoint7:validate
+
+      - name: Launch environment documentation + behavior validators
+        run: |
+          npm run launch:validate
+          npm run launch:validate:env-behavior
 
       - name: AI safety and evaluation (mock provider — no key required)
         run: |
@@ -134,21 +143,27 @@ jobs:
       - name: Database/RLS integration tests
         run: npm run db:test
 
-  e2e-smoke:
-    name: Playwright smoke tests (Docker)
+  e2e:
+    # Phase 4 item 9 (launch-audit remediation): previously ran only 4 of 17
+    # spec files as a "smoke" subset — every staff-auth, student-auth-and-sync,
+    # workspace-tracking, catalogue, correction-report, custom-opportunities,
+    # discovery, mobile-nav, backup, launch-smoke, production-readiness,
+    # scholarly-widget, and theme scenario silently never ran in CI at all.
+    # Runs the full suite now. Tests gated behind real Supabase test-account
+    # env vars (`E2E_STAFF_EMAIL` etc. — see `scripts/e2e-provision-test-accounts.ts`)
+    # still correctly self-skip here, since this job intentionally has no
+    # repository secrets; every other authenticated-route/offline/safety
+    # scenario that doesn't need a real account now actually runs.
+    name: Playwright e2e suite (Docker)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build and run a smoke subset of the e2e suite
+      - name: Build and run the full e2e suite
         run: |
           docker compose --profile test run --rm \
             -e AI_ENABLED=true -e AI_PROVIDER=mock \
-            e2e npx playwright test \
-              tests/e2e/public-database-catalogue.spec.ts \
-              tests/e2e/accessibility.spec.ts \
-              tests/e2e/offline.spec.ts \
-              tests/e2e/ai-assistant.spec.ts
+            e2e npx playwright test
 
       - name: Tear down
         if: always()

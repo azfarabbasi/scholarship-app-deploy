@@ -59,31 +59,54 @@ export function RevokeRoleButton({ assignmentId }: { assignmentId: string }) {
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!open) {
     return (
-      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => {
+          setError(null);
+          setOpen(true);
+        }}
+      >
         Revoke
       </Button>
     );
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Input placeholder="Reason" value={reason} onChange={(e) => setReason(e.target.value)} className="w-40" />
-      <Button
-        size="sm"
-        variant="danger"
-        disabled={busy || !reason}
-        onClick={async () => {
-          setBusy(true);
-          await revokeStaffRole(assignmentId, reason);
-          setBusy(false);
-          router.refresh();
-        }}
-      >
-        Confirm revoke
-      </Button>
+    <div className="flex flex-col items-start gap-2">
+      {error ? <Alert tone="danger">{error}</Alert> : null}
+      <div className="flex items-center gap-2">
+        <Input placeholder="Reason" value={reason} onChange={(e) => setReason(e.target.value)} className="w-40" />
+        <Button
+          size="sm"
+          variant="danger"
+          disabled={busy || !reason.trim()}
+          onClick={async () => {
+            setBusy(true);
+            setError(null);
+            try {
+              const result = await revokeStaffRole(assignmentId, reason.trim());
+              if (!result.ok) {
+                setError(result.error ?? "Could not revoke this role.");
+                return;
+              }
+              setOpen(false);
+              setReason("");
+              router.refresh();
+            } catch {
+              setError("Could not revoke this role. Please try again.");
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          Confirm revoke
+        </Button>
+      </div>
     </div>
   );
 }

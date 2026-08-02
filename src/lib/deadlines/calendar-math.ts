@@ -54,13 +54,6 @@ export function daysBetweenIsoDates(fromIsoDate: string, toIsoDate: string): num
   return toOrdinalDay(toIsoDate) - toOrdinalDay(fromIsoDate);
 }
 
-export function compareIsoDates(a: string, b: string): number {
-  if (a === b) {
-    return 0;
-  }
-  return a < b ? -1 : 1;
-}
-
 /** The current calendar date (YYYY-MM-DD) in a given IANA timezone. */
 export function calendarDateInTimeZone(instant: Date, timeZone: string): string {
   try {

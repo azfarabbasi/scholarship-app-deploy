@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isHttpUrl } from "@/lib/security/url";
 import { applicationStageValueSchema, workspaceTargetTypeSchema } from "./student-workspace";
 
 /**
@@ -8,24 +9,51 @@ import { applicationStageValueSchema, workspaceTargetTypeSchema } from "./studen
  * metadata) instead of the guest IndexedDB row shape. Every object schema
  * is `.strict()` so an unrecognised or prototype-polluting key is rejected
  * rather than silently ignored or assigned.
+ *
+ * Every array/string field below is explicitly bounded (row count, item
+ * length) — a raw `z.array(...)`/`z.string()` with no cap accepts an
+ * arbitrarily large payload up to `MAX_CLOUD_IMPORT_FILE_SIZE_BYTES` on its
+ * own; the real DoS risk is one field looping millions of times inside a
+ * single import transaction, or one absurdly long string, well within that
+ * byte budget. The caps here are generous for any real account (thousands of
+ * tracked opportunities/notes would be an extreme outlier) but bounded.
  */
 export const CLOUD_EXPORT_APP_ID = "scholartrack-account";
 export const CLOUD_EXPORT_SCHEMA_VERSION = 2;
 export const MAX_CLOUD_IMPORT_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
-const isoDateTime = z.string().refine((value) => !Number.isNaN(Date.parse(value)), { message: "Invalid timestamp" });
+/** Oldest schema version this importer still understands. Bump only alongside an explicit, tested migration path. */
+const MIN_SUPPORTED_SCHEMA_VERSION = 1;
+
+const MAX_ROWS = 5_000;
+const MAX_SMALL_ARRAY = 200;
+const MAX_SHORT_TEXT = 300;
+const MAX_TEXT = 20_000;
+const MAX_URL_LENGTH = 2048;
+
+const isoDateTime = z.string().max(MAX_SHORT_TEXT).refine((value) => !Number.isNaN(Date.parse(value)), { message: "Invalid timestamp" });
+const shortText = z.string().max(MAX_SHORT_TEXT);
+const longText = z.string().max(MAX_TEXT);
+const stringArray = z.array(shortText).max(MAX_SMALL_ARRAY);
+
+/** Only ever `http:`/`https:` — never `javascript:`, `data:`, `file:`, or any other scheme that could be dangerous if later rendered as a link. */
+const httpUrlSchema = z
+  .string()
+  .max(MAX_URL_LENGTH)
+  .refine(isHttpUrl, { message: "Must be an http:// or https:// URL" });
+const nullableHttpUrl = httpUrlSchema.nullable();
 
 const profileExportSchema = z
   .object({
-    displayName: z.string().nullable(),
-    countryOrRegion: z.string().nullable(),
-    currentStudyLevel: z.string().nullable(),
-    intendedStudyLevel: z.string().nullable(),
+    displayName: shortText.nullable(),
+    countryOrRegion: shortText.nullable(),
+    currentStudyLevel: shortText.nullable(),
+    intendedStudyLevel: shortText.nullable(),
     graduationYear: z.number().int().nullable(),
     targetIntakeYear: z.number().int().nullable(),
-    targetIntakeTerm: z.string().nullable(),
-    preferredCountries: z.array(z.string()),
-    preferredStudyLevels: z.array(z.string()),
+    targetIntakeTerm: shortText.nullable(),
+    preferredCountries: stringArray,
+    preferredStudyLevels: stringArray,
     onboardingCompletedAt: isoDateTime.nullable(),
   })
   .strict();
@@ -50,7 +78,7 @@ const noteExportSchema = z
     id: z.uuid(),
     targetType: workspaceTargetTypeSchema,
     targetId: z.uuid(),
-    noteText: z.string(),
+    noteText: longText,
     createdAt: isoDateTime,
     updatedAt: isoDateTime,
   })
@@ -61,7 +89,7 @@ const checklistTaskExportSchema = z
     id: z.uuid(),
     targetType: workspaceTargetTypeSchema,
     targetId: z.uuid(),
-    taskText: z.string(),
+    taskText: longText,
     completed: z.boolean(),
     sortOrder: z.number().int(),
     sourceType: z.enum(["generic", "user-created", "imported"]),
@@ -73,21 +101,21 @@ const checklistTaskExportSchema = z
 const customOpportunityExportSchema = z
   .object({
     id: z.uuid(),
-    slug: z.string(),
-    title: z.string(),
-    opportunityType: z.string(),
-    providerName: z.string().nullable(),
-    countries: z.array(z.string()),
-    regions: z.array(z.string()),
-    studyLevels: z.array(z.string()),
-    benefitSummary: z.string(),
-    eligibilitySummary: z.string(),
-    officialUrl: z.string().nullable(),
+    slug: shortText,
+    title: shortText,
+    opportunityType: shortText,
+    providerName: shortText.nullable(),
+    countries: stringArray,
+    regions: stringArray,
+    studyLevels: stringArray,
+    benefitSummary: longText,
+    eligibilitySummary: longText,
+    officialUrl: nullableHttpUrl,
     deadlineKind: z.enum(["exact", "estimated", "rolling", "unknown"]),
-    deadlineRawText: z.string(),
-    deadlineDate: z.string().nullable(),
-    deadlineTimezone: z.string().nullable(),
-    verificationNotes: z.string().nullable(),
+    deadlineRawText: longText,
+    deadlineDate: shortText.nullable(),
+    deadlineTimezone: shortText.nullable(),
+    verificationNotes: longText.nullable(),
     archivedAt: isoDateTime.nullable(),
     createdAt: isoDateTime,
     updatedAt: isoDateTime,
@@ -96,11 +124,11 @@ const customOpportunityExportSchema = z
 
 const planningPreferencesExportSchema = z
   .object({
-    expectedGraduationDate: z.string().nullable(),
+    expectedGraduationDate: shortText.nullable(),
     targetIntakeYear: z.number().int().nullable(),
-    targetIntakeTerm: z.string().nullable(),
-    preferredStudyLevels: z.array(z.string()),
-    preferredCountries: z.array(z.string()),
+    targetIntakeTerm: shortText.nullable(),
+    preferredStudyLevels: stringArray,
+    preferredCountries: stringArray,
   })
   .strict()
   .nullable();
@@ -123,22 +151,22 @@ const syncMetadataExportSchema = z
 
 const eligibilityAnswersExportSchema = z
   .object({
-    countryOfResidence: z.string().nullable(),
-    nationality: z.string().nullable(),
-    currentStudyLevel: z.string().nullable(),
-    intendedStudyLevel: z.string().nullable(),
-    fieldsOfInterest: z.array(z.string()),
+    countryOfResidence: shortText.nullable(),
+    nationality: shortText.nullable(),
+    currentStudyLevel: shortText.nullable(),
+    intendedStudyLevel: shortText.nullable(),
+    fieldsOfInterest: stringArray,
     graduationYear: z.number().int().nullable(),
     targetIntakeYear: z.number().int().nullable(),
-    targetIntakeTerm: z.string().nullable(),
-    preferredCountries: z.array(z.string()),
-    preferredRegions: z.array(z.string()),
-    languageTestStatus: z.string().nullable(),
-    researchExperience: z.string().nullable(),
+    targetIntakeTerm: shortText.nullable(),
+    preferredCountries: stringArray,
+    preferredRegions: stringArray,
+    languageTestStatus: shortText.nullable(),
+    researchExperience: shortText.nullable(),
     workExperienceYears: z.number().int().nullable(),
-    finalYearStatus: z.string().nullable(),
-    fundingPreference: z.string().nullable(),
-    studyMode: z.string().nullable(),
+    finalYearStatus: shortText.nullable(),
+    fundingPreference: shortText.nullable(),
+    studyMode: shortText.nullable(),
   })
   .strict()
   .nullable();
@@ -146,12 +174,12 @@ const eligibilityAnswersExportSchema = z
 const savedSearchExportSchema = z
   .object({
     id: z.uuid(),
-    name: z.string(),
-    queryText: z.string(),
-    filters: z.record(z.string(), z.unknown()),
-    sortMode: z.string(),
+    name: shortText,
+    queryText: longText,
+    filters: z.record(z.string().max(MAX_SHORT_TEXT), z.unknown()),
+    sortMode: shortText,
     resultCountSnapshot: z.number().int().nullable(),
-    resultSnapshot: z.array(z.string()),
+    resultSnapshot: z.array(z.uuid()).max(MAX_ROWS),
     lastCheckedAt: isoDateTime.nullable(),
     alertsEnabled: z.boolean(),
     createdAt: isoDateTime,
@@ -162,8 +190,8 @@ const savedSearchExportSchema = z
 const reminderPreferencesExportSchema = z
   .object({
     remindersEnabled: z.boolean(),
-    officialLeadDays: z.array(z.number().int()),
-    personalLeadDays: z.array(z.number().int()),
+    officialLeadDays: z.array(z.number().int()).max(MAX_SMALL_ARRAY),
+    personalLeadDays: z.array(z.number().int()).max(MAX_SMALL_ARRAY),
     savedSearchAlertsEnabled: z.boolean(),
   })
   .strict()
@@ -172,11 +200,11 @@ const reminderPreferencesExportSchema = z
 const reminderExportSchema = z
   .object({
     id: z.uuid(),
-    stableKey: z.string(),
+    stableKey: shortText,
     source: z.enum(["official-deadline", "personal-deadline", "checklist", "saved-search", "system"]),
     targetType: z.enum(["built-in", "custom"]).nullable(),
-    targetId: z.string().nullable(),
-    title: z.string(),
+    targetId: z.uuid().nullable(),
+    title: shortText,
     dueAt: isoDateTime,
     leadDays: z.number().int(),
     status: z.enum(["pending", "dismissed", "completed"]),
@@ -190,11 +218,11 @@ const notificationExportSchema = z
     id: z.uuid(),
     type: z.enum(["reminder-upcoming", "reminder-overdue", "saved-search-alert", "system"]),
     source: z.enum(["official-deadline", "personal-deadline", "checklist", "saved-search", "system"]),
-    title: z.string(),
-    message: z.string(),
+    title: shortText,
+    message: longText,
     targetType: z.enum(["built-in", "custom"]).nullable(),
-    targetId: z.string().nullable(),
-    savedSearchId: z.string().nullable(),
+    targetId: z.uuid().nullable(),
+    savedSearchId: z.uuid().nullable(),
     dueAt: isoDateTime.nullable(),
     status: z.enum(["unread", "read", "dismissed"]),
     readAt: isoDateTime.nullable(),
@@ -205,12 +233,12 @@ const notificationExportSchema = z
 const aiCitationExportSchema = z
   .object({
     citationType: z.enum(["official-source", "structured-data", "workspace-context", "match-explanation"]),
-    opportunityId: z.string().nullable(),
-    officialSourceId: z.string().nullable(),
-    sourceChunkId: z.string().nullable(),
-    label: z.string(),
-    url: z.string().nullable(),
-    verificationStatus: z.string().nullable(),
+    opportunityId: z.uuid().nullable(),
+    officialSourceId: z.uuid().nullable(),
+    sourceChunkId: z.uuid().nullable(),
+    label: shortText,
+    url: nullableHttpUrl,
+    verificationStatus: shortText.nullable(),
     checkedAt: isoDateTime.nullable(),
   })
   .strict();
@@ -219,8 +247,8 @@ const aiConversationExportSchema = z
   .object({
     id: z.uuid(),
     scope: z.enum(["general", "opportunity", "comparison", "workspace", "matching"]),
-    targetOpportunityId: z.string().nullable(),
-    title: z.string(),
+    targetOpportunityId: z.uuid().nullable(),
+    title: shortText,
     createdAt: isoDateTime,
     updatedAt: isoDateTime,
   })
@@ -231,9 +259,9 @@ const aiMessageExportSchema = z
     id: z.uuid(),
     conversationId: z.uuid(),
     role: z.enum(["user", "assistant"]),
-    content: z.string(),
-    blockedReason: z.string().nullable(),
-    citations: z.array(aiCitationExportSchema),
+    content: longText,
+    blockedReason: shortText.nullable(),
+    citations: z.array(aiCitationExportSchema).max(MAX_SMALL_ARRAY),
     createdAt: isoDateTime,
   })
   .strict();
@@ -244,22 +272,22 @@ export const cloudExportPayloadSchema = z
     schemaVersion: z.number().int().positive(),
     exportedAt: isoDateTime,
     profile: profileExportSchema,
-    tracking: z.array(trackingExportSchema),
-    notes: z.array(noteExportSchema),
-    checklistTasks: z.array(checklistTaskExportSchema),
-    customOpportunities: z.array(customOpportunityExportSchema),
+    tracking: z.array(trackingExportSchema).max(MAX_ROWS),
+    notes: z.array(noteExportSchema).max(MAX_ROWS),
+    checklistTasks: z.array(checklistTaskExportSchema).max(MAX_ROWS),
+    customOpportunities: z.array(customOpportunityExportSchema).max(MAX_ROWS),
     planningPreferences: planningPreferencesExportSchema,
     displayPreferences: displayPreferencesExportSchema,
     syncMetadata: syncMetadataExportSchema,
     // Optional: absent in an export produced before Checkpoint 4.
     eligibilityAnswers: eligibilityAnswersExportSchema.optional(),
-    savedSearches: z.array(savedSearchExportSchema).optional(),
+    savedSearches: z.array(savedSearchExportSchema).max(MAX_ROWS).optional(),
     reminderPreferences: reminderPreferencesExportSchema.optional(),
-    reminders: z.array(reminderExportSchema).optional(),
-    notifications: z.array(notificationExportSchema).optional(),
+    reminders: z.array(reminderExportSchema).max(MAX_ROWS).optional(),
+    notifications: z.array(notificationExportSchema).max(MAX_ROWS).optional(),
     // Optional: only present when the student has AI history enabled (Checkpoint 5) — never included otherwise.
-    aiConversations: z.array(aiConversationExportSchema).optional(),
-    aiMessages: z.array(aiMessageExportSchema).optional(),
+    aiConversations: z.array(aiConversationExportSchema).max(MAX_ROWS).optional(),
+    aiMessages: z.array(aiMessageExportSchema).max(MAX_ROWS).optional(),
   })
   .strict();
 
@@ -318,6 +346,29 @@ export function validateCloudExportPayload(json: unknown): CloudImportValidation
   }
 
   const payload = result.data;
+
+  // A schema version newer than this build understands means the file was
+  // exported by a future version of ScholarTrack whose export shape this
+  // code has never seen validated against — accepting it on the strength of
+  // "the fields happened to parse" would be a false sense of safety, not
+  // real compatibility. An older, still-supported version is fine: the
+  // schema above already reflects every field a supported older export can
+  // legally omit (see the `.optional()` markers).
+  if (payload.schemaVersion > CLOUD_EXPORT_SCHEMA_VERSION) {
+    return {
+      valid: false,
+      errors: [
+        `This file was exported by a newer version of ScholarTrack (schema v${payload.schemaVersion}) than this app supports (v${CLOUD_EXPORT_SCHEMA_VERSION}). Update the app before importing it.`,
+      ],
+    };
+  }
+  if (payload.schemaVersion < MIN_SUPPORTED_SCHEMA_VERSION) {
+    return {
+      valid: false,
+      errors: [`This file's schema version (v${payload.schemaVersion}) is too old to import.`],
+    };
+  }
+
   return {
     valid: true,
     payload,

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SignOutButton } from "./SignOutButton";
 
 const NAV_ITEMS = [
   { href: "/account", label: "Dashboard" },
@@ -11,9 +12,10 @@ const NAV_ITEMS = [
 interface AccountNavProps {
   email: string;
   displayName: string | null;
+  studentProfileId: string;
 }
 
-export function AccountNav({ email, displayName }: AccountNavProps) {
+export function AccountNav({ email, displayName, studentProfileId }: AccountNavProps) {
   return (
     <nav
       aria-label="Account navigation"
@@ -41,14 +43,7 @@ export function AccountNav({ email, displayName }: AccountNavProps) {
         <Link href="/workspace" className="block rounded-md px-3 py-2 text-sm text-foreground-muted hover:bg-surface-muted">
           Go to workspace
         </Link>
-        <form action="/auth/logout" method="post">
-          <button
-            type="submit"
-            className="w-full rounded-md px-3 py-2 text-left text-sm text-foreground-muted hover:bg-surface-muted"
-          >
-            Sign out
-          </button>
-        </form>
+        <SignOutButton studentProfileId={studentProfileId} />
       </div>
     </nav>
   );

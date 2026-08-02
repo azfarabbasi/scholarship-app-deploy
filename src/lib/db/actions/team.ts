@@ -3,9 +3,11 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { recordAuditEvent } from "@/lib/audit/log";
+import { hasBootstrapAdminAccess } from "@/lib/auth/bootstrap-admin";
 import { canManageStaff, type StaffRole } from "@/lib/auth/permissions";
 import { getStaffSession } from "@/lib/auth/session";
 import { getDb, schema } from "@/lib/db/client";
+import { getServerEnv } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { ActionResult } from "./opportunities";
 
@@ -55,7 +57,7 @@ export async function inviteStaffMember(email: string, displayName: string, role
 
   await recordAuditEvent(db, {
     actorStaffProfileId: session.staffProfileId,
-    actorRole: session.roles[0] ?? null,
+    actorRole: "administrator",
     action: "permission-change",
     entityName: "staff_role_assignments",
     entityId: userId,
@@ -69,21 +71,50 @@ export async function inviteStaffMember(email: string, displayName: string, role
 export async function revokeStaffRole(assignmentId: string, reason: string): Promise<ActionResult> {
   const session = await requireAdminSession();
   if (!session) return { ok: false, error: "Not permitted." };
+  if (!reason.trim()) return { ok: false, error: "A revocation reason is required." };
 
   const db = getDb();
-  await db
-    .update(schema.staffRoleAssignments)
-    .set({ revokedAt: new Date(), revokedByStaffProfileId: session.staffProfileId })
-    .where(eq(schema.staffRoleAssignments.id, assignmentId));
+  const [assignment] = await db
+    .select({
+      id: schema.staffRoleAssignments.id,
+      role: schema.staffRoleAssignments.role,
+      email: schema.staffProfiles.email,
+      revokedAt: schema.staffRoleAssignments.revokedAt,
+    })
+    .from(schema.staffRoleAssignments)
+    .innerJoin(schema.staffProfiles, eq(schema.staffProfiles.id, schema.staffRoleAssignments.staffProfileId))
+    .where(eq(schema.staffRoleAssignments.id, assignmentId))
+    .limit(1);
+  if (!assignment || assignment.revokedAt) return { ok: false, error: "Active role assignment not found." };
 
-  await recordAuditEvent(db, {
-    actorStaffProfileId: session.staffProfileId,
-    actorRole: session.roles[0] ?? null,
-    action: "permission-change",
-    entityName: "staff_role_assignments",
-    entityId: assignmentId,
-    reasonCode: reason,
-    redactedChangeSummary: "Revoked a staff role assignment.",
+  const env = getServerEnv("bootstrap administrator role protection");
+  if (
+    hasBootstrapAdminAccess(
+      { email: assignment.email, roles: [assignment.role] },
+      { configuredEmail: env.BOOTSTRAP_ADMIN_EMAIL, enabled: env.ALLOW_ADMIN_SELF_REVIEW },
+    )
+  ) {
+    return {
+      ok: false,
+      error: "The bootstrap administrator role is protected while full testing access is enabled.",
+    };
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(schema.staffRoleAssignments)
+      .set({ revokedAt: new Date(), revokedByStaffProfileId: session.staffProfileId })
+      .where(eq(schema.staffRoleAssignments.id, assignmentId));
+
+    await recordAuditEvent(tx, {
+      actorStaffProfileId: session.staffProfileId,
+      actorRole: "administrator",
+      action: "permission-change",
+      entityName: "staff_role_assignments",
+      entityId: assignmentId,
+      reasonCode: reason.trim(),
+      redactedChangeSummary: "Revoked a staff role assignment.",
+    });
   });
 
   revalidatePath("/staff/team");

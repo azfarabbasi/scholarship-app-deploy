@@ -22,6 +22,14 @@ export interface RetrievedChunkSource {
   checkedAt: string | null;
   verificationStatus: string | null;
   rank: number;
+  /**
+   * Short, stable per-request identifier (e.g. "E1") assigned by
+   * `assignEvidenceIds` (see `./evidence.ts`) — never set by retrieval
+   * itself. This is what the prompt renders as the `<source id="...">`
+   * attribute and what the model is required to cite inline for every
+   * factual claim it draws from this source.
+   */
+  evidenceId?: string;
 }
 
 /**
@@ -42,6 +50,8 @@ export interface StructuredFact {
   officialUrl: string | null;
   checkedAt: string | null;
   verificationStatus: string | null;
+  /** Same purpose as `RetrievedChunkSource.evidenceId` — see there. */
+  evidenceId?: string;
 }
 
 export interface RetrievalResult {

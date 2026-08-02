@@ -1,13 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-/** Only ever redirect to a same-origin, `/staff`-scoped path — never an open redirect. */
-function sanitizeNextPath(path: string | null): string {
-  if (!path || !path.startsWith("/staff") || path.startsWith("//") || path.includes("://")) {
-    return "/staff";
-  }
-  return path;
-}
+import { sanitizeRedirectPath } from "@/lib/security/redirect";
 
 /**
  * Handles Supabase's PKCE/magic-link/OAuth redirect (`?code=...`). Password
@@ -18,7 +11,7 @@ function sanitizeNextPath(path: string | null): string {
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = sanitizeNextPath(searchParams.get("next"));
+  const next = sanitizeRedirectPath(searchParams.get("next"), origin, "/staff", { requiredPrefix: "/staff" });
 
   if (code) {
     const supabase = await createSupabaseServerClient();

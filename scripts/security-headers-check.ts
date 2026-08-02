@@ -9,6 +9,7 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { sanitizeRedirectPath } from "../src/lib/security/redirect";
 
 const root = process.cwd();
 const errors: string[] = [];
@@ -30,6 +31,14 @@ function read(relativePath: string): string {
 const nextConfig = read("next.config.ts");
 const middleware = read("src/lib/supabase/middleware.ts");
 const csp = read("src/lib/security/csp.ts");
+const redirectHelper = read("src/lib/security/redirect.ts");
+const redirectConsumers = [
+  middleware,
+  read("src/components/auth/StudentLoginForm.tsx"),
+  read("src/components/staff/StaffLoginForm.tsx"),
+  read("app/auth/callback/route.ts"),
+  read("app/staff/auth/callback/route.ts"),
+];
 
 // ---------------------------------------------------------------------------
 // 1. Baseline static headers (next.config.ts)
@@ -77,10 +86,32 @@ check(middleware.includes('"/staff"') && middleware.includes('"/account"'), "Sta
 // ---------------------------------------------------------------------------
 // 5. Safe redirects (no open redirect)
 // ---------------------------------------------------------------------------
-check(middleware.includes("sanitizeNextPath"), "Missing sanitizeNextPath() safe-redirect helper.");
+check(redirectHelper.length > 0, "Missing the shared safe-redirect helper.");
 check(
-  middleware.includes('path.startsWith("//")') && middleware.includes('path.includes("://")'),
-  "sanitizeNextPath must reject protocol-relative (//) and absolute (scheme://) redirect targets.",
+  redirectConsumers.every((source) => source.includes("sanitizeRedirectPath")),
+  "Every untrusted auth `next` redirect consumer must use sanitizeRedirectPath().",
+);
+
+const redirectOrigin = "https://security-check.scholartrack.invalid";
+const redirectFallback = "/account";
+const unsafeRedirectTargets = [
+  "//attacker.invalid/path",
+  "///attacker.invalid/path",
+  "https://attacker.invalid/path",
+  "javascript://attacker.invalid/path",
+  "/\\attacker.invalid/path",
+  "/\u0000/attacker.invalid",
+];
+check(
+  unsafeRedirectTargets.every(
+    (target) => sanitizeRedirectPath(target, redirectOrigin, redirectFallback) === redirectFallback,
+  ),
+  "sanitizeRedirectPath() must reject external, malformed, backslash, and control-character redirect targets.",
+);
+check(
+  sanitizeRedirectPath("/staff/../account", redirectOrigin, "/staff", { requiredPrefix: "/staff" }) === "/staff" &&
+    sanitizeRedirectPath("/account/../staff", redirectOrigin, "/account", { disallowedPrefix: "/staff" }) === "/account",
+  "sanitizeRedirectPath() must apply staff/student flow boundaries after URL normalization.",
 );
 
 console.log(`security:headers: ${checksPassed} check(s) passed.`);

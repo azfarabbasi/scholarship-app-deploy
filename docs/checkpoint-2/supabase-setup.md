@@ -100,6 +100,11 @@ find the now-existing user.
 
 ## 8. Test login
 
+For local one-account workflow testing, set `ALLOW_ADMIN_SELF_REVIEW=true` alongside
+`BOOTSTRAP_ADMIN_EMAIL`. The verified bootstrap account then receives the audited testing
+exception documented in `staff-roles-and-workflows.md`; every other administrator retains normal
+separation of duties. Never enable this in production (startup validation rejects it there).
+
 1. `npm run dev` (or `docker compose up`).
 2. Go to `http://localhost:3000/staff/login`.
 3. Sign in with `BOOTSTRAP_ADMIN_EMAIL` and the password you set.

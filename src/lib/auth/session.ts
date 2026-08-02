@@ -1,7 +1,9 @@
 import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db/client";
+import { getServerEnv } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { hasBootstrapAdminAccess } from "./bootstrap-admin";
 import type { StaffRole } from "./permissions";
 
 export interface StaffSession {
@@ -10,6 +12,8 @@ export interface StaffSession {
   displayName: string;
   /** Every active (non-revoked) role assignment; usually one, occasionally more. */
   roles: StaffRole[];
+  /** Server-derived testing super-admin capability; never trusted from request input. */
+  isBootstrapAdmin: boolean;
 }
 
 /**
@@ -32,6 +36,7 @@ export async function getStaffSession(): Promise<StaffSession | null> {
   }
 
   const staffProfileId = data.claims.sub;
+  const verifiedEmail = typeof data.claims.email === "string" ? data.claims.email : null;
   const db = getDb();
 
   const [profile] = await db
@@ -53,19 +58,21 @@ export async function getStaffSession(): Promise<StaffSession | null> {
     return null;
   }
 
+  const roles = assignments.map((assignment) => assignment.role);
+  const env = getServerEnv("bootstrap administrator access");
+  const verifiedEmailMatchesProfile =
+    Boolean(verifiedEmail) && verifiedEmail!.trim().toLowerCase() === profile.email.trim().toLowerCase();
+
   return {
     staffProfileId,
     email: profile.email,
     displayName: profile.displayName,
-    roles: assignments.map((assignment) => assignment.role),
+    roles,
+    isBootstrapAdmin:
+      verifiedEmailMatchesProfile &&
+      hasBootstrapAdminAccess(
+        { email: verifiedEmail!, roles },
+        { configuredEmail: env.BOOTSTRAP_ADMIN_EMAIL, enabled: env.ALLOW_ADMIN_SELF_REVIEW },
+      ),
   };
-}
-
-/** Convenience helper for pages/layouts that just need a yes/no gate. */
-export async function requireStaffSession(): Promise<StaffSession> {
-  const session = await getStaffSession();
-  if (!session) {
-    throw new Error("STAFF_SESSION_REQUIRED");
-  }
-  return session;
 }
