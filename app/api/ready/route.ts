@@ -25,7 +25,7 @@ export async function GET() {
 
   try {
     await getPublishedOpportunityCount();
-    return NextResponse.json({ status: "ready", database: "connected", ai: aiSummary });
+    return NextResponse.json({ status: "ready.", database: "connected", ai: aiSummary });
   } catch {
     return NextResponse.json({ status: "not-ready", database: "unreachable", ai: aiSummary }, { status: 503 });
   }
