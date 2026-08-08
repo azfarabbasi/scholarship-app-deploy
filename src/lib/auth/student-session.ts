@@ -2,6 +2,7 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db/client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { EnvironmentConfigurationError } from "@/lib/env";
 
 export interface StudentSession {
   studentProfileId: string;
@@ -58,7 +59,19 @@ async function ensureStudentProfile(authUserId: string, email: string) {
  * of it: a student session never implies a staff session or vice versa.
  */
 export async function getStudentSession(): Promise<StudentSession | null> {
-  const supabase = await createSupabaseServerClient();
+  let supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
+  try {
+    supabase = await createSupabaseServerClient();
+  } catch (error) {
+    // Student auth is optional for guest browsing (see PROJECT_RULES.md:
+    // "Guest mode must remain available"). A deployment/dev environment
+    // without Supabase configured should behave exactly like a guest with
+    // no session, not crash every page that checks for one.
+    if (error instanceof EnvironmentConfigurationError) {
+      return null;
+    }
+    throw error;
+  }
   const { data, error } = await supabase.auth.getClaims();
 
   if (error || !data?.claims?.sub) {
