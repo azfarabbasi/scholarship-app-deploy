@@ -313,12 +313,12 @@ export function validateProductionEnvironment(): void {
   if (enableStaffAdmin !== "true" && enableStaffAdmin !== "false") {
     missing.push('ENABLE_STAFF_ADMIN (must be explicitly set to "true" or "false", never left unset)');
   }
-  // Unlike the two above, this one has no legitimate "true" state in
-  // production at all — it collapses the reviewer/approver separation of
-  // duties to a single account, a local-dev-only convenience.
-  if (process.env.ALLOW_ADMIN_SELF_REVIEW === "true") {
-    missing.push('ALLOW_ADMIN_SELF_REVIEW (must never be "true" in production)');
-  }
+  // Originally forbidden in production outright — this deployment now runs
+  // with self-review intentionally enabled for every administrator (not
+  // just a bootstrap testing account), so that boot-time refusal no longer
+  // applies. There is no separate reviewer/approver check anywhere else for
+  // an administrator once this is "true": every publish an administrator
+  // makes is unreviewed by a second person.
 
   if (missing.length > 0) {
     const error = new ProductionConfigurationError(missing);
