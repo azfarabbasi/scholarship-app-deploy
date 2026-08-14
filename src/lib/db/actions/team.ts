@@ -7,7 +7,7 @@ import { hasBootstrapAdminAccess } from "@/lib/auth/bootstrap-admin";
 import { canManageStaff, type StaffRole } from "@/lib/auth/permissions";
 import { getStaffSession } from "@/lib/auth/session";
 import { getDb, schema } from "@/lib/db/client";
-import { getServerEnv } from "@/lib/env";
+import { getAppBaseUrl, getServerEnv } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { ActionResult } from "./opportunities";
 
@@ -29,7 +29,9 @@ export async function inviteStaffMember(email: string, displayName: string, role
   if (!session) return { ok: false, error: "Not permitted." };
 
   const admin = createSupabaseAdminClient();
-  const invite = await admin.auth.admin.inviteUserByEmail(email);
+  const invite = await admin.auth.admin.inviteUserByEmail(email, {
+    redirectTo: `${getAppBaseUrl()}/staff/auth/callback?next=/account/security`,
+  });
 
   let userId = invite.data?.user?.id;
   if (!userId) {
