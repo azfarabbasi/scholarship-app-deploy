@@ -2,7 +2,8 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { Button } from "@/components/ui/Button";
-import { WorkflowStatusBadge, workflowStatusLabel } from "@/components/staff/WorkflowStatusBadge";
+import { workflowStatusLabel } from "@/components/staff/WorkflowStatusBadge";
+import { BulkPublishTable } from "@/components/staff/BulkPublishTable";
 import { getDb, schema } from "@/lib/db/client";
 import { OPPORTUNITY_WORKFLOW_STATUSES, type OpportunityWorkflowStatus } from "@/lib/workflow/opportunity-workflow";
 
@@ -85,62 +86,7 @@ export default async function StaffOpportunitiesPage({ searchParams }: PageProps
         ))}
       </nav>
 
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface shadow-e1">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-border bg-surface-muted text-xs uppercase tracking-wide text-foreground-muted">
-            <tr>
-              <th scope="col" className="px-3 py-2.5 font-semibold">
-                Title
-              </th>
-              <th scope="col" className="px-3 py-2.5 font-semibold">
-                Provider
-              </th>
-              <th scope="col" className="px-3 py-2.5 font-semibold">
-                Status
-              </th>
-              <th scope="col" className="px-3 py-2.5 font-semibold">
-                Updated
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-3 py-12 text-center">
-                  <p className="font-medium text-foreground">No opportunities match this filter.</p>
-                  <p className="mt-1 text-sm text-foreground-muted">
-                    Try{" "}
-                    <Link href="/staff/opportunities" className="text-brand hover:underline">
-                      clearing the status filter
-                    </Link>{" "}
-                    or start a new draft.
-                  </p>
-                </td>
-              </tr>
-            ) : (
-              rows.map((row) => (
-                <tr key={row.id} className="border-t border-border transition-colors hover:bg-surface-muted/50">
-                  <td className="px-3 py-2.5">
-                    <Link
-                      href={`/staff/opportunities/${row.id}`}
-                      className="rounded font-medium text-foreground hover:text-brand hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
-                    >
-                      {row.title}
-                    </Link>
-                  </td>
-                  <td className="px-3 py-2.5 text-foreground-muted">{row.providerName}</td>
-                  <td className="px-3 py-2.5">
-                    <WorkflowStatusBadge status={row.status} />
-                  </td>
-                  <td className="px-3 py-2.5 whitespace-nowrap text-foreground-muted">
-                    {row.updatedAt.toLocaleString()}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <BulkPublishTable rows={rows} />
     </div>
   );
 }
