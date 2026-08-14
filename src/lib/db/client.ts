@@ -31,7 +31,17 @@ export function getDb() {
     throw new EnvironmentConfigurationError("the database");
   }
 
-  const client = postgres(connectionString, { max: 10 });
+  // `prepare: false` is required against Supabase's Transaction pooler
+  // (port 6543, pgbouncer in transaction mode): a prepared statement is
+  // scoped to one physical Postgres backend connection, but the pooler can
+  // route each query to a different backend, so a statement prepared on one
+  // connection can be executed against another that never prepared it.
+  // Symptom seen in practice: a query silently returns zero rows for a row
+  // that demonstrably exists, intermittently and worse under concurrency —
+  // not an error, just wrong results. Safe to disable unconditionally, even
+  // against a direct (non-pooled) connection; it only forgoes an
+  // optimization there, never changes correctness.
+  const client = postgres(connectionString, { max: 10, prepare: false });
   cachedDb = drizzle(client, { schema });
   return cachedDb;
 }
